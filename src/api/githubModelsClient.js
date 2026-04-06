@@ -76,6 +76,14 @@ function upstreamErrorText(data) {
     }
     if (parts.length) return parts.join('; ')
   }
+  try {
+    const raw = JSON.stringify(data)
+    if (raw && raw !== '{}') {
+      return raw.length > 900 ? `${raw.slice(0, 900)}…` : raw
+    }
+  } catch {
+    /* ignore */
+  }
   return ''
 }
 
@@ -192,8 +200,9 @@ export async function callGitHubModel(model, messages, systemPrompt) {
       return content
     }
 
-    const msg =
-      upstreamErrorText(data) || classifyGitHubModelsStatus(response.status)
+    const detail = upstreamErrorText(data)
+    const base = classifyGitHubModelsStatus(response.status)
+    const msg = detail ? `${base}\n\n${detail}` : base
     lastError = new Error(msg)
     if (RETRYABLE_STATUS.has(response.status) && attempt < 2) {
       continue

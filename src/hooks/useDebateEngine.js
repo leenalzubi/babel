@@ -8,7 +8,12 @@ import {
   SYNTHESIS_SYSTEM,
 } from '../api/systemPrompts.js'
 import { useForgeUiSettings } from '../context/ForgeSettingsContext.jsx'
+import { clipInferenceText } from '../lib/clipInferenceText.js'
 import { useForge } from '../store/useForgeStore.js'
+
+function pause(ms) {
+  return new Promise((r) => setTimeout(r, ms))
+}
 
 /** @param {string} text */
 function tokenize(text) {
@@ -137,20 +142,24 @@ export function useDebateEngine() {
         dispatch({ type: 'SET_PROMPT', payload: userPrompt.trim() })
         dispatch({ type: 'SET_STATUS', payload: 'running' })
 
-        /* Sequential calls reduce parallel load on GitHub Models (parallel bursts often return 5xx). */
+        const promptClipped = clipInferenceText(userPrompt.trim(), 48_000)
+
+        /* Sequential calls + pacing reduce rate limits and upstream 5xx from GitHub Models. */
         const ra = await callGitHubModel(
           config.agentA.model,
-          [{ role: 'user', content: userPrompt }],
+          [{ role: 'user', content: promptClipped }],
           AGENT_A_ROUND1_SYSTEM
         )
+        await pause(700)
         const rb = await callGitHubModel(
           config.agentB.model,
-          [{ role: 'user', content: userPrompt }],
+          [{ role: 'user', content: promptClipped }],
           AGENT_B_ROUND1_SYSTEM
         )
+        await pause(700)
         const rc = await callGitHubModel(
           config.agentC.model,
-          [{ role: 'user', content: userPrompt }],
+          [{ role: 'user', content: promptClipped }],
           AGENT_C_ROUND1_SYSTEM
         )
 
@@ -169,20 +178,26 @@ export function useDebateEngine() {
           payload: { ab, ac, bc, average },
         })
 
-        const aReviewMsg = buildCrossReviewUserMessage(
-          'A',
-          { agentA: ra, agentB: rb, agentC: rc },
-          config
+        const aReviewMsg = clipInferenceText(
+          buildCrossReviewUserMessage(
+            'A',
+            { agentA: ra, agentB: rb, agentC: rc },
+            config
+          )
         )
-        const bReviewMsg = buildCrossReviewUserMessage(
-          'B',
-          { agentA: ra, agentB: rb, agentC: rc },
-          config
+        const bReviewMsg = clipInferenceText(
+          buildCrossReviewUserMessage(
+            'B',
+            { agentA: ra, agentB: rb, agentC: rc },
+            config
+          )
         )
-        const cReviewMsg = buildCrossReviewUserMessage(
-          'C',
-          { agentA: ra, agentB: rb, agentC: rc },
-          config
+        const cReviewMsg = clipInferenceText(
+          buildCrossReviewUserMessage(
+            'C',
+            { agentA: ra, agentB: rb, agentC: rc },
+            config
+          )
         )
 
         const aRev = await callGitHubModel(
@@ -190,11 +205,13 @@ export function useDebateEngine() {
           [{ role: 'user', content: aReviewMsg }],
           CROSS_REVIEW_SYSTEM
         )
+        await pause(700)
         const bRev = await callGitHubModel(
           config.agentB.model,
           [{ role: 'user', content: bReviewMsg }],
           CROSS_REVIEW_SYSTEM
         )
+        await pause(700)
         const cRev = await callGitHubModel(
           config.agentC.model,
           [{ role: 'user', content: cReviewMsg }],
@@ -223,17 +240,20 @@ export function useDebateEngine() {
           return
         }
 
-        const synthesisUser = buildSynthesisUserMessage(
-          userPrompt,
-          ra,
-          rb,
-          rc,
-          aRev,
-          bRev,
-          cRev,
-          config
+        const synthesisUser = clipInferenceText(
+          buildSynthesisUserMessage(
+            userPrompt,
+            ra,
+            rb,
+            rc,
+            aRev,
+            bRev,
+            cRev,
+            config
+          )
         )
 
+        await pause(700)
         const synthesisRaw = await callGitHubModel(
           config.agentA.model,
           [{ role: 'user', content: synthesisUser }],
