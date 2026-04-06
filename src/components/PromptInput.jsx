@@ -1,4 +1,5 @@
 import { Flame } from 'lucide-react'
+import { useForge } from '../store/useForgeStore.js'
 
 /**
  * @param {{
@@ -18,6 +19,10 @@ export default function PromptInput({
   disabled = false,
   placeholder = 'What should the team debate? Be specific — the richer the prompt, the sharper the forge.',
 }) {
+  const { state } = useForge()
+  const { agentA, agentB, agentC } = state.config
+  const modelBadges = [agentA, agentB, agentC]
+
   const hasToken = Boolean(
     import.meta.env.VITE_GITHUB_TOKEN &&
       String(import.meta.env.VITE_GITHUB_TOKEN).trim()
@@ -32,6 +37,24 @@ export default function PromptInput({
         <p className="font-sans text-sm text-[var(--text-secondary)]">
           Three models answer independently, cross-review, then (optionally) synthesize.
         </p>
+        <div
+          className="flex flex-wrap gap-2"
+          aria-label="Model IDs for this forge run"
+        >
+          {modelBadges.map((agent) => (
+            <span
+              key={agent.model}
+              className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--bg-notebook)] py-1 pl-2 pr-2.5 font-mono text-[10px] text-[var(--text-secondary)]"
+            >
+              <span
+                className="h-1.5 w-1.5 shrink-0 rounded-full"
+                style={{ backgroundColor: agent.color }}
+                aria-hidden
+              />
+              <span className="min-w-0 truncate">{agent.model}</span>
+            </span>
+          ))}
+        </div>
       </div>
 
       <textarea

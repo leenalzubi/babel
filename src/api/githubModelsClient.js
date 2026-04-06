@@ -1,5 +1,5 @@
 /**
- * GitHub Models (Azure inference) — OpenAI-compatible chat completions.
+ * GitHub Models — OpenAI-compatible chat completions.
  *
  * GitHub PAT with models:read scope required. Get one at https://github.com/settings/tokens.
  * Demo use only — never expose tokens in production (use a backend proxy instead).
@@ -8,7 +8,7 @@
 import { API_ERROR, isLikelyNetworkError } from '../lib/apiErrors.js'
 
 const CHAT_COMPLETIONS_URL =
-  'https://models.inference.ai.azure.com/chat/completions'
+  'https://models.github.ai/inference/chat/completions'
 
 /**
  * @param {number} status

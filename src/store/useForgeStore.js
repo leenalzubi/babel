@@ -19,9 +19,9 @@ function createInitialState() {
     error: null,
     config: {
       maxRounds: 2,
-      agentA: { name: 'Claude', model: 'claude-opus-4-5', color: '#2563EB' },
-      agentB: { name: 'DeepSeek R1', model: 'deepseek-r1', color: '#059669' },
-      agentC: { name: 'Llama 4', model: 'meta-llama-4-maverick', color: '#7C3AED' },
+      agentA: { name: 'Claude', model: 'anthropic/claude-4-sonnet', color: '#2563EB' },
+      agentB: { name: 'DeepSeek R1', model: 'deepseek/deepseek-r1', color: '#059669' },
+      agentC: { name: 'Llama 4', model: 'meta/llama-4-maverick', color: '#7C3AED' },
     },
   }
 }
