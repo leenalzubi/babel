@@ -14,6 +14,8 @@ import {
 
 const PROXY_PATH = '/api/github-models'
 
+const RETRYABLE_STATUS = new Set([429, 500, 502, 503])
+
 /**
  * @returns {{ url: string, authorization: string | null }}
  */
@@ -47,26 +49,32 @@ function classifyGitHubModelsStatus(status) {
   if (status === 429) {
     return API_ERROR.RATE_LIMIT
   }
+  if (status === 500 || status === 502 || status === 503) {
+    return API_ERROR.GITHUB_MODELS_UPSTREAM_ERROR
+  }
   return `GitHub Models error: ${status}`
 }
 
 /** @param {unknown} data */
 function upstreamErrorText(data) {
-  if (
-    data &&
-    typeof data === 'object' &&
-    'error' in data &&
-    typeof data.error === 'string'
-  ) {
-    return data.error
-  }
-  if (
-    data &&
-    typeof data === 'object' &&
-    'message' in data &&
-    typeof data.message === 'string'
-  ) {
+  if (!data || typeof data !== 'object') return ''
+  if ('message' in data && typeof data.message === 'string') {
     return data.message
+  }
+  const err = 'error' in data ? data.error : undefined
+  if (typeof err === 'string') return err
+  if (err && typeof err === 'object' && 'message' in err) {
+    const m = err.message
+    if (typeof m === 'string') return m
+  }
+  if (Array.isArray(data.detail)) {
+    const parts = []
+    for (const d of data.detail) {
+      if (d && typeof d === 'object' && 'msg' in d && typeof d.msg === 'string') {
+        parts.push(d.msg)
+      }
+    }
+    if (parts.length) return parts.join('; ')
   }
   return ''
 }
@@ -86,6 +94,16 @@ async function errorMessageFromResponse(response, fallback) {
   return fallback
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * @param {string} model
+ * @param {Array<{ role: 'user' | 'assistant', content: string }>} messages
+ * @param {string} systemPrompt
+ * @returns {Promise<string>}
+ */
 export async function callGitHubModel(model, messages, systemPrompt) {
   const { url, authorization } = resolveGithubChatRequest()
   const isProxyRequest = url === PROXY_PATH
@@ -111,60 +129,79 @@ export async function callGitHubModel(model, messages, systemPrompt) {
     headers.Authorization = authorization
   }
 
-  let response
-  try {
-    response = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        model,
-        max_tokens: 1500,
-        messages: [{ role: 'system', content: systemPrompt }, ...messages],
-      }),
-    })
-  } catch (err) {
-    if (isLikelyNetworkError(err)) {
+  const payload = {
+    model,
+    max_tokens: 1024,
+    messages: [{ role: 'system', content: systemPrompt }, ...messages],
+  }
+
+  let lastError = new Error('GitHub Models request failed')
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) {
+      await sleep(1500 * attempt)
+    }
+
+    let response
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      })
+    } catch (err) {
+      if (isLikelyNetworkError(err)) {
+        lastError = new Error(API_ERROR.NETWORK)
+        if (attempt < 2) continue
+        throw lastError
+      }
+      throw err instanceof Error ? err : new Error(String(err))
+    }
+
+    if (
+      isProxyRequest &&
+      response.status === 404 &&
+      !(response.headers.get('content-type') ?? '').includes('application/json')
+    ) {
+      throw new Error(API_ERROR.GITHUB_PROXY_404)
+    }
+
+    let data
+    try {
+      data = await response.json()
+    } catch {
+      if (!response.ok) {
+        const msg = await errorMessageFromResponse(
+          response,
+          classifyGitHubModelsStatus(response.status)
+        )
+        lastError = new Error(msg)
+        if (RETRYABLE_STATUS.has(response.status) && attempt < 2) continue
+        throw lastError
+      }
       throw new Error(API_ERROR.NETWORK)
     }
-    throw err instanceof Error ? err : new Error(String(err))
-  }
 
-  if (
-    isProxyRequest &&
-    response.status === 404 &&
-    !(response.headers.get('content-type') ?? '').includes('application/json')
-  ) {
-    throw new Error(API_ERROR.GITHUB_PROXY_404)
-  }
-
-  let data
-  try {
-    data = await response.json()
-  } catch {
-    if (!response.ok) {
-      const msg = await errorMessageFromResponse(
-        response,
-        classifyGitHubModelsStatus(response.status)
-      )
-      throw new Error(msg)
+    if (response.ok) {
+      const content = data?.choices?.[0]?.message?.content
+      if (typeof content !== 'string') {
+        throw new Error(
+          'GitHub Models response missing choices[0].message.content string.'
+        )
+      }
+      return content
     }
-    throw new Error(API_ERROR.NETWORK)
+
+    const msg =
+      upstreamErrorText(data) || classifyGitHubModelsStatus(response.status)
+    lastError = new Error(msg)
+    if (RETRYABLE_STATUS.has(response.status) && attempt < 2) {
+      continue
+    }
+    throw lastError
   }
 
-  if (!response.ok) {
-    const fallback = classifyGitHubModelsStatus(response.status)
-    const msg = upstreamErrorText(data) || fallback
-    throw new Error(msg)
-  }
-
-  const content = data?.choices?.[0]?.message?.content
-  if (typeof content !== 'string') {
-    throw new Error(
-      'GitHub Models response missing choices[0].message.content string.'
-    )
-  }
-
-  return content
+  throw lastError
 }
 
 /**

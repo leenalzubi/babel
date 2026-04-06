@@ -13,6 +13,8 @@ export const API_ERROR = {
   GITHUB_PROXY_404:
     '404 from /api/github-models — the serverless route is missing (redeploy with api/github-models.js at repo root) or the host returned an HTML error page instead of JSON. For local npm run dev, use VITE_GITHUB_TOKEN (direct API) or run npx vercel dev.',
   RATE_LIMIT: 'Rate limit reached — wait a moment and retry',
+  GITHUB_MODELS_UPSTREAM_ERROR:
+    'GitHub Models returned 500/502/503 — usually temporary (outage or overloaded model). Retry shortly; check https://www.githubstatus.com. If a detail message appears above the status code, use that first.',
   NETWORK: 'Network error — check your connection',
 }
 

@@ -2,8 +2,8 @@
 export const GITHUB_MODELS_CHAT_URL =
   'https://models.github.ai/inference/chat/completions'
 
-/** Required for routing some GitHub REST behavior; see GitHub Models docs. */
-export const GITHUB_MODELS_API_VERSION = '2026-03-10'
+/** Per GitHub Models quickstart; avoids version mismatch with some inference routes. */
+export const GITHUB_MODELS_API_VERSION = '2022-11-28'
 
 /**
  * Headers GitHub recommends for Models inference (plus any extras, e.g. Content-Type).

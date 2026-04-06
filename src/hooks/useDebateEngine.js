@@ -137,23 +137,22 @@ export function useDebateEngine() {
         dispatch({ type: 'SET_PROMPT', payload: userPrompt.trim() })
         dispatch({ type: 'SET_STATUS', payload: 'running' })
 
-        const [ra, rb, rc] = await Promise.all([
-          callGitHubModel(
-            config.agentA.model,
-            [{ role: 'user', content: userPrompt }],
-            AGENT_A_ROUND1_SYSTEM
-          ),
-          callGitHubModel(
-            config.agentB.model,
-            [{ role: 'user', content: userPrompt }],
-            AGENT_B_ROUND1_SYSTEM
-          ),
-          callGitHubModel(
-            config.agentC.model,
-            [{ role: 'user', content: userPrompt }],
-            AGENT_C_ROUND1_SYSTEM
-          ),
-        ])
+        /* Sequential calls reduce parallel load on GitHub Models (parallel bursts often return 5xx). */
+        const ra = await callGitHubModel(
+          config.agentA.model,
+          [{ role: 'user', content: userPrompt }],
+          AGENT_A_ROUND1_SYSTEM
+        )
+        const rb = await callGitHubModel(
+          config.agentB.model,
+          [{ role: 'user', content: userPrompt }],
+          AGENT_B_ROUND1_SYSTEM
+        )
+        const rc = await callGitHubModel(
+          config.agentC.model,
+          [{ role: 'user', content: userPrompt }],
+          AGENT_C_ROUND1_SYSTEM
+        )
 
         dispatch({
           type: 'ADD_ROUND',
@@ -186,23 +185,21 @@ export function useDebateEngine() {
           config
         )
 
-        const [aRev, bRev, cRev] = await Promise.all([
-          callGitHubModel(
-            config.agentA.model,
-            [{ role: 'user', content: aReviewMsg }],
-            CROSS_REVIEW_SYSTEM
-          ),
-          callGitHubModel(
-            config.agentB.model,
-            [{ role: 'user', content: bReviewMsg }],
-            CROSS_REVIEW_SYSTEM
-          ),
-          callGitHubModel(
-            config.agentC.model,
-            [{ role: 'user', content: cReviewMsg }],
-            CROSS_REVIEW_SYSTEM
-          ),
-        ])
+        const aRev = await callGitHubModel(
+          config.agentA.model,
+          [{ role: 'user', content: aReviewMsg }],
+          CROSS_REVIEW_SYSTEM
+        )
+        const bRev = await callGitHubModel(
+          config.agentB.model,
+          [{ role: 'user', content: bReviewMsg }],
+          CROSS_REVIEW_SYSTEM
+        )
+        const cRev = await callGitHubModel(
+          config.agentC.model,
+          [{ role: 'user', content: cReviewMsg }],
+          CROSS_REVIEW_SYSTEM
+        )
 
         dispatch({
           type: 'ADD_REVIEW',
