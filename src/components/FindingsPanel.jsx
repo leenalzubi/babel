@@ -250,10 +250,10 @@ export default function FindingsPanel() {
         role="note"
       >
         <p className="font-sans text-sm leading-relaxed text-[var(--text-secondary)]">
-          This dataset is shared across all users of The Forge. Only the first
-          120 characters of each prompt are stored — never full responses or
-          personal information. By running a debate you consent to contributing
-          anonymously to this dataset.
+          This dataset is shared publicly. Only the first 120 characters of each
+          prompt are stored. Never full responses or personal information. By
+          running a debate you consent to contributing anonymously to this
+          dataset.
         </p>
       </div>
 

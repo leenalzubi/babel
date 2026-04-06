@@ -61,20 +61,20 @@ function DirectionCard({ title, children }) {
 export default function ResearchPanel() {
   return (
     <article
-      className="mx-auto w-full max-w-3xl pb-16 md:pb-24"
-      aria-label="Research brief"
+      className="w-full min-w-0 pb-16 md:pb-24"
+      aria-label="About The Forge"
     >
       <SectionShell num="01" title="What The Forge Is">
         <div className="space-y-5 font-sans text-[15px] leading-[1.75] text-[var(--text-secondary)]">
           <p>
-            The Forge sends a single prompt to three AI models simultaneously —
+            The Forge sends a single prompt to three AI models simultaneously:
             GPT-4o mini, Phi-4 mini reasoning, and Mistral Small. Each model
             responds independently, then reviews the other two responses, then
             a synthesis pass reconciles all three into one unified answer.
           </p>
           <p>
             The goal is not to find the &apos;best&apos; model. It is to use
-            disagreement as a feature — to surface where models converge, where
+            disagreement as a feature; to surface where models converge, where
             they diverge, and what each reasoning style contributes that the
             others miss.
           </p>
@@ -87,11 +87,10 @@ export default function ResearchPanel() {
         <div className="flex flex-col gap-6">
           <ObservationCard title="Divergence as signal">
             When models trained on similar data still disagree on the same
-            prompt, that divergence is data — it indicates genuinely contested
-            knowledge, not just stylistic variation.
+            prompt, that divergence is data.
           </ObservationCard>
           <ObservationCard title="Reasoning style taxonomy">
-            Different model families reason differently — some toward caution,
+            Different model families reason differently. Some toward caution,
             some toward conviction, some toward synthesis. Those patterns are
             not yet systematically mapped at the prompt level.
           </ObservationCard>
@@ -107,8 +106,8 @@ export default function ResearchPanel() {
           </ObservationCard>
           <ObservationCard title="Naturalistic data">
             Most multi-model research happens in controlled lab conditions. The
-            Forge collects real questions from real people — a different and
-            potentially more valuable dataset.
+            Forge collects real questions from real people, which is a
+            different and valuable dataset.
           </ObservationCard>
         </div>
       </SectionShell>
@@ -118,19 +117,19 @@ export default function ResearchPanel() {
       <SectionShell num="03" title="Where This Goes">
         <div className="grid gap-6 md:grid-cols-2">
           <DirectionCard title="More models, more diversity">
-            Adding models from additional labs — Gemini, Grok, Command R —
+            Adding models from additional labs, like Gemini, Grok, Command R,
             would increase reasoning diversity and make divergence patterns more
             meaningful.
           </DirectionCard>
           <DirectionCard title="Prompt categorisation">
             Tagging debates by topic (technical, ethical, strategic, creative)
-            would allow divergence patterns to be studied by domain —
-            revealing which categories produce the most contested outputs.
+            would allow divergence patterns to be studied by domain, revealing
+            which categories produce the most contested outputs.
           </DirectionCard>
           <DirectionCard title="Human evaluation layer">
             Adding a simple post-synthesis rating (&quot;Was this better than
             any single response?&quot;) would create a feedback signal for
-            studying what good synthesis actually looks like.
+            studying what good synthesis looks like.
           </DirectionCard>
           <DirectionCard title="Academic partnership">
             The dataset this tool generates — structured, timestamped,
@@ -146,17 +145,22 @@ export default function ResearchPanel() {
       <SectionShell num="04" title="About">
         <div className="space-y-6 font-sans text-[15px] leading-[1.75] text-[var(--text-secondary)]">
           <p>
-            Built by Leen Alzubi, Senior Product Manager at Softchoice. This
-            project sits at the intersection of product thinking and AI research
-            — an attempt to build tools that make model behaviour more legible,
-            not just more capable.
+            Built by Leen Al-Zu&apos;bi, Senior Product Manager at Softchoice,
+            as self-directed study in AI research. No lab, no grant, just
+            genuine curiosity about how these models think and where they
+            disagree.
           </p>
           <p>
-            Feedback, collaboration, and research partnerships welcome.
+            This tool is free to use. The dataset it generates is open, and
+            every debate logged here is visible in the Findings tab. If you
+            find it useful, run a debate. If you find it interesting, reach
+            out.
           </p>
           <p>
             <a
-              href="mailto:leenalzubi99@gmail.com"
+              href="https://www.linkedin.com/in/leenalzubi/"
+              target="_blank"
+              rel="noopener noreferrer"
               className="font-mono text-sm font-semibold text-[var(--accent-forge)] underline decoration-[var(--accent-forge)]/30 underline-offset-4 transition hover:decoration-[var(--accent-forge)]"
             >
               Get in touch

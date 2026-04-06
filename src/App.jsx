@@ -8,6 +8,16 @@ import {
   useState,
 } from 'react'
 import { Settings } from 'lucide-react'
+
+const WORKFLOW_SIDEBAR_COLLAPSED_KEY = 'forge-workflow-sidebar-collapsed'
+
+function readWorkflowSidebarCollapsed() {
+  try {
+    return window.localStorage.getItem(WORKFLOW_SIDEBAR_COLLAPSED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
 import ErrorBanner from './components/ErrorBanner.jsx'
 import FindingsPanel from './components/FindingsPanel.jsx'
 import ResearchPanel from './components/ResearchPanel.jsx'
@@ -45,10 +55,27 @@ export default function App() {
   const [promptDraft, setPromptDraft] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [mainTab, setMainTab] = useState(
-    /** @type {'forge' | 'findings' | 'research'} */ ('forge')
+    /** @type {'forge' | 'findings' | 'about'} */ ('forge')
+  )
+  const [workflowSidebarCollapsed, setWorkflowSidebarCollapsed] = useState(
+    () => readWorkflowSidebarCollapsed()
   )
 
   const running = state.status === 'running'
+
+  const showWorkflowSidebar =
+    mainTab === 'forge' && state.status !== 'idle'
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        WORKFLOW_SIDEBAR_COLLAPSED_KEY,
+        workflowSidebarCollapsed ? '1' : '0'
+      )
+    } catch {
+      /* ignore */
+    }
+  }, [workflowSidebarCollapsed])
 
   const cfg = state.config
 
@@ -105,11 +132,27 @@ export default function App() {
     }
   }, [state.synthesis])
 
+  const mainMobilePt = showWorkflowSidebar
+    ? 'pt-[calc(5.25rem+env(safe-area-inset-top,0px))]'
+    : 'pt-[calc(1rem+env(safe-area-inset-top,0px))]'
+  const headerStickyTopMobile = showWorkflowSidebar
+    ? 'top-[calc(5.25rem+env(safe-area-inset-top,0px))]'
+    : 'top-0'
+  const mainMdPr =
+    showWorkflowSidebar && !workflowSidebarCollapsed
+      ? 'md:pr-[272px]'
+      : 'md:pr-10'
+  const roundScrollMt = showWorkflowSidebar
+    ? 'scroll-mt-[calc(5.25rem+env(safe-area-inset-top,0px))]'
+    : 'scroll-mt-[calc(4rem+env(safe-area-inset-top,0px))]'
+
   return (
     <div className="app-shell relative flex min-h-dvh w-full flex-row bg-[var(--bg-base)] text-[var(--text-primary)]">
-      <main className="main-content relative z-[2] flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-4 pb-16 pt-[calc(5.25rem+env(safe-area-inset-top,0px))] sm:px-6 md:min-h-0 md:px-10 md:pb-20 md:pr-[272px] md:pt-10">
+      <main
+        className={`main-content relative z-[2] flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-4 pb-16 sm:px-6 md:min-h-0 md:pb-20 md:pl-10 md:pt-10 ${mainMobilePt} ${mainMdPr}`}
+      >
         <header
-          className="sticky top-[calc(5.25rem+env(safe-area-inset-top,0px))] z-20 -mx-4 mb-8 border-b border-[var(--border)] bg-[var(--bg-surface)] px-4 py-4 shadow-forge-card sm:-mx-6 sm:px-6 md:top-0 md:-mx-10 md:mb-10 md:px-10 md:py-5"
+          className={`sticky z-20 -mx-4 mb-8 border-b border-[var(--border)] bg-[var(--bg-surface)] px-4 py-4 shadow-forge-card sm:-mx-6 sm:px-6 md:top-0 md:-mx-10 md:mb-10 md:px-10 md:py-5 ${headerStickyTopMobile}`}
         >
           <div className="flex flex-wrap items-center justify-between gap-4">
             <span className="font-mono text-[11px] font-semibold tracking-[0.28em] text-[var(--text-primary)]">
@@ -162,22 +205,22 @@ export default function App() {
             </button>
             <button
               type="button"
-              onClick={() => setMainTab('research')}
-              aria-pressed={mainTab === 'research'}
+              onClick={() => setMainTab('about')}
+              aria-pressed={mainTab === 'about'}
               className={`rounded-full px-3 py-2 font-mono text-xs font-semibold transition sm:px-4 ${
-                mainTab === 'research'
+                mainTab === 'about'
                   ? 'bg-[var(--accent-forge)] text-white shadow-md'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
-              Research
+              About
             </button>
           </div>
         </nav>
 
         {mainTab === 'findings' ? (
           <FindingsPanel />
-        ) : mainTab === 'research' ? (
+        ) : mainTab === 'about' ? (
           <ResearchPanel />
         ) : (
           <>
@@ -189,6 +232,13 @@ export default function App() {
                 onReset={handleReset}
                 disabled={running}
               />
+              <p
+                className="mt-4 max-w-2xl font-mono text-[10px] leading-relaxed text-[var(--text-muted)]"
+                role="note"
+              >
+                By running a debate you consent to contributing anonymously to
+                this dataset.
+              </p>
             </div>
 
             {running ? <LiveAgentStrip state={state} /> : null}
@@ -212,7 +262,7 @@ export default function App() {
                   <div
                     key={round.roundNum}
                     id={`forge-round-${round.roundNum}`}
-                    className="flex scroll-mt-[calc(5.25rem+env(safe-area-inset-top,0px))] flex-col gap-12 md:scroll-mt-8"
+                    className={`flex ${roundScrollMt} flex-col gap-12 md:scroll-mt-8`}
                   >
                     <RoundCard
                       roundNum={round.roundNum}
@@ -237,7 +287,7 @@ export default function App() {
               {state.synthesis ? (
                 <div
                   id="forge-synthesis"
-                  className="scroll-mt-[calc(5.25rem+env(safe-area-inset-top,0px))] md:scroll-mt-8"
+                  className={`${roundScrollMt} md:scroll-mt-8`}
                 >
                   <Suspense
                     fallback={
@@ -259,7 +309,12 @@ export default function App() {
         )}
       </main>
 
-      {mainTab === 'forge' ? <WorkflowTimeline /> : null}
+      {showWorkflowSidebar ? (
+        <WorkflowTimeline
+          collapsed={workflowSidebarCollapsed}
+          onCollapsedChange={setWorkflowSidebarCollapsed}
+        />
+      ) : null}
 
       <SettingsDrawer
         open={settingsOpen}

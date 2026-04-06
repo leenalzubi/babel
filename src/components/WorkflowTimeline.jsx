@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowLeftRight, Check, Sparkles } from 'lucide-react'
+import {
+  ArrowLeftRight,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+} from 'lucide-react'
 import { useForge } from '../store/useForgeStore.js'
 
 /** @param {'pending' | 'active' | 'complete'} state */
@@ -110,7 +116,16 @@ function useWorkflowSteps(state) {
   }
 }
 
-export default function WorkflowTimeline() {
+/**
+ * @param {{
+ *   collapsed?: boolean,
+ *   onCollapsedChange?: (collapsed: boolean) => void,
+ * }} props
+ */
+export default function WorkflowTimeline({
+  collapsed = false,
+  onCollapsedChange = () => {},
+}) {
   const { state } = useForge()
   const { steps, round2Applicable } = useWorkflowSteps(state)
   const { config, divergenceScores } = state
@@ -223,7 +238,11 @@ export default function WorkflowTimeline() {
 
   return (
     <aside
-      className="fixed left-0 right-0 top-0 z-30 border-b border-[var(--border)] bg-[var(--bg-surface)] shadow-forge-card md:bottom-0 md:left-auto md:right-0 md:top-0 md:h-screen md:w-[240px] md:border-b-0 md:border-l md:px-4 md:py-5 md:shadow-none"
+      className={`fixed left-0 right-0 top-0 z-30 border-b border-[var(--border)] bg-[var(--bg-surface)] shadow-forge-card md:bottom-0 md:left-auto md:right-0 md:top-0 md:h-screen md:border-b-0 md:border-l md:shadow-none ${
+        collapsed
+          ? 'md:w-[40px] md:min-w-[40px] md:px-1.5 md:py-3'
+          : 'md:w-[240px] md:min-w-[240px] md:px-4 md:py-5'
+      }`}
       aria-label="Debate workflow"
     >
       {/* Mobile: horizontal scroll, dots only; title uses native tooltip via title */}
@@ -264,16 +283,56 @@ export default function WorkflowTimeline() {
         ) : null}
       </div>
 
-      {/* Desktop: vertical timeline */}
-      <div className="hidden px-3 py-0 md:block md:px-0 md:py-0">
-        <h2 className="mb-4 font-mono text-[11px] font-semibold tracking-widest text-[var(--text-muted)]">
-          WORKFLOW
-        </h2>
+      {/* Desktop: full vertical timeline */}
+      <div
+        className={`hidden px-3 py-0 md:px-0 md:py-0 ${collapsed ? '' : 'md:block'}`}
+      >
+        <div className="mb-4 flex items-center justify-between gap-2 pr-0">
+          <h2 className="font-mono text-[11px] font-semibold tracking-widest text-[var(--text-muted)]">
+            WORKFLOW
+          </h2>
+          <button
+            type="button"
+            onClick={() => onCollapsedChange(true)}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--bg-raised)] text-[var(--text-muted)] shadow-forge-card transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            aria-label="Collapse workflow sidebar"
+          >
+            <ChevronRight className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
         <div className="relative">
           {line}
           <div className="relative space-y-0">
             {steps.map((step) => renderDesktopStepRow(step))}
           </div>
+        </div>
+      </div>
+
+      {/* Desktop: collapsed rail — icons only */}
+      <div
+        className={`hidden w-full flex-col items-center ${collapsed ? 'md:flex' : ''}`}
+      >
+        <button
+          type="button"
+          onClick={() => onCollapsedChange(false)}
+          className="mb-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--bg-raised)] text-[var(--text-muted)] shadow-forge-card transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)]"
+          aria-label="Expand workflow sidebar"
+        >
+          <ChevronLeft className="h-4 w-4" aria-hidden />
+        </button>
+        <div className="relative flex flex-1 flex-col items-center gap-5 py-1">
+          <div
+            className="absolute bottom-2 left-1/2 top-2 w-px -translate-x-1/2 bg-[var(--border)]"
+            aria-hidden
+          />
+          {steps.map((step) => (
+            <div
+              key={step.key}
+              className={`relative z-[1] ${step.dim ? 'opacity-70' : ''}`}
+            >
+              <StatusDot state={step.state} />
+            </div>
+          ))}
         </div>
       </div>
     </aside>
