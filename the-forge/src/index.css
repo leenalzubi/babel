@@ -1,0 +1,113 @@
+@import 'tailwindcss';
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+.shadow-forge-card {
+  box-shadow: var(--card-shadow);
+}
+
+.rounded-forge-card {
+  border-radius: var(--card-radius);
+}
+
+@keyframes thinking-pulse {
+  0%,
+  100% {
+    transform: scale(0.55);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+.thinking-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--text-muted);
+  animation: thinking-pulse 0.6s ease-in-out infinite;
+}
+
+.thinking-dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.thinking-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.thinking-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes live-dot-pulse {
+  0%,
+  100% {
+    transform: scale(0.88);
+    opacity: 0.45;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+}
+
+.live-agent-dot-pulse {
+  animation: live-dot-pulse 1s ease-in-out infinite;
+}
+
+@keyframes shimmer-slide {
+  0% {
+    background-position: 120% 0;
+  }
+  100% {
+    background-position: -120% 0;
+  }
+}
+
+.agent-thinking-shimmer {
+  background: linear-gradient(
+    100deg,
+    transparent 28%,
+    rgba(0, 0, 0, 0.035) 48%,
+    transparent 68%
+  );
+  background-size: 240% 100%;
+  animation: shimmer-slide 2.2s ease-in-out infinite;
+}
+
+@keyframes run-banner-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.run-status-banner {
+  animation: run-banner-enter 320ms ease-out forwards;
+}
+
+@keyframes settings-drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.settings-drawer-panel {
+  animation: settings-drawer-in 300ms ease-out forwards;
+}
