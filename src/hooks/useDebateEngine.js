@@ -9,6 +9,7 @@ import {
 } from '../api/systemPrompts.js'
 import { useForgeUiSettings } from '../context/ForgeSettingsContext.jsx'
 import { clipInferenceText } from '../lib/clipInferenceText.js'
+import { logDebate } from '../lib/logDebate.js'
 import { useForge } from '../store/useForgeStore.js'
 
 function pause(ms) {
@@ -237,6 +238,13 @@ export function useDebateEngine() {
             },
           })
           dispatch({ type: 'SET_STATUS', payload: 'complete' })
+          void logDebate({
+            prompt: userPrompt.trim(),
+            rounds: [{ roundNum: 1 }],
+            divergenceScores: [{ ab, ac, bc, average }],
+            synthesis: { attributions: { a: '', b: '', c: '' } },
+            config,
+          })
           return
         }
 
@@ -272,6 +280,13 @@ export function useDebateEngine() {
         })
 
         dispatch({ type: 'SET_STATUS', payload: 'complete' })
+        void logDebate({
+          prompt: userPrompt.trim(),
+          rounds: [{ roundNum: 1 }],
+          divergenceScores: [{ ab, ac, bc, average }],
+          synthesis: { attributions: parsed.attributions },
+          config,
+        })
       } catch (err) {
         const message =
           err instanceof Error ? err.message : `Debate failed: ${String(err)}`

@@ -19,16 +19,20 @@ function createInitialState() {
     error: null,
     config: {
       maxRounds: 2,
-      agentA: { name: 'GPT-4o mini', model: 'openai/gpt-4o-mini', color: '#2563EB' },
+      agentA: {
+        name: 'GPT-4o mini',
+        model: 'openai/gpt-4o-mini',
+        color: '#10A37F',
+      },
       agentB: {
-        name: 'Phi-4 mini reasoning',
-        model: 'microsoft/phi-4-mini-reasoning',
-        color: '#059669',
+        name: 'Phi-4 Reasoning',
+        model: 'microsoft/phi-4-reasoning',
+        color: '#0078D4',
       },
       agentC: {
         name: 'Mistral Small',
         model: 'mistral-ai/mistral-small-2503',
-        color: '#7C3AED',
+        color: '#FF7000',
       },
     },
   }

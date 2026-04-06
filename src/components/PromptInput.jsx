@@ -75,11 +75,12 @@ export default function PromptInput({
         </p>
         <div
           className="flex flex-wrap gap-2"
-          aria-label="Model IDs for this forge run"
+          aria-label="Models in this forge run"
         >
           {modelBadges.map((agent) => (
             <span
               key={agent.model}
+              title={agent.model}
               className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--bg-notebook)] py-1 pl-2 pr-2.5 font-mono text-[10px] text-[var(--text-secondary)]"
             >
               <span
@@ -87,7 +88,9 @@ export default function PromptInput({
                 style={{ backgroundColor: agent.color }}
                 aria-hidden
               />
-              <span className="min-w-0 truncate">{agent.model}</span>
+              <span className="min-w-0 truncate font-medium text-[var(--text-primary)]">
+                {agent.name}
+              </span>
             </span>
           ))}
         </div>

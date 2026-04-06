@@ -63,8 +63,8 @@ export default function SettingsDrawer({ open, onClose }) {
 
   if (!open) return null
 
-  const claudeKey = envKeySet('VITE_ANTHROPIC_API_KEY')
-  const openaiKey = envKeySet('VITE_OPENAI_API_KEY')
+  const githubToken = envKeySet('VITE_GITHUB_TOKEN')
+  const supabaseUrl = envKeySet('VITE_SUPABASE_URL')
 
   return (
     <>
@@ -183,18 +183,15 @@ export default function SettingsDrawer({ open, onClose }) {
               shown.
             </p>
             <div className="flex flex-col gap-2">
-              <StatusPill label="Claude Key" ok={claudeKey} />
-              <StatusPill label="OpenAI Key" ok={openaiKey} />
+              <StatusPill label="GitHub Token" ok={githubToken} />
+              <StatusPill label="Supabase" ok={supabaseUrl} />
             </div>
           </section>
 
           <section className="mt-auto border-t border-[var(--border)] pt-4">
-            <h3 className="mb-2 font-mono text-[11px] font-semibold text-[var(--text-primary)]">
-              The Forge v1.0 — Dual-Agent Debate Engine
+            <h3 className="font-mono text-[11px] font-semibold text-[var(--text-primary)]">
+              The Forge v1.0 — Three-Agent Debate Engine
             </h3>
-            <p className="font-mono text-[10px] leading-relaxed text-[var(--text-muted)]">
-              GPT-4o is branded as Copilot in this interface.
-            </p>
           </section>
         </div>
 

@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import ReactMarkdown from 'react-markdown'
+import AgentResponseBody from './AgentResponseBody.jsx'
 import TriangleConsensus from './TriangleConsensus.jsx'
 
 const replyMd =
@@ -36,7 +36,7 @@ function RoundAgentPanel({ title, color, text }) {
         </span>
       </div>
       <div className="max-h-[360px] overflow-y-auto px-4 pb-4 pt-1">
-        <ReactMarkdown className={replyMd}>{text}</ReactMarkdown>
+        <AgentResponseBody rawText={text} markdownClassName={replyMd} />
       </div>
     </div>
   )

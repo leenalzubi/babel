@@ -9,6 +9,8 @@ import {
 } from 'react'
 import { Settings } from 'lucide-react'
 import ErrorBanner from './components/ErrorBanner.jsx'
+import FindingsPanel from './components/FindingsPanel.jsx'
+import ResearchPanel from './components/ResearchPanel.jsx'
 import ForgeEmptyState from './components/ForgeEmptyState.jsx'
 import LiveAgentStrip from './components/LiveAgentStrip.jsx'
 import PromptInput from './components/PromptInput.jsx'
@@ -42,6 +44,9 @@ export default function App() {
   const { runDebate } = useDebateEngine()
   const [promptDraft, setPromptDraft] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [mainTab, setMainTab] = useState(
+    /** @type {'forge' | 'findings' | 'research'} */ ('forge')
+  )
 
   const running = state.status === 'running'
 
@@ -126,81 +131,135 @@ export default function App() {
           </div>
         </header>
 
-        <div className="mb-10 shrink-0">
-          <PromptInput
-            value={promptDraft}
-            onChange={setPromptDraft}
-            onRun={handleRun}
-            onReset={handleReset}
-            disabled={running}
-          />
-        </div>
-
-        {running ? <LiveAgentStrip state={state} /> : null}
-
-        <ErrorBanner
-          message={state.error}
-          onDismiss={() => dispatch({ type: 'SET_ERROR', payload: null })}
-        />
-
-        <div className="mt-2 flex flex-col gap-12 md:gap-14">
-          {showEmptyState ? (
-            <ForgeEmptyState onPickExample={setPromptDraft} />
-          ) : null}
-
-          {sortedRounds.map((round, roundIdx) => {
-            const scores = state.divergenceScores[roundIdx] ?? DEFAULT_SCORES
-            const review = state.reviews.find((r) => r.roundNum === round.roundNum)
-            return (
-              <div
-                key={round.roundNum}
-                id={`forge-round-${round.roundNum}`}
-                className="flex scroll-mt-[calc(5.25rem+env(safe-area-inset-top,0px))] flex-col gap-12 md:scroll-mt-8"
-              >
-                <RoundCard
-                  roundNum={round.roundNum}
-                  scores={scores}
-                  round={round}
-                  config={cfg}
-                />
-                {review ? (
-                  <ReviewCard
-                    key={`review-${review.roundNum}`}
-                    roundNum={review.roundNum}
-                    aReviews={review.aReviews}
-                    bReviews={review.bReviews}
-                    cReviews={review.cReviews}
-                    config={cfg}
-                  />
-                ) : null}
-              </div>
-            )
-          })}
-
-          {state.synthesis ? (
-            <div
-              id="forge-synthesis"
-              className="scroll-mt-[calc(5.25rem+env(safe-area-inset-top,0px))] md:scroll-mt-8"
+        <nav
+          className="-mx-4 mb-8 flex justify-center border-b border-[var(--border)] bg-[var(--bg-surface)] px-4 pb-4 sm:-mx-6 sm:px-6 md:-mx-10 md:justify-start md:px-10"
+          aria-label="Main views"
+        >
+          <div className="inline-flex max-w-full flex-wrap justify-center gap-1 rounded-full border border-[var(--border)] bg-[var(--bg-raised)] p-1 shadow-forge-card">
+            <button
+              type="button"
+              onClick={() => setMainTab('forge')}
+              aria-pressed={mainTab === 'forge'}
+              className={`rounded-full px-3 py-2 font-mono text-xs font-semibold transition sm:px-4 ${
+                mainTab === 'forge'
+                  ? 'bg-[var(--accent-forge)] text-white shadow-md'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
             >
-              <Suspense
-                fallback={
-                  <div
-                    className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] px-6 py-12 text-center font-mono text-xs text-[var(--text-muted)] shadow-forge-card"
-                    role="status"
-                    aria-live="polite"
-                  >
-                    Loading synthesis…
-                  </div>
-                }
-              >
-                <SynthesisPanel synthesis={state.synthesis} />
-              </Suspense>
+              Forge
+            </button>
+            <button
+              type="button"
+              onClick={() => setMainTab('findings')}
+              aria-pressed={mainTab === 'findings'}
+              className={`rounded-full px-3 py-2 font-mono text-xs font-semibold transition sm:px-4 ${
+                mainTab === 'findings'
+                  ? 'bg-[var(--accent-forge)] text-white shadow-md'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              Findings
+            </button>
+            <button
+              type="button"
+              onClick={() => setMainTab('research')}
+              aria-pressed={mainTab === 'research'}
+              className={`rounded-full px-3 py-2 font-mono text-xs font-semibold transition sm:px-4 ${
+                mainTab === 'research'
+                  ? 'bg-[var(--accent-forge)] text-white shadow-md'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              Research
+            </button>
+          </div>
+        </nav>
+
+        {mainTab === 'findings' ? (
+          <FindingsPanel />
+        ) : mainTab === 'research' ? (
+          <ResearchPanel />
+        ) : (
+          <>
+            <div className="mb-10 shrink-0">
+              <PromptInput
+                value={promptDraft}
+                onChange={setPromptDraft}
+                onRun={handleRun}
+                onReset={handleReset}
+                disabled={running}
+              />
             </div>
-          ) : null}
-        </div>
+
+            {running ? <LiveAgentStrip state={state} /> : null}
+
+            <ErrorBanner
+              message={state.error}
+              onDismiss={() => dispatch({ type: 'SET_ERROR', payload: null })}
+            />
+
+            <div className="mt-2 flex flex-col gap-12 md:gap-14">
+              {showEmptyState ? (
+                <ForgeEmptyState onPickExample={setPromptDraft} />
+              ) : null}
+
+              {sortedRounds.map((round, roundIdx) => {
+                const scores = state.divergenceScores[roundIdx] ?? DEFAULT_SCORES
+                const review = state.reviews.find(
+                  (r) => r.roundNum === round.roundNum
+                )
+                return (
+                  <div
+                    key={round.roundNum}
+                    id={`forge-round-${round.roundNum}`}
+                    className="flex scroll-mt-[calc(5.25rem+env(safe-area-inset-top,0px))] flex-col gap-12 md:scroll-mt-8"
+                  >
+                    <RoundCard
+                      roundNum={round.roundNum}
+                      scores={scores}
+                      round={round}
+                      config={cfg}
+                    />
+                    {review ? (
+                      <ReviewCard
+                        key={`review-${review.roundNum}`}
+                        roundNum={review.roundNum}
+                        aReviews={review.aReviews}
+                        bReviews={review.bReviews}
+                        cReviews={review.cReviews}
+                        config={cfg}
+                      />
+                    ) : null}
+                  </div>
+                )
+              })}
+
+              {state.synthesis ? (
+                <div
+                  id="forge-synthesis"
+                  className="scroll-mt-[calc(5.25rem+env(safe-area-inset-top,0px))] md:scroll-mt-8"
+                >
+                  <Suspense
+                    fallback={
+                      <div
+                        className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] px-6 py-12 text-center font-mono text-xs text-[var(--text-muted)] shadow-forge-card"
+                        role="status"
+                        aria-live="polite"
+                      >
+                        Loading synthesis…
+                      </div>
+                    }
+                  >
+                    <SynthesisPanel synthesis={state.synthesis} />
+                  </Suspense>
+                </div>
+              ) : null}
+            </div>
+          </>
+        )}
       </main>
 
-      <WorkflowTimeline />
+      {mainTab === 'forge' ? <WorkflowTimeline /> : null}
 
       <SettingsDrawer
         open={settingsOpen}

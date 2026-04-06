@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { ArrowLeftRight } from 'lucide-react'
-import ReactMarkdown from 'react-markdown'
+import AgentResponseBody from './AgentResponseBody.jsx'
 
 const mdClass =
   'max-w-none text-sm leading-relaxed text-[var(--text-secondary)] [&_a]:text-[var(--accent-forge)] [&_code]:rounded-md [&_code]:bg-[var(--bg-raised)] [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[13px] [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_li]:my-0.5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-3 [&_p:last-child]:mb-0 [&_strong]:text-[var(--text-primary)] [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5'
@@ -34,7 +34,7 @@ function CrossReviewAgentCard({ border, dot, title, body, regionLabel }) {
         </h4>
       </header>
       <div className="px-4 py-4">
-        <ReactMarkdown className={mdClass}>{body}</ReactMarkdown>
+        <AgentResponseBody rawText={body} markdownClassName={mdClass} />
       </div>
     </article>
   )

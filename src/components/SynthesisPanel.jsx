@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Copy, Sparkles } from 'lucide-react'
+import { Copy, HelpCircle, Sparkles } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { useForge } from '../store/useForgeStore.js'
 import { useForgeUiSettings } from '../context/ForgeSettingsContext.jsx'
@@ -30,6 +30,7 @@ export default function SynthesisPanel({ synthesis }) {
   const { state } = useForge()
   const { settings } = useForgeUiSettings()
   const [toast, setToast] = useState(null)
+  const [howWorksOpen, setHowWorksOpen] = useState(false)
 
   const clearToastLater = useCallback(() => {
     window.setTimeout(() => setToast(null), 2000)
@@ -109,13 +110,63 @@ export default function SynthesisPanel({ synthesis }) {
             className="mt-1 h-6 w-6 shrink-0 text-[var(--accent-forge)]"
             aria-hidden
           />
-          <div>
-            <h2 className="font-mono text-sm font-bold uppercase tracking-[0.2em] text-[var(--text-primary)]">
-              Synthesis
-            </h2>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2
+                id="synthesis-panel-title"
+                className="font-mono text-sm font-bold uppercase tracking-[0.2em] text-[var(--text-primary)]"
+              >
+                Synthesis
+              </h2>
+              <button
+                type="button"
+                onClick={() => setHowWorksOpen((open) => !open)}
+                aria-expanded={howWorksOpen}
+                aria-controls="synthesis-how-works"
+                title="How this works"
+                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--bg-raised)] text-[var(--text-muted)] shadow-forge-card transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] aria-expanded:border-[var(--accent-forge)]/40 aria-expanded:text-[var(--accent-forge)]"
+              >
+                <HelpCircle className="h-3.5 w-3.5" aria-hidden />
+                <span className="sr-only">How this works</span>
+              </button>
+            </div>
             <p className="mt-2 max-w-2xl font-sans text-sm text-[var(--text-secondary)]">
-              Unified answer from all three agents — this is the payoff.
+              Each agent responded independently, reviewed the others, then their
+              strongest arguments were reconciled into one answer.
             </p>
+            {howWorksOpen ? (
+              <div
+                id="synthesis-how-works"
+                role="region"
+                aria-labelledby="synthesis-how-works-heading"
+                className="mt-3 max-w-2xl rounded-lg border border-[var(--border)] bg-[var(--bg-base)]/80 px-3 py-3 font-sans text-xs leading-relaxed text-[var(--text-secondary)] shadow-forge-card"
+              >
+                <p
+                  id="synthesis-how-works-heading"
+                  className="font-mono text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]"
+                >
+                  How this works
+                </p>
+                <p className="mt-2">
+                  <span className="font-medium text-[var(--text-primary)]">
+                    Round 1:
+                  </span>{' '}
+                  Three models answered your prompt independently with no knowledge
+                  of each other.{' '}
+                  <span className="font-medium text-[var(--text-primary)]">
+                    Round 2:
+                  </span>{' '}
+                  Each model read the other two responses and identified what
+                  they agreed with, challenged, or found missing.{' '}
+                  <span className="font-medium text-[var(--text-primary)]">
+                    Synthesis:
+                  </span>{' '}
+                  A final pass reconciled all three positions — prioritising
+                  points of agreement and resolving contradictions — to produce
+                  this answer.
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
