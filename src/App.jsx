@@ -38,10 +38,40 @@ function readWorkflowSidebarCollapsed() {
 
 const DEFAULT_SCORES = { ab: 0, ac: 0, bc: 0, average: 0 }
 
+/** GitHub Pages (etc.): set VITE_DEPLOY_PATH=babel so routes match /babel/about */
+const DEPLOY_PATH =
+  typeof import.meta.env.VITE_DEPLOY_PATH === 'string'
+    ? import.meta.env.VITE_DEPLOY_PATH.replace(/^\/+|\/+$/g, '')
+    : ''
+
+function pathPrefix() {
+  return DEPLOY_PATH ? `/${DEPLOY_PATH}` : ''
+}
+
+/** @param {string} pathname */
+function normalizePathname(pathname) {
+  const p = pathPrefix()
+  if (p && (pathname === p || pathname.startsWith(`${p}/`))) {
+    const rest = pathname.slice(p.length) || '/'
+    return rest.startsWith('/') ? rest : `/${rest}`
+  }
+  return pathname
+}
+
+/** Browser path including optional deploy prefix (for history API). */
+function hrefForMainTab(tab) {
+  const inner = pathnameForMainTab(tab)
+  const p = pathPrefix()
+  if (!p) return inner
+  if (inner === '/') return `${p}/`
+  return `${p}${inner}`
+}
+
 /** @param {string} pathname */
 function mainTabFromPathname(pathname) {
-  if (pathname === '/findings') return 'findings'
-  if (pathname === '/about') return 'about'
+  const path = normalizePathname(pathname)
+  if (path === '/findings') return 'findings'
+  if (path === '/about') return 'about'
   return 'babel'
 }
 
@@ -105,7 +135,7 @@ export default function App() {
     /** @param {'babel' | 'findings' | 'about'} tab */ (tab) => {
       setMainTab((prev) => {
         if (prev === tab) return prev
-        window.history.pushState({ tab }, '', pathnameForMainTab(tab))
+        window.history.pushState({ tab }, '', hrefForMainTab(tab))
         return tab
       })
     },
@@ -116,7 +146,7 @@ export default function App() {
     const path = window.location.pathname
     const tab = mainTabFromPathname(path)
     if (window.history.state?.tab !== tab) {
-      window.history.replaceState({ tab }, '', pathnameForMainTab(tab))
+      window.history.replaceState({ tab }, '', hrefForMainTab(tab))
     }
   }, [])
 
