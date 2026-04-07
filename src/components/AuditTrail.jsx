@@ -312,9 +312,37 @@ function TracePanel({ trace, config }) {
   )
 }
 
+/**
+ * @param {string} line
+ * @param {{
+ *   agentA: { name: string, color: string },
+ *   agentB: { name: string, color: string },
+ *   agentC: { name: string, color: string },
+ * }} config
+ */
+function synthesisLineAgentPill(line, config) {
+  const l = str(line).toLowerCase()
+  if (/\b(agent[_\s]?c|mistral)\b/i.test(line) || l.includes('mistral')) {
+    return { name: config.agentC.name, color: config.agentC.color }
+  }
+  if (/\b(agent[_\s]?b|phi-4)\b/i.test(line) || l.includes('phi')) {
+    return { name: config.agentB.name, color: config.agentB.color }
+  }
+  if (/\b(agent[_\s]?a|gpt-4o)\b/i.test(line) || l.includes('gpt')) {
+    return { name: config.agentA.name, color: config.agentA.color }
+  }
+  return { name: '—', color: 'var(--text-muted)' }
+}
+
 export default function AuditTrail() {
   const { state } = useForge()
-  const { audit, auditLoading, auditError, config } = state
+  const { audit, auditLoading, auditError, config, synthesis } = state
+  const concessions = Array.isArray(synthesis?.concessions)
+    ? synthesis.concessions
+    : []
+  const heldFirmLines = Array.isArray(synthesis?.heldFirm)
+    ? synthesis.heldFirm
+    : []
   const [expandedId, setExpandedId] = useState(/** @type {string | null} */ (null))
 
   const claimById = useMemo(() => {
@@ -373,7 +401,7 @@ export default function AuditTrail() {
 
   const colLabels = ['GPT-4o', 'Phi-4', 'Mistral']
 
-  if (!auditLoading && !audit && !auditError) {
+  if (!auditLoading && !audit && !auditError && concessions.length === 0 && heldFirmLines.length === 0) {
     return null
   }
 
@@ -382,6 +410,74 @@ export default function AuditTrail() {
       className="audit-trail mx-auto w-full max-w-4xl px-1 pb-12"
       aria-label="Debate audit trail"
     >
+      {concessions.length > 0 ? (
+        <div className="mb-10 rounded-[6px] border border-dashed border-[#16A34A]/35 bg-[#16A34A]/6 px-4 py-5 md:px-6">
+          <h3 className="mb-4 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#15803D]">
+            Concessions made
+          </h3>
+          <ul className="flex flex-col gap-3">
+            {concessions.map((line, i) => {
+              const pill = synthesisLineAgentPill(line, config)
+              return (
+                <li
+                  key={`conc-${i}`}
+                  className="flex flex-wrap items-baseline gap-2 text-[15px] italic leading-relaxed text-[var(--text-secondary)]"
+                >
+                  <span
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--border)] px-2 py-0.5 font-mono text-[10px] font-medium not-italic text-[var(--text-primary)]"
+                    style={{ borderColor: pill.color, color: pill.color }}
+                  >
+                    <span
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ background: pill.color }}
+                      aria-hidden
+                    />
+                    {pill.name}
+                  </span>
+                  <span className="text-[var(--text-muted)]">conceded:</span>
+                  <span>{str(line).replace(/^[^:]+:\s*/, '').trim() || str(line)}</span>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      ) : null}
+
+      {heldFirmLines.length > 0 ? (
+        <div className="mb-10 rounded-[6px] border border-dashed border-[var(--border)] bg-[var(--bg-surface)]/80 px-4 py-5 md:px-6">
+          <h3 className="mb-4 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+            Positions maintained under challenge
+          </h3>
+          <ul className="flex flex-col gap-3">
+            {heldFirmLines.map((line, i) => {
+              const pill = synthesisLineAgentPill(line, config)
+              return (
+                <li
+                  key={`held-${i}`}
+                  className="relative flex flex-wrap items-baseline gap-2 pl-3 text-[15px] leading-relaxed text-[var(--text-secondary)] before:absolute before:left-0 before:top-1 before:h-[calc(100%-4px)] before:w-px before:bg-[var(--agree)]/50"
+                >
+                  <span
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--border)] px-2 py-0.5 font-mono text-[10px] font-medium text-[var(--text-primary)]"
+                    style={{ borderColor: pill.color, color: pill.color }}
+                  >
+                    <span
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ background: pill.color }}
+                      aria-hidden
+                    />
+                    {pill.name}
+                  </span>
+                  <span className="text-[var(--text-muted)]">maintained:</span>
+                  <span className="italic">
+                    {str(line).replace(/^[^:]+:\s*/, '').trim() || str(line)}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      ) : null}
+
       {auditLoading ? (
         <div
           className="mb-6 flex items-center justify-center gap-2 font-mono text-[13px] text-[var(--text-muted)]"

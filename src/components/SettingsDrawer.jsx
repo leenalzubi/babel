@@ -153,7 +153,7 @@ export default function SettingsDrawer({ open, onClose }) {
                     : 'border-[var(--border)] bg-[var(--bg-base)] text-[var(--text-secondary)] hover:border-[var(--text-muted)]'
                 }`}
               >
-                Only synthesize if divergence &gt; 40%
+                Only synthesize if semantic divergence &gt; 40%
               </button>
             </div>
           </section>

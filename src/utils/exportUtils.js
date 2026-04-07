@@ -55,6 +55,22 @@ export function exportToMarkdown(state) {
     }
   }
 
+  const reb = state.rebuttals && typeof state.rebuttals === 'object' ? state.rebuttals : {}
+  if (reb && (reb.a || reb.b || reb.c)) {
+    lines.push('## Round 3 — Rebuttals', '')
+    lines.push(`### ${aName}`, '', String(reb.a ?? '').trim(), '')
+    lines.push(`### ${bName}`, '', String(reb.b ?? '').trim(), '')
+    lines.push(`### ${cName}`, '', String(reb.c ?? '').trim(), '')
+  }
+
+  const fin = state.finalPositions && typeof state.finalPositions === 'object' ? state.finalPositions : {}
+  if (fin && (fin.a || fin.b || fin.c)) {
+    lines.push('## Round 4 — Final Positions', '')
+    lines.push(`### ${aName}`, '', String(fin.a ?? '').trim(), '')
+    lines.push(`### ${bName}`, '', String(fin.b ?? '').trim(), '')
+    lines.push(`### ${cName}`, '', String(fin.c ?? '').trim(), '')
+  }
+
   if (synthesis) {
     const out = (synthesis.output ?? '').trim()
     const rat = (synthesis.rationale ?? '').trim()

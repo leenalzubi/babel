@@ -403,7 +403,7 @@ export default function FindingsPanel() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard title="Total debates run" value={stats.total} />
         <StatCard
-          title="Average divergence"
+          title="Average semantic divergence"
           value={
             stats.avgDiv == null ? '—' : `${pct(stats.avgDiv)}%`
           }
@@ -431,6 +431,11 @@ export default function FindingsPanel() {
           }
         />
       </div>
+
+      <p className="rounded-forge-card border border-dashed border-[var(--border)] bg-[var(--bg-surface)]/80 px-4 py-3 text-center font-sans text-xs italic leading-relaxed text-[var(--text-muted)]">
+        Divergence scores reflect semantic distance between model responses —
+        how differently they reasoned, not just how differently they phrased it.
+      </p>
 
       {supabaseConfigured ? (
         <section className="flex flex-col gap-4">
@@ -746,8 +751,12 @@ export default function FindingsPanel() {
                       {expandedId === id ? (
                         <tr className="border-b border-[var(--border)] bg-[var(--bg-surface)]">
                           <td colSpan={8} className="px-6 py-6">
-                            <p className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                            <p className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                               Pairwise divergence
+                            </p>
+                            <p className="mb-3 max-w-md font-sans text-[11px] italic leading-relaxed text-[var(--text-muted)]">
+                              Semantic scores measure meaning similarity, not
+                              vocabulary overlap.
                             </p>
                             <div className="flex justify-center md:justify-start">
                               <TriangleConsensus
@@ -796,8 +805,8 @@ export default function FindingsPanel() {
 
       {!loading && supabaseConfigured ? (
         <p className="font-mono text-[10px] text-[var(--text-muted)]">
-          Showing debates with average divergence between {divMin}% and {divMax}
-          %. Rows without a stored average are hidden while filtering.
+          Showing debates with average semantic divergence between {divMin}% and{' '}
+          {divMax}%. Rows without a stored average are hidden while filtering.
         </p>
       ) : null}
     </div>

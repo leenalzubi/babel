@@ -64,6 +64,43 @@ function hasNamedReferences(text) {
   )
 }
 
+/**
+ * @param {string[]} lines
+ * @param {{
+ *   agentA?: { name?: string },
+ *   agentB?: { name?: string },
+ *   agentC?: { name?: string },
+ * }} config
+ */
+function countFlexibleSignals(lines, config) {
+  const counts = { a: 0, b: 0, c: 0 }
+  if (!Array.isArray(lines) || !config) return counts
+  const aN = config.agentA?.name?.toLowerCase() ?? ''
+  const bN = config.agentB?.name?.toLowerCase() ?? ''
+  const cN = config.agentC?.name?.toLowerCase() ?? ''
+  for (const line of lines) {
+    if (typeof line !== 'string' || !line.trim()) continue
+    const lower = line.toLowerCase()
+    let assigned = false
+    if (aN && lower.includes(aN.slice(0, Math.min(12, aN.length)))) {
+      counts.a += 1
+      assigned = true
+    } else if (bN && lower.includes(bN.slice(0, Math.min(12, bN.length)))) {
+      counts.b += 1
+      assigned = true
+    } else if (cN && lower.includes(cN.slice(0, Math.min(12, cN.length)))) {
+      counts.c += 1
+      assigned = true
+    }
+    if (!assigned) {
+      if (/\b(agent[_\s]?a|gpt-4o)\b/i.test(line)) counts.a += 1
+      else if (/\b(agent[_\s]?b|phi-4)\b/i.test(line)) counts.b += 1
+      else if (/\b(agent[_\s]?c|mistral)\b/i.test(line)) counts.c += 1
+    }
+  }
+  return counts
+}
+
 /** @param {string} s */
 function wordCount(s) {
   if (typeof s !== 'string' || !s.trim()) return 0
@@ -133,6 +170,46 @@ export function analyseDebate(state) {
   const challenged_most =
     topKeys.length !== 1 || maxAtt === 0 ? 'tied' : topKeys[0]
 
+  const combative_a = countSignals(aReviews)
+  const combative_b = countSignals(bReviews)
+  const combative_c = countSignals(cReviews)
+  const combativeScores = [
+    { k: /** @type {'a'|'b'|'c'} */ ('a'), v: combative_a },
+    { k: 'b', v: combative_b },
+    { k: 'c', v: combative_c },
+  ]
+  const maxComb = Math.max(combative_a, combative_b, combative_c)
+  const combTop = combativeScores.filter((x) => x.v === maxComb).map((x) => x.k)
+  const most_combative =
+    combTop.length !== 1 || maxComb === 0 ? 'tied' : combTop[0]
+
+  const synthObj =
+    state?.synthesis && typeof state.synthesis === 'object'
+      ? state.synthesis
+      : {}
+  const concessionLines = Array.isArray(synthObj.concessions)
+    ? synthObj.concessions
+    : []
+
+  const flexCounts = countFlexibleSignals(concessionLines, {
+    agentA: state?.config?.agentA,
+    agentB: state?.config?.agentB,
+    agentC: state?.config?.agentC,
+  })
+  const flexVals = [
+    { k: /** @type {'a'|'b'|'c'} */ ('a'), v: flexCounts.a },
+    { k: 'b', v: flexCounts.b },
+    { k: 'c', v: flexCounts.c },
+  ]
+  const maxFlex = Math.max(flexCounts.a, flexCounts.b, flexCounts.c)
+  const flexTop = flexVals.filter((x) => x.v === maxFlex).map((x) => x.k)
+  const most_flexible =
+    concessionLines.length === 0
+      ? 'tied'
+      : flexTop.length !== 1 || maxFlex === 0
+        ? 'tied'
+        : flexTop[0]
+
   let synthesis_overlap_a = null
   let synthesis_overlap_b = null
   let synthesis_overlap_c = null
@@ -164,6 +241,8 @@ export function analyseDebate(state) {
     named_references_b,
     named_references_c,
     challenged_most,
+    most_combative,
+    most_flexible,
     synthesis_overlap_a,
     synthesis_overlap_b,
     synthesis_overlap_c,

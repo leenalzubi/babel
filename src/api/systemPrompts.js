@@ -30,16 +30,40 @@ export const CROSS_REVIEW_SYSTEM = `You are reviewing two other AI responses to 
 
 Be specific — reference their actual arguments, not generic observations.`
 
-/** Final synthesis — output parsed by the app (---ATTRIBUTIONS--- / ---RATIONALE---) */
-export const SYNTHESIS_SYSTEM = `You are a synthesis engine. Three expert AI agents have responded to a prompt and cross-reviewed each other. Produce the single best possible answer by combining the strongest elements from all three.
+/** Round 3 — rebuttal to challenges directed at this agent */
+export const REBUTTAL_SYSTEM = `You are defending and refining your original position after reading how the other agents reviewed your response. Be direct. If you concede a point, say so explicitly and why. If you maintain your position, explain why their challenge did not change your view. Maximum 3 paragraphs.`
 
-Use EXACTLY this format — include the delimiter lines verbatim:
+/** Round 4 — one-paragraph final position */
+export const FINAL_POSITION_SYSTEM = `You have now read the original responses, the cross-reviews, and the rebuttals. State your final position on the original question in exactly one paragraph. Be definitive. This is your closing argument.`
 
-[Your synthesized answer — comprehensive, well-structured, takes the best from all three]
+/** Final synthesis — full transcript; parsed by the app */
+export const SYNTHESIS_SYSTEM = `You are synthesizing a complete multi-round debate between three AI models. You have:
+- Round 1: Their independent responses
+- Round 2: Their cross-reviews of each other
+- Round 3: Their rebuttals to challenges directed at them
+- Round 4: Their final positions after seeing everything
+
+Pay special attention to:
+1. Points where an agent CONCEDED — these are high-confidence conclusions
+2. Points where an agent HELD FIRM despite challenge — these are genuine disagreements worth noting
+3. Points that went UNCHALLENGED — likely safe to include
+
+Output format — use EXACTLY these delimiters:
+
+[Synthesized answer]
 
 ---ATTRIBUTIONS---
-AGENT_A: [One sentence on the key contribution agent A made to this synthesis]
-AGENT_B: [One sentence on the key contribution agent B made]
-AGENT_C: [One sentence on the key contribution agent C made]
+GPT-4O: [contribution]
+PHI-4: [contribution]
+MISTRAL: [contribution]
+
+---CONCESSIONS---
+[List any explicit concessions made during debate, one per line,
+format: "AGENT conceded: [what they conceded]"]
+
+---HELD-FIRM---
+[List points where an agent maintained position despite challenge,
+format: "AGENT maintained: [their position]"]
+
 ---RATIONALE---
-[2–3 sentences explaining how you resolved disagreements and why this synthesis is stronger than any single response]`
+[2-3 sentences on how you resolved the debate]`

@@ -55,9 +55,10 @@ function useWorkflowSteps(state) {
     rounds,
     reviews,
     synthesis,
-    config,
     agentResponses,
     reviewResponses,
+    rebuttals,
+    finalPositions,
   } = state
 
   const round1Done =
@@ -83,8 +84,20 @@ function useWorkflowSteps(state) {
         String(r.bReviews ?? '').length > 0 &&
         String(r.cReviews ?? '').length > 0
     )
+
+  const rb = rebuttals ?? {}
+  const rebuttalDone =
+    String(rb.a ?? '').length > 0 &&
+    String(rb.b ?? '').length > 0 &&
+    String(rb.c ?? '').length > 0
+
+  const fp = finalPositions ?? {}
+  const finalDone =
+    String(fp.a ?? '').length > 0 &&
+    String(fp.b ?? '').length > 0 &&
+    String(fp.c ?? '').length > 0
+
   const running = status === 'running'
-  const round2Applicable = config.maxRounds >= 2
 
   /** @type {'pending' | 'active' | 'complete'} */
   let s1 = 'pending'
@@ -99,25 +112,28 @@ function useWorkflowSteps(state) {
   else if (running && round1Done) s3 = 'active'
 
   let s4 = 'pending'
-  if (reviewDone) s4 = 'complete'
-  else if (running && round1Done) s4 = 'pending'
+  if (rebuttalDone) s4 = 'complete'
+  else if (running && reviewDone) s4 = 'active'
 
   let s5 = 'pending'
-  if (synthesis) s5 = 'complete'
-  else if (running && reviewDone) s5 = 'active'
+  if (finalDone) s5 = 'complete'
+  else if (running && rebuttalDone) s5 = 'active'
 
   let s6 = 'pending'
-  if (status === 'complete') s6 = 'complete'
+  if (synthesis) s6 = 'complete'
+  else if (running && finalDone) s6 = 'active'
+
+  let s7 = 'pending'
+  if (status === 'complete') s7 = 'complete'
 
   if (status === 'error') {
     if (round1Done) s2 = 'complete'
-    if (reviewDone) {
-      s3 = 'complete'
-      s4 = 'complete'
-    }
+    if (reviewDone) s3 = 'complete'
+    if (rebuttalDone) s4 = 'complete'
+    if (finalDone) s5 = 'complete'
     if (synthesis) {
-      s5 = 'complete'
       s6 = 'complete'
+      s7 = 'complete'
     }
   }
 
@@ -131,18 +147,27 @@ function useWorkflowSteps(state) {
         icon: 'agents',
         divergenceIdx: 0,
       },
-      { key: 'cross', label: 'Cross-Review', state: s3, icon: 'arrows' },
+      { key: 'cross', label: 'Round 2: Cross-Review', state: s3, icon: 'arrows' },
       {
-        key: 'r2',
-        label: 'Round 2: Debate',
+        key: 'rebuttal',
+        label: 'Round 3: Rebuttals',
         state: s4,
-        icon: null,
-        dim: !round2Applicable,
+        icon: 'arrows',
       },
-      { key: 'synth', label: 'Synthesis', state: s5, icon: 'sparkles' },
-      { key: 'done', label: 'Complete', state: s6, icon: null },
+      {
+        key: 'finalp',
+        label: 'Round 4: Final Positions',
+        state: s5,
+        icon: 'agents',
+      },
+      {
+        key: 'synth',
+        label: 'Synthesizing full debate',
+        state: s6,
+        icon: 'sparkles',
+      },
+      { key: 'done', label: 'Complete', state: s7, icon: null },
     ],
-    round2Applicable,
   }
 }
 
@@ -157,7 +182,7 @@ export default function WorkflowTimeline({
   onCollapsedChange = () => {},
 }) {
   const { state } = useForge()
-  const { steps, round2Applicable } = useWorkflowSteps(state)
+  const { steps } = useWorkflowSteps(state)
   const { config, divergenceScores } = state
   const [mobileStepHint, setMobileStepHint] = useState('')
   const hintClearRef = useRef(0)
@@ -207,7 +232,7 @@ export default function WorkflowTimeline({
     return (
       <div
         key={step.key}
-        className={`relative flex min-w-0 flex-1 flex-col gap-1 pb-6 last:pb-0 ${step.dim ? 'opacity-70' : ''}`}
+        className="relative flex min-w-0 flex-1 flex-col gap-1 pb-6 last:pb-0"
       >
         <div className="flex items-start gap-3">
           <div className="relative z-[1] flex flex-col items-center">
@@ -302,15 +327,93 @@ export default function WorkflowTimeline({
                 })}
               </div>
             )}
-            {step.key === 'r2' && !round2Applicable && step.state === 'complete' && (
-              <p className="mt-1 font-mono text-[9px] text-[var(--text-muted)]">
-                Not used (single-round mode)
-              </p>
+            {step.key === 'rebuttal' && (
+              <div className="mt-1.5 space-y-1">
+                {(['a', 'b', 'c']).map((k) => {
+                  const spec =
+                    k === 'a'
+                      ? config.agentA
+                      : k === 'b'
+                        ? config.agentB
+                        : config.agentC
+                  const tm = timelineState.rebuttalTimers?.[k] ?? {
+                    startTime: null,
+                    endTime: null,
+                  }
+                  return (
+                    <div
+                      key={k}
+                      className="flex items-center justify-between gap-2 pr-1 font-mono"
+                    >
+                      <span className="flex min-w-0 flex-1 items-center gap-1 text-[9px] text-[var(--text-muted)]">
+                        <span
+                          className="h-1.5 w-1.5 shrink-0 rounded-full"
+                          style={{ background: spec.color }}
+                        />
+                        <span className="truncate">{spec.name}</span>
+                      </span>
+                      {tm.startTime != null ? (
+                        <AgentTimer
+                          startTime={tm.startTime}
+                          endTime={tm.endTime}
+                        />
+                      ) : (
+                        <span className="shrink-0 text-[9px] text-[var(--text-muted)]/50">
+                          —
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            {step.key === 'finalp' && (
+              <div className="mt-1.5 space-y-1">
+                {(['a', 'b', 'c']).map((k) => {
+                  const spec =
+                    k === 'a'
+                      ? config.agentA
+                      : k === 'b'
+                        ? config.agentB
+                        : config.agentC
+                  const tm = timelineState.finalPositionTimers?.[k] ?? {
+                    startTime: null,
+                    endTime: null,
+                  }
+                  return (
+                    <div
+                      key={k}
+                      className="flex items-center justify-between gap-2 pr-1 font-mono"
+                    >
+                      <span className="flex min-w-0 flex-1 items-center gap-1 text-[9px] text-[var(--text-muted)]">
+                        <span
+                          className="h-1.5 w-1.5 shrink-0 rounded-full"
+                          style={{ background: spec.color }}
+                        />
+                        <span className="truncate">{spec.name}</span>
+                      </span>
+                      {tm.startTime != null ? (
+                        <AgentTimer
+                          startTime={tm.startTime}
+                          endTime={tm.endTime}
+                        />
+                      ) : (
+                        <span className="shrink-0 text-[9px] text-[var(--text-muted)]/50">
+                          —
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             )}
             {showBar && (
               <div className="pr-1 pt-1">
                 <p className="font-mono text-[9px] text-[var(--text-muted)]">
-                  Divergence (avg.)
+                  Semantic divergence (avg.)
+                </p>
+                <p className="mt-0.5 font-mono text-[8px] leading-snug text-[var(--text-muted)]/90">
+                  Meaning distance, not wording
                 </p>
                 <DivergenceBar pct={pct} />
               </div>
@@ -351,7 +454,7 @@ export default function WorkflowTimeline({
                 aria-label={step.label}
                 aria-current={step.state === 'active' ? 'step' : undefined}
                 onClick={() => showMobileHint(step.label)}
-                className={`flex shrink-0 touch-manipulation rounded-full p-1 outline-none ring-offset-2 ring-offset-[var(--bg-surface)] focus-visible:ring-2 focus-visible:ring-[var(--accent-forge)] ${step.dim ? 'opacity-70' : ''}`}
+                className="flex shrink-0 touch-manipulation rounded-full p-1 outline-none ring-offset-2 ring-offset-[var(--bg-surface)] focus-visible:ring-2 focus-visible:ring-[var(--accent-forge)]"
               >
                 <StatusDot state={step.state} />
               </button>
@@ -413,7 +516,7 @@ export default function WorkflowTimeline({
           {steps.map((step) => (
             <div
               key={step.key}
-              className={`relative z-[1] ${step.dim ? 'opacity-70' : ''}`}
+              className="relative z-[1]"
             >
               <StatusDot state={step.state} />
             </div>

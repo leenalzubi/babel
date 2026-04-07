@@ -52,6 +52,19 @@ export async function logDebate(state) {
         : { a: '', b: '', c: '' }
     const top_contributor = topContributorKey(attributions)
 
+    const concession_count =
+      synth &&
+      typeof synth === 'object' &&
+      Array.isArray(synth.concessions)
+        ? synth.concessions.length
+        : 0
+    const held_firm_count =
+      synth &&
+      typeof synth === 'object' &&
+      Array.isArray(synth.heldFirm)
+        ? synth.heldFirm.length
+        : 0
+
     const rounds = Array.isArray(state.rounds) ? state.rounds.length : 0
 
     const cfg = state.config && typeof state.config === 'object' ? state.config : {}
@@ -61,6 +74,18 @@ export async function logDebate(state) {
     const model_a = typeof agentA.model === 'string' ? agentA.model : null
     const model_b = typeof agentB.model === 'string' ? agentB.model : null
     const model_c = typeof agentC.model === 'string' ? agentC.model : null
+
+    /** @param {unknown} emb */
+    function vecForInsert(emb) {
+      return Array.isArray(emb) &&
+        emb.length > 0 &&
+        emb.every((x) => typeof x === 'number')
+        ? emb
+        : null
+    }
+    const embedding_a = vecForInsert(state.embedding_a)
+    const embedding_b = vecForInsert(state.embedding_b)
+    const embedding_c = vecForInsert(state.embedding_c)
 
     const analysis = analyseDebate(state)
 
@@ -72,10 +97,15 @@ export async function logDebate(state) {
       divergence_bc,
       divergence_avg,
       top_contributor,
+      concession_count,
+      held_firm_count,
       rounds,
       model_a,
       model_b,
       model_c,
+      embedding_a,
+      embedding_b,
+      embedding_c,
       ...analysis,
     }
 

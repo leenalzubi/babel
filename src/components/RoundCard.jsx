@@ -10,14 +10,22 @@ const replyMd =
 /** @param {{ label: string, color: string, pct: number }} props */
 function DivergenceChip({ label, color, pct }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-[4px] border border-[var(--border)] bg-transparent px-2 py-1 font-mono text-[10px] text-[var(--text-secondary)]">
-      <span
-        className="h-1.5 w-1.5 rounded-full"
-        style={{ backgroundColor: color }}
-        aria-hidden
-      />
-      {label}
-      <span className="font-medium text-[var(--text-primary)]">{pct}%</span>
+    <span
+      className="inline-flex flex-col items-center gap-0.5 rounded-[4px] border border-dashed border-[var(--border)] bg-transparent px-2 py-1.5 font-mono text-[10px] text-[var(--text-secondary)]"
+      title="Semantic divergence: meaning similarity, not vocabulary overlap."
+    >
+      <span className="inline-flex items-center gap-1.5">
+        <span
+          className="h-1.5 w-1.5 shrink-0 rounded-full"
+          style={{ backgroundColor: color }}
+          aria-hidden
+        />
+        {label}
+        <span className="font-medium text-[var(--text-primary)]">{pct}%</span>
+      </span>
+      <span className="text-[8px] font-normal uppercase tracking-wide text-[var(--text-muted)]">
+        semantic
+      </span>
     </span>
   )
 }
@@ -63,7 +71,9 @@ function RoundAgentWaiting({ title, color }) {
       >
         {title}
       </span>
-      <p className="mt-3 text-center text-xs text-[var(--text-muted)]">Queued…</p>
+      <p className="mt-3 text-center text-sm italic text-[var(--text-muted)]">
+        Waiting its turn
+      </p>
     </div>
   )
 }

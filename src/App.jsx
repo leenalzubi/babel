@@ -15,6 +15,8 @@ import ResearchPanel from './components/ResearchPanel.jsx'
 import ForgeEmptyState from './components/ForgeEmptyState.jsx'
 import LiveAgentStrip from './components/LiveAgentStrip.jsx'
 import PromptInput from './components/PromptInput.jsx'
+import FinalPositionCard from './components/FinalPositionCard.jsx'
+import RebuttalCard from './components/RebuttalCard.jsx'
 import ReviewCard from './components/ReviewCard.jsx'
 import RoundCard from './components/RoundCard.jsx'
 import SettingsDrawer from './components/SettingsDrawer.jsx'
@@ -69,6 +71,8 @@ export default function App() {
     mainTab === 'forge' &&
     (state.status !== 'idle' ||
       state.rounds.length > 0 ||
+      state.rebuttals?.a != null ||
+      state.finalPositions?.a != null ||
       state.synthesis != null)
 
   useEffect(() => {
@@ -92,6 +96,8 @@ export default function App() {
   const showEmptyState =
     state.status === 'idle' &&
     state.rounds.length === 0 &&
+    state.rebuttals?.a == null &&
+    state.finalPositions?.a == null &&
     state.synthesis == null
 
   const handleRun = useCallback(() => {
@@ -271,6 +277,11 @@ export default function App() {
                 const review = state.reviews.find(
                   (r) => r.roundNum === round.roundNum
                 )
+                const crossReviewComplete =
+                  review &&
+                  String(review.aReviews ?? '').length > 0 &&
+                  String(review.bReviews ?? '').length > 0 &&
+                  String(review.cReviews ?? '').length > 0
                 return (
                   <div
                     key={round.roundNum}
@@ -293,6 +304,23 @@ export default function App() {
                         cReviews={review.cReviews}
                         config={cfg}
                         reviewTimers={state.reviewTimers}
+                      />
+                    ) : null}
+                    {crossReviewComplete ? (
+                      <RebuttalCard
+                        config={cfg}
+                        rebuttals={state.rebuttals}
+                        rebuttalTimers={state.rebuttalTimers}
+                      />
+                    ) : null}
+                    {crossReviewComplete ? (
+                      <FinalPositionCard
+                        config={cfg}
+                        finalPositions={state.finalPositions}
+                        finalPositionTimers={state.finalPositionTimers}
+                        agentTimers={state.agentTimers}
+                        reviewTimers={state.reviewTimers}
+                        rebuttalTimers={state.rebuttalTimers}
                       />
                     ) : null}
                   </div>

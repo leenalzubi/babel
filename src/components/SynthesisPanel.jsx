@@ -135,8 +135,8 @@ export default function SynthesisPanel({ synthesis }) {
               </button>
             </div>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--text-secondary)]">
-              Each agent responded independently, reviewed the others, then their
-              strongest arguments were reconciled into one answer.
+              Four rounds of dialogue — independent answers, cross-reviews, rebuttals,
+              and closing positions — then one synthesis from the full transcript.
             </p>
             {howWorksOpen ? (
               <div
@@ -155,19 +155,23 @@ export default function SynthesisPanel({ synthesis }) {
                   <span className="font-medium text-[var(--text-primary)]">
                     Round 1:
                   </span>{' '}
-                  Three models answered your prompt independently with no knowledge
-                  of each other.{' '}
+                  Independent answers.{' '}
                   <span className="font-medium text-[var(--text-primary)]">
                     Round 2:
                   </span>{' '}
-                  Each model read the other two responses and identified what
-                  they agreed with, challenged, or found missing.{' '}
+                  Cross-reviews of each other.{' '}
+                  <span className="font-medium text-[var(--text-primary)]">
+                    Round 3:
+                  </span>{' '}
+                  Rebuttals to challenges aimed at each agent.{' '}
+                  <span className="font-medium text-[var(--text-primary)]">
+                    Round 4:
+                  </span>{' '}
+                  One-paragraph final positions.{' '}
                   <span className="font-medium text-[var(--text-primary)]">
                     Synthesis:
                   </span>{' '}
-                  A final pass reconciled all three positions — prioritising
-                  points of agreement and resolving contradictions — to produce
-                  this answer.
+                  Reconciles the full multi-round debate into a single answer.
                 </p>
               </div>
             ) : null}
@@ -177,8 +181,12 @@ export default function SynthesisPanel({ synthesis }) {
 
       {divergence && (
         <div className="border-t border-dashed border-[var(--border)] bg-[var(--bg-synthesis)] px-6 py-6 md:px-10">
-          <p className="mb-4 text-center font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+          <p className="mb-2 text-center font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
             Overall divergence
+          </p>
+          <p className="mx-auto mb-4 max-w-md text-center font-sans text-[11px] leading-relaxed italic text-[var(--text-muted)]">
+            Semantic scores — measures meaning similarity between model answers,
+            not shared vocabulary.
           </p>
           <div className="flex justify-center">
             <TriangleConsensus scores={divergence} initials={triInitials} />

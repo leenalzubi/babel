@@ -22,7 +22,7 @@ function createInitialState() {
     reviews: [],
     /** @type {{ ab: number, ac: number, bc: number, average: number }[]} */
     divergenceScores: [],
-    /** @type {{ output: string, attributions: { a: string, b: string, c: string }, rationale: string } | null} */
+    /** @type {{ output: string, attributions: { a: string, b: string, c: string }, rationale: string, concessions: string[], heldFirm: string[] } | null} */
     synthesis: null,
     error: null,
     config: {
@@ -55,6 +55,18 @@ function createInitialState() {
       b: null,
       c: null,
     },
+    rebuttals: {
+      a: /** @type {string | null} */ (null),
+      b: null,
+      c: null,
+    },
+    rebuttalTimers: emptyAgentTimers(),
+    finalPositions: {
+      a: /** @type {string | null} */ (null),
+      b: null,
+      c: null,
+    },
+    finalPositionTimers: emptyAgentTimers(),
     /** @type {{ claims: { id: string, text: string }[], positions: unknown[], traces: unknown[] } | null} */
     audit: null,
     auditLoading: false,
@@ -82,6 +94,10 @@ function forgeReducer(state, action) {
           agentResponses: { a: null, b: null, c: null },
           reviewTimers: emptyAgentTimers(),
           reviewResponses: { a: null, b: null, c: null },
+          rebuttals: { a: null, b: null, c: null },
+          rebuttalTimers: emptyAgentTimers(),
+          finalPositions: { a: null, b: null, c: null },
+          finalPositionTimers: emptyAgentTimers(),
           audit: null,
           auditLoading: false,
           auditError: null,
@@ -259,8 +275,66 @@ function forgeReducer(state, action) {
             c: action.payload.attributions?.c ?? '',
           },
           rationale: action.payload.rationale ?? '',
+          concessions: Array.isArray(action.payload.concessions)
+            ? action.payload.concessions
+            : [],
+          heldFirm: Array.isArray(action.payload.heldFirm)
+            ? action.payload.heldFirm
+            : [],
         },
       }
+
+    case 'SET_REBUTTAL_THINKING': {
+      const { agent, startTime } = action.payload
+      const k = /** @type {'a' | 'b' | 'c'} */ (agent)
+      return {
+        ...state,
+        rebuttalTimers: {
+          ...state.rebuttalTimers,
+          [k]: { startTime, endTime: null },
+        },
+      }
+    }
+
+    case 'SET_REBUTTAL_DONE': {
+      const { agent, rebuttal, endTime } = action.payload
+      const k = /** @type {'a' | 'b' | 'c'} */ (agent)
+      const text = rebuttal ?? ''
+      return {
+        ...state,
+        rebuttals: { ...state.rebuttals, [k]: text },
+        rebuttalTimers: {
+          ...state.rebuttalTimers,
+          [k]: { ...state.rebuttalTimers[k], endTime },
+        },
+      }
+    }
+
+    case 'SET_FINAL_THINKING': {
+      const { agent, startTime } = action.payload
+      const k = /** @type {'a' | 'b' | 'c'} */ (agent)
+      return {
+        ...state,
+        finalPositionTimers: {
+          ...state.finalPositionTimers,
+          [k]: { startTime, endTime: null },
+        },
+      }
+    }
+
+    case 'SET_FINAL_DONE': {
+      const { agent, position, endTime } = action.payload
+      const k = /** @type {'a' | 'b' | 'c'} */ (agent)
+      const text = position ?? ''
+      return {
+        ...state,
+        finalPositions: { ...state.finalPositions, [k]: text },
+        finalPositionTimers: {
+          ...state.finalPositionTimers,
+          [k]: { ...state.finalPositionTimers[k], endTime },
+        },
+      }
+    }
 
     case 'SET_ERROR':
       return { ...state, error: action.payload ?? null }

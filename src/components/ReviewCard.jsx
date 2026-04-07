@@ -72,8 +72,8 @@ function CrossReviewWaiting({ title, color }) {
       >
         {title}
       </span>
-      <p className="mt-2 text-center text-xs text-[var(--text-muted)]">
-        Queued…
+      <p className="mt-2 text-center text-sm italic text-[var(--text-muted)]">
+        Waiting its turn
       </p>
     </div>
   )

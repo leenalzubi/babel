@@ -23,6 +23,18 @@ import { deriveCurrentStep } from './debateStep.js'
  *     c: { startTime: number | null, endTime: number | null },
  *   },
  *   reviewResponses?: { a?: string | null, b?: string | null, c?: string | null },
+ *   rebuttals?: { a?: string | null, b?: string | null, c?: string | null },
+ *   rebuttalTimers?: {
+ *     a: { startTime: number | null, endTime: number | null },
+ *     b: { startTime: number | null, endTime: number | null },
+ *     c: { startTime: number | null, endTime: number | null },
+ *   },
+ *   finalPositions?: { a?: string | null, b?: string | null, c?: string | null },
+ *   finalPositionTimers?: {
+ *     a: { startTime: number | null, endTime: number | null },
+ *     b: { startTime: number | null, endTime: number | null },
+ *     c: { startTime: number | null, endTime: number | null },
+ *   },
  * }} state
  */
 export function getLiveAgentStripModel(state) {
@@ -56,12 +68,34 @@ export function getLiveAgentStripModel(state) {
         String(r.cReviews ?? '').length > 0
     )
 
+  const rebuttals = state.rebuttals ?? {}
+  const rebuttalDone =
+    String(rebuttals.a ?? '').length > 0 &&
+    String(rebuttals.b ?? '').length > 0 &&
+    String(rebuttals.c ?? '').length > 0
+
+  const finals = state.finalPositions ?? {}
+  const finalDone =
+    String(finals.a ?? '').length > 0 &&
+    String(finals.b ?? '').length > 0 &&
+    String(finals.c ?? '').length > 0
+
   const agentTimers = state.agentTimers ?? {
     a: { startTime: null, endTime: null },
     b: { startTime: null, endTime: null },
     c: { startTime: null, endTime: null },
   }
   const reviewTimers = state.reviewTimers ?? {
+    a: { startTime: null, endTime: null },
+    b: { startTime: null, endTime: null },
+    c: { startTime: null, endTime: null },
+  }
+  const rebuttalTimers = state.rebuttalTimers ?? {
+    a: { startTime: null, endTime: null },
+    b: { startTime: null, endTime: null },
+    c: { startTime: null, endTime: null },
+  }
+  const finalPositionTimers = state.finalPositionTimers ?? {
     a: { startTime: null, endTime: null },
     b: { startTime: null, endTime: null },
     c: { startTime: null, endTime: null },
@@ -79,15 +113,18 @@ export function getLiveAgentStripModel(state) {
 
   if (!round1Done) {
     return {
-      agents: order.map((k) => {
+      agents: order.map((k, i) => {
         const spec = specs[k]
         const tm = agentTimers[k]
         const done = Boolean(agentResponses[k])
         const working = tm.startTime != null && tm.endTime == null
+        /** @type {'active' | 'done' | 'waiting'} */
+        const phase = done ? 'done' : working ? 'active' : 'waiting'
         return {
           spec,
-          working,
-          line: working ? 'Thinking…' : done ? 'Done' : 'Queued…',
+          rollIndex: i + 1,
+          phase,
+          activeLine: working ? 'Thinking…' : null,
         }
       }),
     }
@@ -95,15 +132,53 @@ export function getLiveAgentStripModel(state) {
 
   if (!reviewDone) {
     return {
-      agents: order.map((k) => {
+      agents: order.map((k, i) => {
         const spec = specs[k]
         const tm = reviewTimers[k]
         const done = Boolean(reviewResponses[k])
         const working = tm.startTime != null && tm.endTime == null
+        const phase = done ? 'done' : working ? 'active' : 'waiting'
         return {
           spec,
-          working,
-          line: working ? 'Reviewing…' : done ? 'Done' : 'Queued…',
+          rollIndex: i + 1,
+          phase,
+          activeLine: working ? 'Reviewing…' : null,
+        }
+      }),
+    }
+  }
+
+  if (!rebuttalDone) {
+    return {
+      agents: order.map((k, i) => {
+        const spec = specs[k]
+        const tm = rebuttalTimers[k]
+        const done = Boolean(String(rebuttals[k] ?? '').length)
+        const working = tm.startTime != null && tm.endTime == null
+        const phase = done ? 'done' : working ? 'active' : 'waiting'
+        return {
+          spec,
+          rollIndex: i + 1,
+          phase,
+          activeLine: working ? 'Rebutting…' : null,
+        }
+      }),
+    }
+  }
+
+  if (!finalDone) {
+    return {
+      agents: order.map((k, i) => {
+        const spec = specs[k]
+        const tm = finalPositionTimers[k]
+        const done = Boolean(String(finals[k] ?? '').length)
+        const working = tm.startTime != null && tm.endTime == null
+        const phase = done ? 'done' : working ? 'active' : 'waiting'
+        return {
+          spec,
+          rollIndex: i + 1,
+          phase,
+          activeLine: working ? 'Final position…' : null,
         }
       }),
     }
@@ -115,28 +190,32 @@ export function getLiveAgentStripModel(state) {
       agents: [
         {
           spec: cfg.agentA,
-          working: true,
-          line: 'Synthesizing…',
+          rollIndex: 1,
+          phase: /** @type {const} */ ('active'),
+          activeLine: 'Synthesizing full debate…',
         },
         {
           spec: cfg.agentB,
-          working: false,
-          line: '—',
+          rollIndex: 2,
+          phase: 'waiting',
+          waitingNote: 'Standing by',
         },
         {
           spec: cfg.agentC,
-          working: false,
-          line: '—',
+          rollIndex: 3,
+          phase: 'waiting',
+          waitingNote: 'Standing by',
         },
       ],
     }
   }
 
   return {
-    agents: order.map((k) => ({
+    agents: order.map((k, i) => ({
       spec: specs[k],
-      working: false,
-      line: 'Done',
+      rollIndex: i + 1,
+      phase: /** @type {const} */ ('done'),
+      activeLine: null,
     })),
   }
 }
