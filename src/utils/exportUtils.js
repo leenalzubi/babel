@@ -42,7 +42,7 @@ export function exportToMarkdown(state) {
   }
 
   if (reviews.length > 0) {
-    lines.push('## Cross-Reviews', '')
+    lines.push('## Round 2 — Cross-review and rebuttal', '')
     for (const rev of [...reviews].sort((a, b) => a.roundNum - b.roundNum)) {
       lines.push(`### Round ${rev.roundNum} — ${aName}`, '', (rev.aReviews ?? '').trim(), '')
       lines.push(`### Round ${rev.roundNum} — ${bName}`, '', (rev.bReviews ?? '').trim(), '')
@@ -57,7 +57,7 @@ export function exportToMarkdown(state) {
 
   const reb = state.rebuttals && typeof state.rebuttals === 'object' ? state.rebuttals : {}
   if (reb && (reb.a || reb.b || reb.c)) {
-    lines.push('## Round 3 — Rebuttals', '')
+    lines.push('## Rebuttals (legacy run)', '')
     lines.push(`### ${aName}`, '', String(reb.a ?? '').trim(), '')
     lines.push(`### ${bName}`, '', String(reb.b ?? '').trim(), '')
     lines.push(`### ${cName}`, '', String(reb.c ?? '').trim(), '')
@@ -65,7 +65,7 @@ export function exportToMarkdown(state) {
 
   const fin = state.finalPositions && typeof state.finalPositions === 'object' ? state.finalPositions : {}
   if (fin && (fin.a || fin.b || fin.c)) {
-    lines.push('## Round 4 — Final Positions', '')
+    lines.push('## Round 3 — Final Positions', '')
     lines.push(`### ${aName}`, '', String(fin.a ?? '').trim(), '')
     lines.push(`### ${bName}`, '', String(fin.b ?? '').trim(), '')
     lines.push(`### ${cName}`, '', String(fin.c ?? '').trim(), '')

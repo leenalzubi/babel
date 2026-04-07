@@ -1,19 +1,15 @@
 import { callGitHubModel } from '../api/githubModelsClient.js'
 import {
-  CROSS_REVIEW_SYSTEM,
   FINAL_POSITION_SYSTEM,
-  REBUTTAL_SYSTEM,
+  ROUND2_COMBINED_SYSTEM,
   SYNTHESIS_SYSTEM,
   SYNTHESIS_VALIDATION_SYSTEM,
 } from '../api/systemPrompts.js'
 import { runAudit } from '../lib/auditDebate.js'
-import {
-  AGENT_TIMEOUT_MESSAGE,
-  TIMEOUT_ERROR_MESSAGE,
-} from '../lib/debateConstants.js'
+import { AGENT_TIMEOUT_MESSAGE } from '../lib/debateConstants.js'
+import { isModelCallTimeoutError } from '../lib/modelCallErrors.js'
 import { semanticDivergence } from '../lib/cosineSimilarity.js'
 import { clipInferenceText } from '../lib/clipInferenceText.js'
-import { extractReviewSectionAboutPeer } from '../lib/extractCrossReviewSection.js'
 import { getEmbedding } from '../lib/getEmbedding.js'
 import { logDebate } from '../lib/logDebate.js'
 import { parseSynthesisOutput } from '../lib/parseSynthesisOutput.js'
@@ -53,35 +49,27 @@ export function scheduleDebateAudit(dispatch, snapshot) {
   })()
 }
 
-function pause(ms) {
-  return new Promise((r) => setTimeout(r, ms))
-}
+const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
- * @param {'a' | 'b' | 'c'} target
- * @param {string} ra
- * @param {string} rb
- * @param {string} rc
- * @param {string} aRev
- * @param {string} bRev
- * @param {string} cRev
+ * @param {'A' | 'B' | 'C'} forKey
+ * @param {{ agentA: string, agentB: string, agentC: string }} responses
  * @param {{ agentA: { name: string }, agentB: { name: string }, agentC: { name: string } }} config
  */
-function buildRebuttalUserMessage(target, ra, rb, rc, aRev, bRev, cRev, config) {
+function buildRound2CombinedUserMessage(
+  forKey,
+  { agentA: a, agentB: b, agentC: c },
+  config
+) {
   const { agentA, agentB, agentC } = config
-  if (target === 'a') {
-    const sB = extractReviewSectionAboutPeer(bRev, agentA.name)
-    const sC = extractReviewSectionAboutPeer(cRev, agentA.name)
-    return `Your original response was:\n${ra}\n\n${agentB.name} reviewed your response and said:\n${sB}\n\n${agentC.name} reviewed your response and said:\n${sC}\n\nDo you maintain, modify, or concede your position?`
+
+  if (forKey === 'A') {
+    return `Your original response was:\n${a}\n\nHere is how ${agentB.name} answered:\n${b}\n\nHere is how ${agentC.name} answered:\n${c}`
   }
-  if (target === 'b') {
-    const sA = extractReviewSectionAboutPeer(aRev, agentB.name)
-    const sC = extractReviewSectionAboutPeer(cRev, agentB.name)
-    return `Your original response was:\n${rb}\n\n${agentA.name} reviewed your response and said:\n${sA}\n\n${agentC.name} reviewed your response and said:\n${sC}\n\nDo you maintain, modify, or concede your position?`
+  if (forKey === 'B') {
+    return `Your original response was:\n${b}\n\nHere is how ${agentA.name} answered:\n${a}\n\nHere is how ${agentC.name} answered:\n${c}`
   }
-  const sA = extractReviewSectionAboutPeer(aRev, agentC.name)
-  const sB = extractReviewSectionAboutPeer(bRev, agentC.name)
-  return `Your original response was:\n${rc}\n\n${agentA.name} reviewed your response and said:\n${sA}\n\n${agentB.name} reviewed your response and said:\n${sB}\n\nDo you maintain, modify, or concede your position?`
+  return `Your original response was:\n${c}\n\nHere is how ${agentA.name} answered:\n${a}\n\nHere is how ${agentB.name} answered:\n${b}`
 }
 
 function buildFinalPositionUserMessage(
@@ -92,9 +80,6 @@ function buildFinalPositionUserMessage(
   aRev,
   bRev,
   cRev,
-  rebA,
-  rebB,
-  rebC,
   config
 ) {
   const { agentA, agentB, agentC } = config
@@ -103,12 +88,9 @@ function buildFinalPositionUserMessage(
     `=== ${agentA.name} (round 1) ===\n${ra}`,
     `=== ${agentB.name} (round 1) ===\n${rb}`,
     `=== ${agentC.name} (round 1) ===\n${rc}`,
-    `=== ${agentA.name} (cross-review) ===\n${aRev}`,
-    `=== ${agentB.name} (cross-review) ===\n${bRev}`,
-    `=== ${agentC.name} (cross-review) ===\n${cRev}`,
-    `=== ${agentA.name} (rebuttal) ===\n${rebA}`,
-    `=== ${agentB.name} (rebuttal) ===\n${rebB}`,
-    `=== ${agentC.name} (rebuttal) ===\n${rebC}`,
+    `=== ${agentA.name} (round 2 — cross-review & rebuttal) ===\n${aRev}`,
+    `=== ${agentB.name} (round 2 — cross-review & rebuttal) ===\n${bRev}`,
+    `=== ${agentC.name} (round 2 — cross-review & rebuttal) ===\n${cRev}`,
   ].join('\n\n')
 }
 
@@ -120,9 +102,6 @@ function buildFullSynthesisUserMessage(
   aRev,
   bRev,
   cRev,
-  rebA,
-  rebB,
-  rebC,
   fa,
   fb,
   fc,
@@ -134,35 +113,22 @@ function buildFullSynthesisUserMessage(
     `=== ${agentA.name} (round 1) ===\n${ra}`,
     `=== ${agentB.name} (round 1) ===\n${rb}`,
     `=== ${agentC.name} (round 1) ===\n${rc}`,
-    `=== ${agentA.name} (cross-review) ===\n${aRev}`,
-    `=== ${agentB.name} (cross-review) ===\n${bRev}`,
-    `=== ${agentC.name} (cross-review) ===\n${cRev}`,
-    `=== ${agentA.name} (rebuttal) ===\n${rebA}`,
-    `=== ${agentB.name} (rebuttal) ===\n${rebB}`,
-    `=== ${agentC.name} (rebuttal) ===\n${rebC}`,
+    `=== ${agentA.name} (round 2) ===\n${aRev}`,
+    `=== ${agentB.name} (round 2) ===\n${bRev}`,
+    `=== ${agentC.name} (round 2) ===\n${cRev}`,
     `=== ${agentA.name} (final position) ===\n${fa}`,
     `=== ${agentB.name} (final position) ===\n${fb}`,
     `=== ${agentC.name} (final position) ===\n${fc}`,
   ].join('\n\n')
 }
 
-/**
- * @param {'A' | 'B' | 'C'} forKey
- * @param {{ agentA: string, agentB: string, agentC: string }} responses
- * @param {{ agentA: { name: string }, agentB: { name: string }, agentC: { name: string } }} config
- */
-function buildCrossReviewUserMessage(forKey, { agentA: a, agentB: b, agentC: c }, config) {
-  const { agentA, agentB, agentC } = config
-  const tail =
-    'Review both responses. For each: what did they get right, what would you challenge, what did they miss?'
-
-  if (forKey === 'A') {
-    return `Here are the two other responses to the prompt you just answered:\n\n=== ${agentB.name} responded: ===\n${b}\n\n=== ${agentC.name} responded: ===\n${c}\n\n${tail}`
-  }
-  if (forKey === 'B') {
-    return `Here are the two other responses to the prompt you just answered:\n\n=== ${agentA.name} responded: ===\n${a}\n\n=== ${agentC.name} responded: ===\n${c}\n\n${tail}`
-  }
-  return `Here are the two other responses to the prompt you just answered:\n\n=== ${agentA.name} responded: ===\n${a}\n\n=== ${agentB.name} responded: ===\n${b}\n\n${tail}`
+/** Audit / logging: neutral summary when synthesis was skipped */
+function auditSynthesisFallback(fa, fb, fc) {
+  const parts = [fa, fb, fc].filter(
+    (x) => typeof x === 'string' && x.trim().length > 0
+  )
+  if (!parts.length) return '(No synthesis; final positions unavailable.)'
+  return `No unified synthesis was generated for this run. Final positions follow for trace context:\n\n${parts.join('\n\n---\n\n')}`
 }
 
 /**
@@ -189,7 +155,7 @@ async function tryModel(fn) {
     const value = await fn()
     return { ok: true, value }
   } catch (e) {
-    if (e instanceof Error && e.message === TIMEOUT_ERROR_MESSAGE) {
+    if (isModelCallTimeoutError(e)) {
       return { ok: false, timeout: true }
     }
     throw e
@@ -214,9 +180,9 @@ export async function runPipelineFromFinalsOnward(ctx) {
     aRev,
     bRev,
     cRev,
-    rebA,
-    rebB,
-    rebC,
+    rebA = '',
+    rebB = '',
+    rebC = '',
     embA,
     embB,
     embC,
@@ -226,6 +192,7 @@ export async function runPipelineFromFinalsOnward(ctx) {
     average,
     skipFinalModelCalls,
     precomputedFinals,
+    synthesisEnabled = false,
   } = ctx
 
   let fa
@@ -256,9 +223,6 @@ export async function runPipelineFromFinalsOnward(ctx) {
       aRev,
       bRev,
       cRev,
-      rebA,
-      rebB,
-      rebC,
       config
     )
   )
@@ -274,7 +238,11 @@ export async function runPipelineFromFinalsOnward(ctx) {
       callGitHubModel(
         config.agentA.model,
         [{ role: 'user', content: finalUserBase }],
-        FINAL_POSITION_SYSTEM
+        FINAL_POSITION_SYSTEM,
+        {
+          agentName: config.agentA.name,
+          errorContext: { stage: 'final-positions', round: 3 },
+        }
       )
     )
     if (r.ok) {
@@ -304,7 +272,11 @@ export async function runPipelineFromFinalsOnward(ctx) {
       callGitHubModel(
         config.agentB.model,
         [{ role: 'user', content: finalUserBase }],
-        FINAL_POSITION_SYSTEM
+        FINAL_POSITION_SYSTEM,
+        {
+          agentName: config.agentB.name,
+          errorContext: { stage: 'final-positions', round: 3 },
+        }
       )
     )
     if (r.ok) {
@@ -334,7 +306,11 @@ export async function runPipelineFromFinalsOnward(ctx) {
       callGitHubModel(
         config.agentC.model,
         [{ role: 'user', content: finalUserBase }],
-        FINAL_POSITION_SYSTEM
+        FINAL_POSITION_SYSTEM,
+        {
+          agentName: config.agentC.name,
+          errorContext: { stage: 'final-positions', round: 3 },
+        }
       )
     )
     if (r.ok) {
@@ -360,8 +336,7 @@ export async function runPipelineFromFinalsOnward(ctx) {
 
   }
 
-  const shouldSynthesize =
-    uiSettings.synthesisMode === 'always' || average > 0.4
+  await pause(2000)
 
   const debateBase = {
     prompt: userPrompt.trim(),
@@ -376,12 +351,34 @@ export async function runPipelineFromFinalsOnward(ctx) {
     embedding_c: embC,
   }
 
+  if (!synthesisEnabled) {
+    dispatch({ type: 'SET_STATUS', payload: 'complete' })
+    void logDebate({
+      ...debateBase,
+      synthesis: null,
+      validation: null,
+    })
+    scheduleDebateAudit(dispatch, {
+      config,
+      prompt: userPrompt.trim(),
+      round1: { agentA: ra, agentB: rb, agentC: rc },
+      reviews: { aReviews: aRev, bReviews: bRev, cReviews: cRev },
+      synthesis: {
+        output: clipInferenceText(auditSynthesisFallback(fa, fb, fc), 48_000),
+      },
+    })
+    return
+  }
+
+  const shouldSynthesize =
+    uiSettings.synthesisMode === 'always' || average > 0.4
+
   if (!shouldSynthesize) {
     dispatch({
       type: 'SET_SYNTHESIS',
       payload: {
         output:
-          '*Synthesis skipped:* your setting only runs synthesis when **average semantic divergence** (embedding distance) is above **40%**. This run was below that threshold — use the full debate transcript (rounds 1–4) as the final output.',
+          '*Synthesis skipped:* your setting only runs synthesis when **average semantic divergence** (embedding distance) is above **40%**. This run was below that threshold — use the full debate transcript (rounds 1–3) as the final output.',
         attributions: { a: '', b: '', c: '' },
         rationale: '',
         concessions: [],
@@ -397,7 +394,7 @@ export async function runPipelineFromFinalsOnward(ctx) {
       ...debateBase,
       synthesis: {
         output:
-          '*Synthesis skipped:* your setting only runs synthesis when **average semantic divergence** (embedding distance) is above **40%**. This run was below that threshold — use the full debate transcript (rounds 1–4) as the final output.',
+          '*Synthesis skipped:* your setting only runs synthesis when **average semantic divergence** (embedding distance) is above **40%**. This run was below that threshold — use the full debate transcript (rounds 1–3) as the final output.',
         attributions: { a: '', b: '', c: '' },
         concessions: [],
         heldFirm: [],
@@ -410,7 +407,7 @@ export async function runPipelineFromFinalsOnward(ctx) {
       reviews: { aReviews: aRev, bReviews: bRev, cReviews: cRev },
       synthesis: {
         output:
-          '*Synthesis skipped:* your setting only runs synthesis when **average semantic divergence** (embedding distance) is above **40%**. This run was below that threshold — use the full debate transcript (rounds 1–4) as the final output.',
+          '*Synthesis skipped:* your setting only runs synthesis when **average semantic divergence** (embedding distance) is above **40%**. This run was below that threshold — use the full debate transcript (rounds 1–3) as the final output.',
       },
     })
     return
@@ -425,9 +422,6 @@ export async function runPipelineFromFinalsOnward(ctx) {
       aRev,
       bRev,
       cRev,
-      rebA,
-      rebB,
-      rebC,
       fa,
       fb,
       fc,
@@ -442,7 +436,11 @@ export async function runPipelineFromFinalsOnward(ctx) {
       callGitHubModel(
         config.agentA.model,
         [{ role: 'user', content: synthesisUser }],
-        SYNTHESIS_SYSTEM
+        SYNTHESIS_SYSTEM,
+        {
+          agentName: config.agentA.name,
+          errorContext: { stage: 'synthesis', round: 3 },
+        }
       )
     )
     if (r.ok) {
@@ -491,7 +489,11 @@ export async function runPipelineFromFinalsOnward(ctx) {
       config.agentB.model,
       [{ role: 'user', content: msgB }],
       SYNTHESIS_VALIDATION_SYSTEM,
-      { agentName: config.agentB.name, maxTokens: 1024 }
+      {
+        agentName: config.agentB.name,
+        maxTokens: 1024,
+        errorContext: { stage: 'synthesis', round: 3 },
+      }
     )
   )
   const rawCResult = await tryModel(() =>
@@ -499,7 +501,11 @@ export async function runPipelineFromFinalsOnward(ctx) {
       config.agentC.model,
       [{ role: 'user', content: msgC }],
       SYNTHESIS_VALIDATION_SYSTEM,
-      { agentName: config.agentC.name, maxTokens: 1024 }
+      {
+        agentName: config.agentC.name,
+        maxTokens: 1024,
+        errorContext: { stage: 'synthesis', round: 3 },
+      }
     )
   )
 
@@ -561,171 +567,6 @@ export async function runPipelineFromFinalsOnward(ctx) {
 }
 
 /**
- * Rebuttals → finals → synthesis/validation → audit. Requires embeddings + divergence already computed.
- */
-export async function runPipelineFromRebuttalsOnward(ctx) {
-  const {
-    dispatch,
-    uiSettings,
-    userPrompt,
-    config,
-    ra,
-    rb,
-    rc,
-    aRev,
-    bRev,
-    cRev,
-    embA,
-    embB,
-    embC,
-    ab,
-    ac,
-    bc,
-    average,
-  } = ctx
-
-  await pause(700)
-  dispatch({
-    type: 'SET_REBUTTAL_THINKING',
-    payload: { agent: 'a', startTime: Date.now() },
-  })
-  let rebA = AGENT_TIMEOUT_MESSAGE
-  {
-    const r = await tryModel(() =>
-      callGitHubModel(
-        config.agentA.model,
-        [
-          {
-            role: 'user',
-            content: clipInferenceText(
-              buildRebuttalUserMessage('a', ra, rb, rc, aRev, bRev, cRev, config)
-            ),
-          },
-        ],
-        REBUTTAL_SYSTEM
-      )
-    )
-    if (r.ok) {
-      rebA = r.value
-      dispatch({
-        type: 'SET_REBUTTAL_DONE',
-        payload: { agent: 'a', rebuttal: rebA, endTime: Date.now() },
-      })
-    } else {
-      dispatch({
-        type: 'SET_REBUTTAL_DONE',
-        payload: { agent: 'a', rebuttal: AGENT_TIMEOUT_MESSAGE, endTime: Date.now() },
-      })
-      bumpTimeout(dispatch)
-    }
-    bump(dispatch)
-  }
-
-  await pause(700)
-  dispatch({
-    type: 'SET_REBUTTAL_THINKING',
-    payload: { agent: 'b', startTime: Date.now() },
-  })
-  let rebB = AGENT_TIMEOUT_MESSAGE
-  {
-    const r = await tryModel(() =>
-      callGitHubModel(
-        config.agentB.model,
-        [
-          {
-            role: 'user',
-            content: clipInferenceText(
-              buildRebuttalUserMessage('b', ra, rb, rc, aRev, bRev, cRev, config)
-            ),
-          },
-        ],
-        REBUTTAL_SYSTEM
-      )
-    )
-    if (r.ok) {
-      rebB = r.value
-      dispatch({
-        type: 'SET_REBUTTAL_DONE',
-        payload: { agent: 'b', rebuttal: rebB, endTime: Date.now() },
-      })
-    } else {
-      dispatch({
-        type: 'SET_REBUTTAL_DONE',
-        payload: { agent: 'b', rebuttal: AGENT_TIMEOUT_MESSAGE, endTime: Date.now() },
-      })
-      bumpTimeout(dispatch)
-    }
-    bump(dispatch)
-  }
-
-  await pause(700)
-  dispatch({
-    type: 'SET_REBUTTAL_THINKING',
-    payload: { agent: 'c', startTime: Date.now() },
-  })
-  let rebC = AGENT_TIMEOUT_MESSAGE
-  {
-    const r = await tryModel(() =>
-      callGitHubModel(
-        config.agentC.model,
-        [
-          {
-            role: 'user',
-            content: clipInferenceText(
-              buildRebuttalUserMessage('c', ra, rb, rc, aRev, bRev, cRev, config)
-            ),
-          },
-        ],
-        REBUTTAL_SYSTEM
-      )
-    )
-    if (r.ok) {
-      rebC = r.value
-      dispatch({
-        type: 'SET_REBUTTAL_DONE',
-        payload: { agent: 'c', rebuttal: rebC, endTime: Date.now() },
-      })
-    } else {
-      dispatch({
-        type: 'SET_REBUTTAL_DONE',
-        payload: { agent: 'c', rebuttal: AGENT_TIMEOUT_MESSAGE, endTime: Date.now() },
-      })
-      bumpTimeout(dispatch)
-    }
-    bump(dispatch)
-  }
-
-  dispatch({
-    type: 'SET_LAST_COMPLETED_STAGE',
-    payload: { stage: 'rebuttals' },
-  })
-
-  await runPipelineFromFinalsOnward({
-    dispatch,
-    uiSettings,
-    userPrompt,
-    config,
-    ra,
-    rb,
-    rc,
-    aRev,
-    bRev,
-    cRev,
-    rebA,
-    rebB,
-    rebC,
-    embA,
-    embB,
-    embC,
-    ab,
-    ac,
-    bc,
-    average,
-  })
-
-}
-
-/**
  * @param {{
  *   dispatch: import('react').Dispatch<unknown>,
  *   uiSettings: { synthesisMode: string },
@@ -741,7 +582,16 @@ export async function runPipelineFromRebuttalsOnward(ctx) {
  * }} ctx
  */
 export async function runPipelineAfterRound1(ctx) {
-  const { dispatch, uiSettings, userPrompt, config, ra, rb, rc } = ctx
+  const {
+    dispatch,
+    uiSettings,
+    userPrompt,
+    config,
+    ra,
+    rb,
+    rc,
+    synthesisEnabled = false,
+  } = ctx
 
   const [embA, embB, embC] = await Promise.all([
     getEmbedding(ra),
@@ -772,13 +622,25 @@ export async function runPipelineAfterRound1(ctx) {
   })
 
   const aReviewMsg = clipInferenceText(
-    buildCrossReviewUserMessage('A', { agentA: ra, agentB: rb, agentC: rc }, config)
+    buildRound2CombinedUserMessage(
+      'A',
+      { agentA: ra, agentB: rb, agentC: rc },
+      config
+    )
   )
   const bReviewMsg = clipInferenceText(
-    buildCrossReviewUserMessage('B', { agentA: ra, agentB: rb, agentC: rc }, config)
+    buildRound2CombinedUserMessage(
+      'B',
+      { agentA: ra, agentB: rb, agentC: rc },
+      config
+    )
   )
   const cReviewMsg = clipInferenceText(
-    buildCrossReviewUserMessage('C', { agentA: ra, agentB: rb, agentC: rc }, config)
+    buildRound2CombinedUserMessage(
+      'C',
+      { agentA: ra, agentB: rb, agentC: rc },
+      config
+    )
   )
 
   dispatch({
@@ -791,7 +653,11 @@ export async function runPipelineAfterRound1(ctx) {
       callGitHubModel(
         config.agentA.model,
         [{ role: 'user', content: aReviewMsg }],
-        CROSS_REVIEW_SYSTEM
+        ROUND2_COMBINED_SYSTEM,
+        {
+          agentName: config.agentA.name,
+          errorContext: { stage: 'cross-review', round: 2 },
+        }
       )
     )
     if (r.ok) {
@@ -821,7 +687,11 @@ export async function runPipelineAfterRound1(ctx) {
       callGitHubModel(
         config.agentB.model,
         [{ role: 'user', content: bReviewMsg }],
-        CROSS_REVIEW_SYSTEM
+        ROUND2_COMBINED_SYSTEM,
+        {
+          agentName: config.agentB.name,
+          errorContext: { stage: 'cross-review', round: 2 },
+        }
       )
     )
     if (r.ok) {
@@ -851,7 +721,11 @@ export async function runPipelineAfterRound1(ctx) {
       callGitHubModel(
         config.agentC.model,
         [{ role: 'user', content: cReviewMsg }],
-        CROSS_REVIEW_SYSTEM
+        ROUND2_COMBINED_SYSTEM,
+        {
+          agentName: config.agentC.name,
+          errorContext: { stage: 'cross-review', round: 2 },
+        }
       )
     )
     if (r.ok) {
@@ -875,8 +749,9 @@ export async function runPipelineAfterRound1(ctx) {
     payload: { stage: 'reviews' },
   })
 
-  await pause(700)
-  await runPipelineFromRebuttalsOnward({
+  await pause(2000)
+
+  await runPipelineFromFinalsOnward({
     dispatch,
     uiSettings,
     userPrompt,
@@ -887,6 +762,9 @@ export async function runPipelineAfterRound1(ctx) {
     aRev,
     bRev,
     cRev,
+    rebA: '',
+    rebB: '',
+    rebC: '',
     embA,
     embB,
     embC,
@@ -894,6 +772,7 @@ export async function runPipelineAfterRound1(ctx) {
     ac,
     bc,
     average,
+    synthesisEnabled,
   })
 }
 
@@ -939,6 +818,7 @@ export async function resumeFromReviews(ctx) {
     aRev,
     bRev,
     cRev,
+    synthesisEnabled = false,
   } = ctx
 
   const [embA, embB, embC] = await Promise.all([
@@ -968,7 +848,9 @@ export async function resumeFromReviews(ctx) {
     payload: { ab, ac, bc, average },
   })
 
-  await runPipelineFromRebuttalsOnward({
+  await pause(2000)
+
+  await runPipelineFromFinalsOnward({
     dispatch,
     uiSettings,
     userPrompt,
@@ -979,6 +861,9 @@ export async function resumeFromReviews(ctx) {
     aRev,
     bRev,
     cRev,
+    rebA: '',
+    rebB: '',
+    rebC: '',
     embA,
     embB,
     embC,
@@ -986,5 +871,6 @@ export async function resumeFromReviews(ctx) {
     ac,
     bc,
     average,
+    synthesisEnabled,
   })
 }

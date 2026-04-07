@@ -15,7 +15,6 @@ import ResearchPanel from './components/ResearchPanel.jsx'
 import ForgeEmptyState from './components/ForgeEmptyState.jsx'
 import PromptInput from './components/PromptInput.jsx'
 import FinalPositionCard from './components/FinalPositionCard.jsx'
-import RebuttalCard from './components/RebuttalCard.jsx'
 import ReviewCard from './components/ReviewCard.jsx'
 import RoundCard from './components/RoundCard.jsx'
 import SettingsDrawer from './components/SettingsDrawer.jsx'
@@ -105,7 +104,13 @@ function HeaderAgentPill({ name, color }) {
 
 export default function App() {
   const { state, dispatch } = useForge()
-  const { runDebate, resumeDebate, stageLabel } = useDebateEngine()
+  const {
+    runDebate,
+    resumeDebate,
+    stageLabel,
+    resetAndRetry,
+    resetForEditPrompt,
+  } = useDebateEngine()
   const [promptDraft, setPromptDraft] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [mainTab, setMainTab] = useState(
@@ -118,7 +123,7 @@ export default function App() {
     () => readWorkflowSidebarCollapsed()
   )
   const [showWelcome, setShowWelcome] = useState(
-    !localStorage.getItem('babel_welcomed')
+    !sessionStorage.getItem('babel_welcomed')
   )
 
   const running = state.status === 'running'
@@ -387,8 +392,15 @@ export default function App() {
             </div>
 
             <ErrorBanner
-              message={state.error}
+              error={state.error}
               onDismiss={() => dispatch({ type: 'SET_ERROR', payload: null })}
+              onRetry={resetAndRetry}
+              onEditPrompt={() => {
+                resetForEditPrompt()
+                requestAnimationFrame(() =>
+                  promptInputRef.current?.focusPrompt()
+                )
+              }}
             />
 
             {partial && state.lastCompletedStage ? (
@@ -457,15 +469,9 @@ export default function App() {
                       />
                     ) : null}
                     {crossReviewComplete ? (
-                      <RebuttalCard
-                        config={cfg}
-                        rebuttals={state.rebuttals}
-                        rebuttalTimers={state.rebuttalTimers}
-                      />
-                    ) : null}
-                    {crossReviewComplete ? (
                       <FinalPositionCard
                         config={cfg}
+                        scores={scores}
                         finalPositions={state.finalPositions}
                         finalPositionTimers={state.finalPositionTimers}
                         agentTimers={state.agentTimers}
@@ -477,7 +483,7 @@ export default function App() {
                 )
               })}
 
-              {state.synthesis ? (
+              {state.synthesis != null ? (
                 <>
                   <div
                     id="forge-synthesis"
@@ -501,8 +507,10 @@ export default function App() {
                     className="my-8 w-full border-t border-dashed border-[#D4C9B0]"
                     role="presentation"
                   />
-                  <AuditTrail />
                 </>
+              ) : null}
+              {state.status === 'complete' || state.status === 'partial' ? (
+                <AuditTrail />
               ) : null}
             </div>
           </>
@@ -523,12 +531,11 @@ export default function App() {
 
       {showWelcome ? (
         <WelcomeModal
-          onClose={() => setShowWelcome(false)}
-          onStartExploring={() => {
-            promptInputRef.current?.focusPrompt()
-          }}
-          onHowItWorks={() => {
-            navigateMainTab('about')
+          onClose={() => {
+            setShowWelcome(false)
+            requestAnimationFrame(() =>
+              promptInputRef.current?.focusPrompt()
+            )
           }}
         />
       ) : null}

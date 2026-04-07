@@ -6,15 +6,15 @@ export const AGENT_TIMEOUT_MESSAGE =
 export const TIMEOUT_ERROR_MESSAGE = 'TIMEOUT'
 
 /**
- * Total model API calls in a full debate (round 1 + pipeline + audit).
- * Used for progress: 3 + 3 + 3 + 3 + 1 + 2 + 3 = 18
+ * Total model API calls in a full debate with synthesis + validation + audit.
+ * Round 1–3: 9; synthesis + validation: 3; audit: 3 → max 15
  */
-export const TOTAL_MODEL_CALLS = 18
+export const TOTAL_MODEL_CALLS = 15
 
 /**
- * Calls after round 1 used for "~n min remaining" estimate (cross-review through validation + audit).
+ * Calls after round 1 used for "~n min remaining" estimate (through validation + audit).
  */
-export const POST_ROUND1_MODEL_CALLS = 15
+export const POST_ROUND1_MODEL_CALLS = 12
 
 /** @param {unknown} text */
 export function isAgentTimeoutResponse(text) {

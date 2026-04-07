@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
-import { FORGE_SETTINGS_DEFAULTS, loadForgeSettings } from '../lib/forgeSettings.js'
 import { useForgeUiSettings } from '../context/ForgeSettingsContext.jsx'
+import {
+  dispatchBabelSynthesisToggled,
+  readBabelSynthesisEnabled,
+} from '../lib/babelSynthesisPref.js'
+import { FORGE_SETTINGS_DEFAULTS, loadForgeSettings } from '../lib/forgeSettings.js'
 
 function envKeySet(key) {
   try {
@@ -32,6 +36,7 @@ function StatusPill({ label, ok }) {
 export default function SettingsDrawer({ open, onClose }) {
   const { applySettings } = useForgeUiSettings()
   const [draft, setDraft] = useState(() => ({ ...FORGE_SETTINGS_DEFAULTS }))
+  const [synthesisPass, setSynthesisPass] = useState(readBabelSynthesisEnabled)
   const draftRef = useRef(draft)
 
   useEffect(() => {
@@ -42,6 +47,7 @@ export default function SettingsDrawer({ open, onClose }) {
     if (!open) return
     /* Reload persisted settings when the drawer opens (external source of truth). */
     setDraft(loadForgeSettings()) // eslint-disable-line react-hooks/set-state-in-effect -- sync from localStorage
+    setSynthesisPass(readBabelSynthesisEnabled())
   }, [open])
 
   const closeAndPersist = useCallback(() => {
@@ -124,6 +130,37 @@ export default function SettingsDrawer({ open, onClose }) {
             <p className="mt-1 font-mono text-[10px] text-[var(--text-muted)]">
               1–3 rounds (stored locally)
             </p>
+          </section>
+
+          <section>
+            <label className="flex cursor-pointer flex-col gap-1 rounded-lg border border-[var(--border)] bg-[var(--bg-base)] px-3 py-3">
+              <span className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={synthesisPass}
+                  onChange={(e) => {
+                    const v = e.target.checked
+                    setSynthesisPass(v)
+                    try {
+                      localStorage.setItem(
+                        'babel_synthesis_enabled',
+                        v ? 'true' : 'false'
+                      )
+                      dispatchBabelSynthesisToggled()
+                    } catch {
+                      /* ignore */
+                    }
+                  }}
+                  className="h-4 w-4 shrink-0 rounded border-[var(--border)] accent-[var(--accent-forge)]"
+                />
+                <span className="font-mono text-[11px] font-medium text-[var(--text-primary)]">
+                  Synthesis
+                </span>
+              </span>
+              <span className="pl-7 font-mono text-[10px] leading-snug text-[var(--text-muted)]">
+                Generate a unified answer after final positions
+              </span>
+            </label>
           </section>
 
           <section>

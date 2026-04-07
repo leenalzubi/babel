@@ -1,11 +1,12 @@
 const LABELS = {
   round1: 'Running Round 1...',
-  crossReview: 'Computing cross-reviews...',
+  crossReview: 'Round 2: cross-review and rebuttal…',
+  finalPosition: 'Round 3: final positions…',
   synthesis: 'Synthesizing...',
 }
 
 /**
- * @param {{ step: 'round1' | 'crossReview' | 'synthesis' | null }} props
+ * @param {{ step: 'round1' | 'crossReview' | 'finalPosition' | 'synthesis' | null }} props
  */
 export default function RunStatusBanner({ step }) {
   if (step == null) return null

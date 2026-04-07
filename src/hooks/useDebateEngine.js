@@ -8,12 +8,16 @@ import {
 import { useForgeUiSettings } from '../context/ForgeSettingsContext.jsx'
 import {
   AGENT_TIMEOUT_MESSAGE,
-  TIMEOUT_ERROR_MESSAGE,
   isAgentTimeoutResponse,
 } from '../lib/debateConstants.js'
+import {
+  isModelCallTimeoutError,
+  normalizeDebateFailure,
+} from '../lib/modelCallErrors.js'
 import { clipInferenceText } from '../lib/clipInferenceText.js'
 import { semanticDivergence } from '../lib/cosineSimilarity.js'
 import { getEmbedding } from '../lib/getEmbedding.js'
+import { readBabelSynthesisEnabled } from '../lib/babelSynthesisPref.js'
 import { logDebate } from '../lib/logDebate.js'
 import { useForge } from '../store/useForgeStore.js'
 import {
@@ -24,9 +28,7 @@ import {
   scheduleDebateAudit,
 } from './debatePipeline.js'
 
-function pause(ms) {
-  return new Promise((r) => setTimeout(r, ms))
-}
+const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
  * @param {import('react').Dispatch<unknown>} dispatch
@@ -44,7 +46,7 @@ async function tryModel(fn) {
     const value = await fn()
     return { ok: true, value }
   } catch (e) {
-    if (e instanceof Error && e.message === TIMEOUT_ERROR_MESSAGE) {
+    if (isModelCallTimeoutError(e)) {
       return { ok: false, timeout: true }
     }
     throw e
@@ -56,7 +58,7 @@ function stageLabel(stage) {
   if (!stage) return 'last stage'
   const map = {
     round1: 'Round 1',
-    reviews: 'cross-review',
+    reviews: 'Round 2 (cross-review & rebuttal)',
     rebuttals: 'rebuttals',
     finalPositions: 'final positions',
     synthesis: 'synthesis',
@@ -94,7 +96,10 @@ export function useDebateEngine() {
               config.agentA.model,
               [{ role: 'user', content: promptClipped }],
               AGENT_A_ROUND1_SYSTEM,
-              { agentName: config.agentA.name }
+              {
+                agentName: config.agentA.name,
+                errorContext: { stage: 'round1', round: 1 },
+              }
             )
           )
           if (r.ok && 'value' in r) {
@@ -125,7 +130,10 @@ export function useDebateEngine() {
               config.agentB.model,
               [{ role: 'user', content: promptClipped }],
               AGENT_B_ROUND1_SYSTEM,
-              { agentName: config.agentB.name }
+              {
+                agentName: config.agentB.name,
+                errorContext: { stage: 'round1', round: 1 },
+              }
             )
           )
           if (r.ok && 'value' in r) {
@@ -156,7 +164,10 @@ export function useDebateEngine() {
               config.agentC.model,
               [{ role: 'user', content: promptClipped }],
               AGENT_C_ROUND1_SYSTEM,
-              { agentName: config.agentC.name }
+              {
+                agentName: config.agentC.name,
+                errorContext: { stage: 'round1', round: 1 },
+              }
             )
           )
           if (r.ok && 'value' in r) {
@@ -189,6 +200,7 @@ export function useDebateEngine() {
           payload: { stage: 'round1' },
         })
 
+        const synthesisEnabled = readBabelSynthesisEnabled()
         await runPipelineAfterRound1({
           dispatch,
           uiSettings,
@@ -197,10 +209,9 @@ export function useDebateEngine() {
           ra,
           rb,
           rc,
+          synthesisEnabled,
         })
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : `Debate failed: ${String(err)}`
         const snap = stateRef.current
         const lastStage = snap.lastCompletedStage
         if (lastStage) {
@@ -222,12 +233,12 @@ export function useDebateEngine() {
             timeout_count: snap.timeoutCount,
           })
         } else {
-          dispatch({ type: 'SET_ERROR', payload: message })
+          dispatch({ type: 'SET_ERROR', payload: normalizeDebateFailure(err) })
           dispatch({ type: 'SET_STATUS', payload: 'error' })
         }
       }
     },
-    [dispatch, uiSettings.synthesisMode]
+    [dispatch, uiSettings]
   )
 
   const resumeDebate = useCallback(
@@ -255,6 +266,7 @@ export function useDebateEngine() {
       dispatch({ type: 'RESUME_DEBATE' })
 
       try {
+        const synthesisEnabled = readBabelSynthesisEnabled()
         if (fromStage === 'round1') {
           await resumeFromRound1({
             dispatch,
@@ -264,6 +276,7 @@ export function useDebateEngine() {
             ra,
             rb,
             rc,
+            synthesisEnabled,
           })
           return
         }
@@ -279,6 +292,7 @@ export function useDebateEngine() {
             aRev,
             bRev,
             cRev,
+            synthesisEnabled,
           })
           return
         }
@@ -307,6 +321,7 @@ export function useDebateEngine() {
             type: 'SET_DIVERGENCE',
             payload: { ab, ac, bc, average },
           })
+          await pause(2000)
           await runPipelineFromFinalsOnward({
             dispatch,
             uiSettings,
@@ -328,6 +343,7 @@ export function useDebateEngine() {
             ac,
             bc,
             average,
+            synthesisEnabled,
           })
           return
         }
@@ -379,6 +395,7 @@ export function useDebateEngine() {
             average,
             skipFinalModelCalls: true,
             precomputedFinals: { a: fa, b: fb, c: fc },
+            synthesisEnabled,
           })
           return
         }
@@ -399,14 +416,34 @@ export function useDebateEngine() {
           dispatch({ type: 'SET_STATUS', payload: 'complete' })
         }
       } catch (e) {
-        const message =
-          e instanceof Error ? e.message : `Resume failed: ${String(e)}`
-        dispatch({ type: 'SET_ERROR', payload: message })
+        dispatch({ type: 'SET_ERROR', payload: normalizeDebateFailure(e) })
         dispatch({ type: 'SET_STATUS', payload: 'error' })
       }
     },
     [dispatch, state, uiSettings]
   )
 
-  return { runDebate, resumeDebate, stageLabel }
+  const resetAndRetry = useCallback(() => {
+    const snap = stateRef.current
+    const p = snap.prompt
+    const c = snap.config
+    dispatch({ type: 'RESET' })
+    dispatch({ type: 'SET_PROMPT', payload: p })
+    void runDebate(p, c)
+  }, [dispatch, runDebate])
+
+  const resetForEditPrompt = useCallback(() => {
+    const snap = stateRef.current
+    const p = snap.prompt
+    dispatch({ type: 'RESET' })
+    dispatch({ type: 'SET_PROMPT', payload: p })
+  }, [dispatch])
+
+  return {
+    runDebate,
+    resumeDebate,
+    stageLabel,
+    resetAndRetry,
+    resetForEditPrompt,
+  }
 }

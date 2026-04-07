@@ -27,6 +27,7 @@ function createInitialState() {
     divergenceScores: [],
     /** @type {{ output: string, attributions: { a: string, b: string, c: string }, rationale: string, concessions: string[], heldFirm: string[] } | null} */
     synthesis: null,
+    /** @type {string | { type?: string, title?: string, detail?: string, suggestion?: string, stage?: string, round?: number } | null} */
     error: null,
     config: {
       maxRounds: 2,
@@ -76,7 +77,7 @@ function createInitialState() {
     auditError: /** @type {string | null} */ (null),
     /** Peer validation of synthesis (agents B & C). Null when no run or synthesis skipped. */
     validation: null,
-    /** Completed model API calls in the current run (max 18). */
+    /** Completed model API calls in the current run (max 15). */
     progressCallsCompleted: 0,
     /** Last major stage that finished successfully before an error/partial stop. */
     /** @type {DebateStageKey} */
@@ -150,7 +151,7 @@ function forgeReducer(state, action) {
           : 1
       return {
         ...state,
-        progressCallsCompleted: Math.min(18, (state.progressCallsCompleted ?? 0) + add),
+        progressCallsCompleted: Math.min(15, (state.progressCallsCompleted ?? 0) + add),
       }
     }
 

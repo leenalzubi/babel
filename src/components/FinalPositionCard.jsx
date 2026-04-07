@@ -1,9 +1,9 @@
 import { memo, useMemo } from 'react'
-import { Gavel } from 'lucide-react'
 import AgentTimeoutNotice from './AgentTimeoutNotice.jsx'
 import AgentResponseBody from './AgentResponseBody.jsx'
 import AgentThinking from './AgentThinking.jsx'
 import AgentTimer from './AgentTimer.jsx'
+import TriangleConsensus from './TriangleConsensus.jsx'
 import { isAgentTimeoutResponse } from '../lib/debateConstants.js'
 
 const replyMd =
@@ -167,10 +167,12 @@ function FinalColumn({ agentSpec, text, finalTimer, totalMs }) {
  *   agentTimers: Record<string, { startTime: number | null, endTime: number | null }>,
  *   reviewTimers: Record<string, { startTime: number | null, endTime: number | null }>,
  *   rebuttalTimers: Record<string, { startTime: number | null, endTime: number | null }>,
+ *   scores: { ab: number, ac: number, bc: number, average?: number } | null,
  * }} props
  */
 function FinalPositionCard({
   config,
+  scores = null,
   finalPositions,
   finalPositionTimers,
   agentTimers,
@@ -181,6 +183,12 @@ function FinalPositionCard({
   const fa = finalPositions?.a ?? ''
   const fb = finalPositions?.b ?? ''
   const fc = finalPositions?.c ?? ''
+
+  const initials = {
+    a: (agentA.name?.[0] ?? 'A').toUpperCase(),
+    b: (agentB.name?.[0] ?? 'B').toUpperCase(),
+    c: (agentC.name?.[0] ?? 'C').toUpperCase(),
+  }
 
   const totalA = useTotalDebateMs({
     agentKey: 'a',
@@ -204,20 +212,27 @@ function FinalPositionCard({
     finalPositionTimers,
   })
 
+  const showTriangle =
+    scores != null &&
+    typeof scores.ab === 'number' &&
+    [fa, fb, fc].every(
+      (t) => typeof t === 'string' && t.length > 0 && !isAgentTimeoutResponse(t)
+    )
+
   return (
     <section className="flex flex-col gap-6">
-      <header className="flex flex-col gap-1 border-b border-dashed border-[var(--border)] pb-4">
-        <div className="flex items-center gap-2">
-          <Gavel
-            className="h-4 w-4 shrink-0 text-[var(--accent-forge)]"
-            aria-hidden
-          />
-          <h3 className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
-            Round 4 — final positions
-          </h3>
-        </div>
-        <p className="pl-6 text-xs leading-relaxed text-[var(--text-secondary)]">
-          Closing arguments after the full debate
+      <header className="flex flex-col gap-2 border-b border-dashed border-[var(--border)] pb-4">
+        <p className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
+          Round 3
+        </p>
+        <h2
+          className="text-2xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-[1.75rem]"
+          style={{ fontFamily: 'var(--font-display)' }}
+        >
+          Final positions
+        </h2>
+        <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
+          Each model&apos;s closing argument after the full debate
         </p>
       </header>
 
@@ -241,6 +256,15 @@ function FinalPositionCard({
           totalMs={totalC}
         />
       </div>
+
+      {showTriangle && scores ? (
+        <div className="flex flex-col items-center border-t border-dashed border-[var(--border)] pt-6">
+          <p className="mb-3 font-mono text-[10px] text-[var(--text-muted)]">
+            Overall semantic divergence
+          </p>
+          <TriangleConsensus scores={scores} initials={initials} />
+        </div>
+      ) : null}
     </section>
   )
 }

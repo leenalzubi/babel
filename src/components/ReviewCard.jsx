@@ -159,7 +159,6 @@ function ReviewAgentColumn({
  * }} props
  */
 function ReviewCard({
-  roundNum,
   aReviews,
   bReviews,
   cReviews,
@@ -177,15 +176,15 @@ function ReviewCard({
             aria-hidden
           />
           <h3 className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
-            Cross-review — round {roundNum}
+            Round 2 — cross-review and rebuttal
           </h3>
         </div>
         <p className="pl-6 text-xs leading-relaxed text-[var(--text-secondary)]">
-          Each agent reviewed the other two
+          Each model reviews the other two and defends its position in one pass
         </p>
       </header>
 
-      <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
         <ReviewAgentColumn
           agentSpec={agentA}
           otherNames={`${agentB.name} + ${agentC.name}`}

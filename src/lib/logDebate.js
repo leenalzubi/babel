@@ -2,22 +2,6 @@ import { analyseDebate } from './analyseDebate.js'
 import { supabase } from './supabaseClient.js'
 
 /**
- * @param {{ a?: string, b?: string, c?: string }} attributions
- * @returns {'a' | 'b' | 'c' | null}
- */
-function topContributorKey(attributions) {
-  if (!attributions || typeof attributions !== 'object') return null
-  const la = String(attributions.a ?? '').length
-  const lb = String(attributions.b ?? '').length
-  const lc = String(attributions.c ?? '').length
-  if (la === 0 && lb === 0 && lc === 0) return null
-  const max = Math.max(la, lb, lc)
-  if (la === max) return 'a'
-  if (lb === max) return 'b'
-  return 'c'
-}
-
-/**
  * Best-effort analytics row for Supabase `debates` table. Never throws.
  *
  * @param {Record<string, unknown>} state Debate snapshot (prompt, rounds, divergenceScores, synthesis, config).
@@ -43,14 +27,6 @@ export async function logDebate(state) {
       div && typeof div.average === 'number' ? div.average : null
 
     const synth = state.synthesis
-    const attributions =
-      synth &&
-      typeof synth === 'object' &&
-      synth.attributions &&
-      typeof synth.attributions === 'object'
-        ? synth.attributions
-        : { a: '', b: '', c: '' }
-    const top_contributor = topContributorKey(attributions)
 
     const concession_count =
       synth &&
@@ -66,6 +42,13 @@ export async function logDebate(state) {
         : 0
 
     const rounds = Array.isArray(state.rounds) ? state.rounds.length : 0
+
+    const fpLog = state.finalPositions && typeof state.finalPositions === 'object'
+      ? state.finalPositions
+      : {}
+    const final_position_a = String(fpLog.a ?? '').slice(0, 200) || null
+    const final_position_b = String(fpLog.b ?? '').slice(0, 200) || null
+    const final_position_c = String(fpLog.c ?? '').slice(0, 200) || null
 
     const cfg = state.config && typeof state.config === 'object' ? state.config : {}
     const r0 =
@@ -145,7 +128,9 @@ export async function logDebate(state) {
       divergence_ac,
       divergence_bc,
       divergence_avg,
-      top_contributor,
+      final_position_a,
+      final_position_b,
+      final_position_c,
       concession_count,
       held_firm_count,
       rounds,

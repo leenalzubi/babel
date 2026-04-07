@@ -42,18 +42,6 @@ function normalizeConflictScore(count) {
 }
 
 /** @param {string} text */
-function jaccardOverlap(text1, text2) {
-  const a = typeof text1 === 'string' ? text1 : ''
-  const b = typeof text2 === 'string' ? text2 : ''
-  const set1 = new Set(a.toLowerCase().split(/\s+/).filter(Boolean))
-  const set2 = new Set(b.toLowerCase().split(/\s+/).filter(Boolean))
-  const intersection = new Set([...set1].filter((w) => set2.has(w)))
-  const union = new Set([...set1, ...set2])
-  if (union.size === 0) return 0
-  return intersection.size / union.size
-}
-
-/** @param {string} text */
 function hasNamedReferences(text) {
   if (typeof text !== 'string' || !text) return false
   const lower = text.toLowerCase()
@@ -108,15 +96,6 @@ function wordCount(s) {
 }
 
 /**
- * @param {string | null | undefined} out
- * @returns {boolean}
- */
-function isSynthesisSkippedOrEmpty(out) {
-  if (typeof out !== 'string' || !out.trim()) return true
-  return /\bsynthesis\s+skipped\b/i.test(out)
-}
-
-/**
  * Analyse a completed debate snapshot for logging / findings.
  * Safe on partial state; never throws.
  *
@@ -136,13 +115,6 @@ export function analyseDebate(state) {
   const aReviews = typeof rev0.aReviews === 'string' ? rev0.aReviews : ''
   const bReviews = typeof rev0.bReviews === 'string' ? rev0.bReviews : ''
   const cReviews = typeof rev0.cReviews === 'string' ? rev0.cReviews : ''
-
-  const synth =
-    state?.synthesis && typeof state.synthesis === 'object'
-      ? state.synthesis
-      : {}
-  const synthesisOut =
-    typeof synth.output === 'string' ? synth.output : ''
 
   const response_length_a = wordCount(agentA)
   const response_length_b = wordCount(agentB)
@@ -210,26 +182,6 @@ export function analyseDebate(state) {
         ? 'tied'
         : flexTop[0]
 
-  let synthesis_overlap_a = null
-  let synthesis_overlap_b = null
-  let synthesis_overlap_c = null
-  let dominant_agent = null
-
-  if (!isSynthesisSkippedOrEmpty(synthesisOut)) {
-    synthesis_overlap_a = jaccardOverlap(agentA, synthesisOut)
-    synthesis_overlap_b = jaccardOverlap(agentB, synthesisOut)
-    synthesis_overlap_c = jaccardOverlap(agentC, synthesisOut)
-
-    const ov = [
-      { k: /** @type {'a'|'b'|'c'} */ ('a'), v: synthesis_overlap_a },
-      { k: 'b', v: synthesis_overlap_b },
-      { k: 'c', v: synthesis_overlap_c },
-    ].sort((x, y) => y.v - x.v)
-
-    const d0 = ov[0].v - ov[1].v
-    dominant_agent = d0 <= 0.02 ? 'tied' : ov[0].k
-  }
-
   return {
     response_length_a,
     response_length_b,
@@ -243,9 +195,5 @@ export function analyseDebate(state) {
     challenged_most,
     most_combative,
     most_flexible,
-    synthesis_overlap_a,
-    synthesis_overlap_b,
-    synthesis_overlap_c,
-    dominant_agent,
   }
 }

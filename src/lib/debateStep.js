@@ -1,3 +1,5 @@
+import { readBabelSynthesisEnabled } from './babelSynthesisPref.js'
+
 /**
  * Which long-running debate phase is active (only meaningful when `status === 'running'`).
  * @param {{
@@ -10,10 +12,12 @@
  *   rebuttals?: { a?: string | null, b?: string | null, c?: string | null },
  *   finalPositions?: { a?: string | null, b?: string | null, c?: string | null },
  * }} state
- * @returns {'round1' | 'crossReview' | 'rebuttal' | 'finalPosition' | 'synthesis' | null}
+ * @returns {'round1' | 'crossReview' | 'finalPosition' | 'synthesis' | null}
  */
 export function deriveCurrentStep(state) {
   if (state.status !== 'running') return null
+
+  const synthesisPassDesired = readBabelSynthesisEnabled()
 
   const round1Done =
     (state.agentResponses?.a &&
@@ -39,12 +43,6 @@ export function deriveCurrentStep(state) {
         String(r.cReviews ?? '').length > 0
     )
 
-  const rebuttals = state.rebuttals ?? {}
-  const rebuttalDone =
-    String(rebuttals.a ?? '').length > 0 &&
-    String(rebuttals.b ?? '').length > 0 &&
-    String(rebuttals.c ?? '').length > 0
-
   const finals = state.finalPositions ?? {}
   const finalDone =
     String(finals.a ?? '').length > 0 &&
@@ -53,8 +51,7 @@ export function deriveCurrentStep(state) {
 
   if (!round1Done) return 'round1'
   if (!reviewDone) return 'crossReview'
-  if (!rebuttalDone) return 'rebuttal'
   if (!finalDone) return 'finalPosition'
-  if (state.synthesis == null) return 'synthesis'
+  if (synthesisPassDesired && state.synthesis == null) return 'synthesis'
   return null
 }

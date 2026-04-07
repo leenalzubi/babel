@@ -10,6 +10,10 @@ import {
 import AgentTimer from './AgentTimer.jsx'
 import { isAgentTimeoutResponse } from '../lib/debateConstants.js'
 import { computeProgressUi } from '../lib/progressEstimate.js'
+import {
+  BABEL_SYNTHESIS_TOGGLE_EVENT,
+  readBabelSynthesisEnabled,
+} from '../lib/babelSynthesisPref.js'
 import { useForge } from '../store/useForgeStore.js'
 
 /** @param {'pending' | 'active' | 'complete' | 'partial'} state */
@@ -62,7 +66,11 @@ function DivergenceBar({ pct, muted }) {
   )
 }
 
-function useWorkflowSteps(state) {
+/**
+ * @param {Record<string, unknown>} state
+ * @param {boolean} synthesisEnabled
+ */
+function useWorkflowSteps(state, synthesisEnabled) {
   const {
     status,
     rounds,
@@ -70,7 +78,6 @@ function useWorkflowSteps(state) {
     synthesis,
     agentResponses,
     reviewResponses,
-    rebuttals,
     finalPositions,
     timeoutCount,
   } = state
@@ -99,12 +106,6 @@ function useWorkflowSteps(state) {
         String(r.cReviews ?? '').length > 0
     )
 
-  const rb = rebuttals ?? {}
-  const rebuttalDone =
-    String(rb.a ?? '').length > 0 &&
-    String(rb.b ?? '').length > 0 &&
-    String(rb.c ?? '').length > 0
-
   const fp = finalPositions ?? {}
   const finalDone =
     String(fp.a ?? '').length > 0 &&
@@ -123,9 +124,6 @@ function useWorkflowSteps(state) {
     [rev.aReviews, rev.bReviews, rev.cReviews].some((t) =>
       isAgentTimeoutResponse(t)
     )
-  const rebuttalTimeout = [rb.a, rb.b, rb.c].some((t) =>
-    isAgentTimeoutResponse(t)
-  )
   const finalTimeout = [fp.a, fp.b, fp.c].some((t) =>
     isAgentTimeoutResponse(t)
   )
@@ -147,29 +145,30 @@ function useWorkflowSteps(state) {
   else if (running && round1Done) s3 = 'active'
 
   let s4 = 'pending'
-  if (rebuttalDone) s4 = 'complete'
+  if (finalDone) s4 = 'complete'
   else if (running && reviewDone) s4 = 'active'
 
   let s5 = 'pending'
-  if (finalDone) s5 = 'complete'
-  else if (running && rebuttalDone) s5 = 'active'
+  if (synthesisEnabled) {
+    if (synthesis) s5 = 'complete'
+    else if (running && finalDone) s5 = 'active'
+  } else {
+    s5 = 'pending'
+  }
 
   let s6 = 'pending'
-  if (synthesis) s6 = 'complete'
-  else if (running && finalDone) s6 = 'active'
-
-  let s7 = 'pending'
-  if (status === 'complete') s7 = 'complete'
+  if (status === 'complete') s6 = 'complete'
+  else if (!synthesisEnabled && running && finalDone) s6 = 'active'
 
   if (status === 'error' || status === 'partial') {
     if (round1Done) s2 = 'complete'
     if (reviewDone) s3 = 'complete'
-    if (rebuttalDone) s4 = 'complete'
-    if (finalDone) s5 = 'complete'
-    if (synthesis) {
+    if (finalDone) s4 = 'complete'
+    if (synthesisEnabled && synthesis) {
+      s5 = 'complete'
       s6 = 'complete'
-      s7 = 'complete'
     }
+    if (!synthesisEnabled && finalDone) s6 = 'complete'
   }
 
   const markPartial = (
@@ -182,44 +181,48 @@ function useWorkflowSteps(state) {
 
   s2 = markPartial(s2, Boolean(round1Timeout))
   s3 = markPartial(s3, Boolean(reviewTimeout))
-  s4 = markPartial(s4, Boolean(rebuttalTimeout))
-  s5 = markPartial(s5, Boolean(finalTimeout))
-  s6 = markPartial(s6, Boolean(synthesisTimeout))
-  const tc = timeoutCount ?? 0
-  s7 = markPartial(s7, status === 'complete' && tc > 0)
-
-  return {
-    steps: [
-      { key: 'prompt', label: 'Prompt received', state: s1, icon: null },
-      {
-        key: 'r1',
-        label: 'Round 1: independent',
-        state: s2,
-        icon: 'agents',
-        divergenceIdx: 0,
-      },
-      { key: 'cross', label: 'Round 2: cross-review', state: s3, icon: 'arrows' },
-      {
-        key: 'rebuttal',
-        label: 'Round 3: rebuttals',
-        state: s4,
-        icon: 'arrows',
-      },
-      {
-        key: 'finalp',
-        label: 'Round 4: final positions',
-        state: s5,
-        icon: 'agents',
-      },
-      {
-        key: 'synth',
-        label: 'Synthesizing full debate',
-        state: s6,
-        icon: 'sparkles',
-      },
-      { key: 'done', label: 'Complete', state: s7, icon: null },
-    ],
+  s4 = markPartial(s4, Boolean(finalTimeout))
+  if (synthesisEnabled) {
+    s5 = markPartial(s5, Boolean(synthesisTimeout))
   }
+  const tc = timeoutCount ?? 0
+  s6 = markPartial(s6, status === 'complete' && tc > 0)
+
+  const baseSteps = [
+    { key: 'prompt', label: 'Prompt received', state: s1, icon: null },
+    {
+      key: 'r1',
+      label: 'Round 1: independent',
+      state: s2,
+      icon: 'agents',
+      divergenceIdx: 0,
+    },
+    {
+      key: 'cross',
+      label: 'Round 2: cross-review and rebuttal',
+      state: s3,
+      icon: 'arrows',
+    },
+    {
+      key: 'finalp',
+      label: 'Round 3: final positions',
+      state: s4,
+      icon: 'agents',
+    },
+  ]
+  const tailSteps = synthesisEnabled
+    ? [
+        {
+          key: 'synth',
+          label: 'Synthesizing',
+          state: s5,
+          icon: 'sparkles',
+        },
+        { key: 'done', label: 'Complete', state: s6, icon: null },
+      ]
+    : [{ key: 'done', label: 'Complete', state: s6, icon: null }]
+
+  return { steps: [...baseSteps, ...tailSteps] }
 }
 
 /**
@@ -233,7 +236,16 @@ export default function WorkflowTimeline({
   onCollapsedChange = () => {},
 }) {
   const { state } = useForge()
-  const { steps } = useWorkflowSteps(state)
+  const [synthesisUiEnabled, setSynthesisUiEnabled] = useState(
+    readBabelSynthesisEnabled
+  )
+  useEffect(() => {
+    const onToggle = () => setSynthesisUiEnabled(readBabelSynthesisEnabled())
+    window.addEventListener(BABEL_SYNTHESIS_TOGGLE_EVENT, onToggle)
+    return () =>
+      window.removeEventListener(BABEL_SYNTHESIS_TOGGLE_EVENT, onToggle)
+  }, [])
+  const { steps } = useWorkflowSteps(state, synthesisUiEnabled)
   const { config, divergenceScores } = state
   const progress = computeProgressUi(state)
   const [progressFadeOut, setProgressFadeOut] = useState(false)
@@ -362,46 +374,6 @@ export default function WorkflowTimeline({
                         ? config.agentB
                         : config.agentC
                   const tm = timelineState.reviewTimers?.[k] ?? {
-                    startTime: null,
-                    endTime: null,
-                  }
-                  return (
-                    <div
-                      key={k}
-                      className="flex items-center justify-between gap-2 pr-1 font-mono"
-                    >
-                      <span className="flex min-w-0 flex-1 items-center gap-1 text-[9px] text-[var(--text-muted)]">
-                        <span
-                          className="h-1.5 w-1.5 shrink-0 rounded-full"
-                          style={{ background: spec.color }}
-                        />
-                        <span className="truncate">{spec.name}</span>
-                      </span>
-                      {tm.startTime != null ? (
-                        <AgentTimer
-                          startTime={tm.startTime}
-                          endTime={tm.endTime}
-                        />
-                      ) : (
-                        <span className="shrink-0 text-[9px] text-[var(--text-muted)]/50">
-                          —
-                        </span>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-            {step.key === 'rebuttal' && (
-              <div className="mt-1.5 space-y-1">
-                {(['a', 'b', 'c']).map((k) => {
-                  const spec =
-                    k === 'a'
-                      ? config.agentA
-                      : k === 'b'
-                        ? config.agentB
-                        : config.agentC
-                  const tm = timelineState.rebuttalTimers?.[k] ?? {
                     startTime: null,
                     endTime: null,
                   }

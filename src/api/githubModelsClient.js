@@ -7,7 +7,6 @@
  */
 
 import { API_ERROR, isLikelyNetworkError } from '../lib/apiErrors.js'
-import { TIMEOUT_ERROR_MESSAGE } from '../lib/debateConstants.js'
 import {
   GITHUB_MODELS_CHAT_URL,
   githubModelsFetchHeaders,
@@ -16,6 +15,113 @@ import {
 const PROXY_PATH = '/api/github-models'
 
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503])
+
+/**
+ * @typedef {{
+ *   stage?: string,
+ *   round?: number,
+ *   type: string,
+ *   agent: string,
+ *   title: string,
+ *   detail: string,
+ *   suggestion: string,
+ * }} ClassifiedModelError
+ */
+
+/**
+ * @param {Response} response
+ * @param {string} agentName
+ * @returns {Promise<ClassifiedModelError>}
+ */
+export async function classifyError(response, agentName) {
+  const status = response.status
+
+  let body = {}
+  try {
+    body = await response.json()
+  } catch {
+    body = {}
+  }
+
+  const rawMessage = body?.error?.message || body?.message || ''
+  const message = typeof rawMessage === 'string' ? rawMessage : String(rawMessage ?? '')
+  const messageLower = message.toLowerCase()
+
+  if (status === 400 && messageLower.includes('content management policy')) {
+    return {
+      type: 'content_filter',
+      agent: agentName,
+      title: 'Content filter triggered',
+      detail: `${agentName} was blocked by Azure's content filter. This usually happens with prompts containing sensitive, ambiguous, or politically charged language.`,
+      suggestion:
+        'Try rephrasing your prompt. Avoid loaded language, explicit hypotheticals, or topics that could be interpreted as harmful.',
+    }
+  }
+
+  if (status === 429) {
+    const retryAfter = response.headers.get('retry-after') || '60'
+    return {
+      type: 'rate_limit',
+      agent: agentName,
+      title: 'Rate limit reached',
+      detail: `GitHub Models free tier rate limit hit on ${agentName}. Retry after ${retryAfter} seconds.`,
+      suggestion: `Wait ${retryAfter} seconds and try again. If this keeps happening, space out your debates.`,
+    }
+  }
+
+  if (status === 400 && messageLower.includes('token')) {
+    return {
+      type: 'token_limit',
+      agent: agentName,
+      title: 'Prompt too long',
+      detail: `${agentName} received more text than it can process. This can happen in later rounds when the full debate context is passed.`,
+      suggestion:
+        'Try a shorter initial prompt. The debate context grows with each round.',
+    }
+  }
+
+  if (status === 401 || status === 403) {
+    return {
+      type: 'auth',
+      agent: agentName,
+      title: 'Authentication failed',
+      detail:
+        'Your GitHub token was rejected. It may have expired or have insufficient permissions.',
+      suggestion:
+        'Generate a new fine-grained GitHub token with Models: Read-only permission and update your environment variables.',
+    }
+  }
+
+  if (status === 404) {
+    return {
+      type: 'model_unavailable',
+      agent: agentName,
+      title: 'Model unavailable',
+      detail: `${agentName} is not available on your GitHub Models tier or the model ID has changed.`,
+      suggestion:
+        'Check https://github.com/marketplace?type=models to confirm the model is available on your account.',
+    }
+  }
+
+  if (status === 500 || status === 502 || status === 503) {
+    return {
+      type: 'server_error',
+      agent: agentName,
+      title: 'GitHub Models server error',
+      detail: `GitHub Models returned a ${status} error for ${agentName}. This is usually temporary.`,
+      suggestion:
+        'Wait a moment and try again. Check https://www.githubstatus.com if it keeps happening.',
+    }
+  }
+
+  return {
+    type: 'unknown',
+    agent: agentName,
+    title: 'Unexpected error',
+    detail: `${agentName} failed with status ${status}${message ? `: ${message}` : ''}`,
+    suggestion: 'Try again. If it keeps failing, try a different prompt.',
+  }
+}
 
 /**
  * @returns {{ url: string, authorization: string | null }}
@@ -37,72 +143,6 @@ function resolveGithubChatRequest() {
   return { url: '', authorization: null }
 }
 
-/**
- * @param {number} status
- */
-function classifyGitHubModelsStatus(status) {
-  if (status === 401 || status === 403) {
-    return API_ERROR.GITHUB_TOKEN_REJECTED
-  }
-  if (status === 404) {
-    return API_ERROR.GITHUB_MODEL_NOT_FOUND
-  }
-  if (status === 429) {
-    return API_ERROR.RATE_LIMIT
-  }
-  if (status === 500 || status === 502 || status === 503) {
-    return API_ERROR.GITHUB_MODELS_UPSTREAM_ERROR
-  }
-  return `GitHub Models error: ${status}`
-}
-
-/** @param {unknown} data */
-function upstreamErrorText(data) {
-  if (!data || typeof data !== 'object') return ''
-  if ('message' in data && typeof data.message === 'string') {
-    return data.message
-  }
-  const err = 'error' in data ? data.error : undefined
-  if (typeof err === 'string') return err
-  if (err && typeof err === 'object' && 'message' in err) {
-    const m = err.message
-    if (typeof m === 'string') return m
-  }
-  if (Array.isArray(data.detail)) {
-    const parts = []
-    for (const d of data.detail) {
-      if (d && typeof d === 'object' && 'msg' in d && typeof d.msg === 'string') {
-        parts.push(d.msg)
-      }
-    }
-    if (parts.length) return parts.join('; ')
-  }
-  try {
-    const raw = JSON.stringify(data)
-    if (raw && raw !== '{}') {
-      return raw.length > 900 ? `${raw.slice(0, 900)}…` : raw
-    }
-  } catch {
-    /* ignore */
-  }
-  return ''
-}
-
-/**
- * @param {Response} response
- * @param {string} fallback
- */
-async function errorMessageFromResponse(response, fallback) {
-  try {
-    const data = await response.clone().json()
-    const t = upstreamErrorText(data)
-    if (t) return t
-  } catch {
-    /* use fallback */
-  }
-  return fallback
-}
-
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -113,9 +153,19 @@ const DEFAULT_MODEL_CALL_TIMEOUT_MS = 120_000
  * @template T
  * @param {(signal: AbortSignal) => Promise<T>} fetchWithSignal
  * @param {number} [timeoutMs]
+ * @param {{ agentName?: string, errorContext?: { stage?: string, round?: number } }} [meta]
  * @returns {Promise<T>}
  */
-async function callWithTimeout(fetchWithSignal, timeoutMs = DEFAULT_MODEL_CALL_TIMEOUT_MS) {
+async function callWithTimeout(
+  fetchWithSignal,
+  timeoutMs = DEFAULT_MODEL_CALL_TIMEOUT_MS,
+  meta = {}
+) {
+  const agentName = meta.agentName?.trim() || 'Model'
+  const errorContext =
+    meta.errorContext && typeof meta.errorContext === 'object'
+      ? meta.errorContext
+      : {}
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
   try {
@@ -126,13 +176,21 @@ async function callWithTimeout(fetchWithSignal, timeoutMs = DEFAULT_MODEL_CALL_T
     clearTimeout(timeout)
     const name = err && typeof err === 'object' && 'name' in err ? err.name : ''
     if (name === 'AbortError') {
-      throw new Error(TIMEOUT_ERROR_MESSAGE)
+      throw {
+        type: 'timeout',
+        agent: agentName,
+        title: 'Model timed out',
+        detail: `${agentName} took longer than 2 minutes to respond.`,
+        suggestion:
+          'Try again. Phi-4 Reasoning sometimes takes longer on complex prompts.',
+        ...errorContext,
+      }
     }
     throw err
   }
 }
 
-/** User-facing prefix; ErrorBanner treats messages containing "Content filter" specially. */
+/** @deprecated Prefer checking classified error `type === 'content_filter'` */
 export const CONTENT_FILTER_MESSAGE_PREFIX = 'Content filter:'
 
 /**
@@ -140,37 +198,10 @@ export const CONTENT_FILTER_MESSAGE_PREFIX = 'Content filter:'
  * @returns {boolean}
  */
 export function isContentFilterError(err) {
+  if (err && typeof err === 'object' && err.type === 'content_filter') return true
   return (
     err instanceof Error &&
     err.message.includes(CONTENT_FILTER_MESSAGE_PREFIX)
-  )
-}
-
-const CONTENT_POLICY_MARK = 'content management policy'
-
-/**
- * Azure/GitHub Models may return 400 with this phrase when the prompt is blocked.
- * @param {number} status
- * @param {unknown} data
- * @param {{ agentName?: string } | undefined} options
- */
-function throwIfContentPolicyBlocked(status, data, options) {
-  if (status !== 400) return
-  let blob = ''
-  if (data && typeof data === 'object') {
-    blob = `${upstreamErrorText(data)} ${JSON.stringify(data)}`
-  } else if (typeof data === 'string') {
-    blob = data
-  }
-  if (!blob.toLowerCase().includes(CONTENT_POLICY_MARK)) return
-  const name =
-    options &&
-    typeof options.agentName === 'string' &&
-    options.agentName.trim()
-      ? options.agentName.trim()
-      : 'the model'
-  throw new Error(
-    `${CONTENT_FILTER_MESSAGE_PREFIX} this prompt was blocked by Azure's safety filter on ${name}. Try rephrasing.`
   )
 }
 
@@ -178,7 +209,7 @@ function throwIfContentPolicyBlocked(status, data, options) {
  * @param {string} model
  * @param {Array<{ role: 'user' | 'assistant', content: string }>} messages
  * @param {string} systemPrompt
- * @param {{ maxTokens?: number, agentName?: string } | undefined} [options]
+ * @param {{ maxTokens?: number, agentName?: string, errorContext?: { stage?: string, round?: number } } | undefined} [options]
  * @returns {Promise<string>}
  */
 export async function callGitHubModel(model, messages, systemPrompt, options) {
@@ -220,96 +251,127 @@ export async function callGitHubModel(model, messages, systemPrompt, options) {
     messages: [{ role: 'system', content: systemPrompt }, ...messages],
   }
 
-  return callWithTimeout(async (signal) => {
-    let lastError = new Error('GitHub Models request failed')
+  const agentName =
+    options &&
+    typeof options === 'object' &&
+    typeof options.agentName === 'string' &&
+    options.agentName.trim()
+      ? options.agentName.trim()
+      : 'Model'
+  const errorContext =
+    options &&
+    typeof options === 'object' &&
+    options.errorContext &&
+    typeof options.errorContext === 'object'
+      ? options.errorContext
+      : {}
 
-    for (let attempt = 0; attempt < 3; attempt++) {
-      if (signal.aborted) {
-        throw new Error(TIMEOUT_ERROR_MESSAGE)
-      }
-      if (attempt > 0) {
-        await sleep(1500 * attempt)
-      }
-      if (signal.aborted) {
-        throw new Error(TIMEOUT_ERROR_MESSAGE)
-      }
+  return callWithTimeout(
+    async (signal) => {
+      let lastError = new Error('GitHub Models request failed')
 
-      let response
-      try {
-        response = await fetch(url, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload),
-          signal,
-        })
-      } catch (err) {
-        const name = err && typeof err === 'object' && 'name' in err ? err.name : ''
-        if (name === 'AbortError' || signal.aborted) {
-          throw new Error(TIMEOUT_ERROR_MESSAGE)
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt > 0) {
+          await sleep(1500 * attempt)
         }
-        if (isLikelyNetworkError(err)) {
-          lastError = new Error(API_ERROR.NETWORK)
-          if (attempt < 2) continue
-          throw lastError
+        if (signal.aborted) {
+          throw {
+            type: 'timeout',
+            agent: agentName,
+            title: 'Model timed out',
+            detail: `${agentName} took longer than 2 minutes to respond.`,
+            suggestion:
+              'Try again. Phi-4 Reasoning sometimes takes longer on complex prompts.',
+            ...errorContext,
+          }
         }
-        throw err instanceof Error ? err : new Error(String(err))
-      }
+        if (attempt > 0) {
+          await sleep(1500 * attempt)
+        }
+        if (signal.aborted) {
+          throw {
+            type: 'timeout',
+            agent: agentName,
+            title: 'Model timed out',
+            detail: `${agentName} took longer than 2 minutes to respond.`,
+            suggestion:
+              'Try again. Phi-4 Reasoning sometimes takes longer on complex prompts.',
+            ...errorContext,
+          }
+        }
 
-    if (
-      isProxyRequest &&
-      response.status === 404 &&
-      !(response.headers.get('content-type') ?? '').includes('application/json')
-    ) {
-      throw new Error(API_ERROR.GITHUB_PROXY_404)
-    }
-
-    let data
-    try {
-      data = await response.json()
-    } catch {
-      if (!response.ok) {
-        let textFallback = ''
+        let response
         try {
-          textFallback = await response.clone().text()
-        } catch {
-          /* ignore */
+          response = await fetch(url, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(payload),
+            signal,
+          })
+        } catch (err) {
+          const name =
+            err && typeof err === 'object' && 'name' in err ? err.name : ''
+          if (name === 'AbortError' || signal.aborted) {
+            throw {
+              type: 'timeout',
+              agent: agentName,
+              title: 'Model timed out',
+              detail: `${agentName} took longer than 2 minutes to respond.`,
+              suggestion:
+                'Try again. Phi-4 Reasoning sometimes takes longer on complex prompts.',
+              ...errorContext,
+            }
+          }
+          if (isLikelyNetworkError(err)) {
+            lastError = new Error(API_ERROR.NETWORK)
+            if (attempt < 2) continue
+            throw lastError
+          }
+          throw err instanceof Error ? err : new Error(String(err))
         }
-        throwIfContentPolicyBlocked(response.status, textFallback, options)
-        const msg = await errorMessageFromResponse(
-          response,
-          classifyGitHubModelsStatus(response.status)
-        )
-        lastError = new Error(msg)
-        if (RETRYABLE_STATUS.has(response.status) && attempt < 2) continue
-        throw lastError
+
+        if (
+          isProxyRequest &&
+          response.status === 404 &&
+          !(response.headers.get('content-type') ?? '').includes('application/json')
+        ) {
+          throw new Error(API_ERROR.GITHUB_PROXY_404)
+        }
+
+        if (!response.ok) {
+          if (RETRYABLE_STATUS.has(response.status) && attempt < 2) {
+            try {
+              await response.text()
+            } catch {
+              /* ignore */
+            }
+            continue
+          }
+          const classified = await classifyError(response, agentName)
+          throw { ...classified, ...errorContext }
+        }
+
+        let data
+        try {
+          data = await response.json()
+        } catch {
+          throw new Error(API_ERROR.NETWORK)
+        }
+
+        const content = data?.choices?.[0]?.message?.content
+        if (typeof content !== 'string') {
+          throw new Error(
+            'GitHub Models response missing choices[0].message.content string.'
+          )
+        }
+        return content
       }
-      throw new Error(API_ERROR.NETWORK)
-    }
 
-    if (response.ok) {
-      const content = data?.choices?.[0]?.message?.content
-      if (typeof content !== 'string') {
-        throw new Error(
-          'GitHub Models response missing choices[0].message.content string.'
-        )
-      }
-      return content
-    }
-
-    throwIfContentPolicyBlocked(response.status, data, options)
-
-    const detail = upstreamErrorText(data)
-    const base = classifyGitHubModelsStatus(response.status)
-    const msg = detail ? `${base}\n\n${detail}` : base
-    lastError = new Error(msg)
-    if (RETRYABLE_STATUS.has(response.status) && attempt < 2) {
-      continue
-    }
-    throw lastError
-  }
-
-    throw lastError
-  })
+      throw lastError
+    },
+    DEFAULT_MODEL_CALL_TIMEOUT_MS,
+    { agentName, errorContext }
+  )
 }
 
 /**

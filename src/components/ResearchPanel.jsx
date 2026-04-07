@@ -178,7 +178,7 @@ export default function ResearchPanel() {
           type="button"
           onClick={() => {
             try {
-              window.localStorage.removeItem(WELCOME_STORAGE_KEY)
+              window.sessionStorage.removeItem(WELCOME_STORAGE_KEY)
             } catch {
               /* ignore */
             }
