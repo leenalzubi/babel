@@ -223,6 +223,7 @@ export function useDebateEngine() {
             validation: snap.validation,
             config: snap.config,
             synthesisWinner: snap.synthesisWinner,
+            influenceReport: snap.influenceReport,
             is_partial: true,
             last_completed_stage: lastStage,
             timeout_count: snap.timeoutCount,

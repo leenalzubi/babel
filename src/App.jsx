@@ -563,6 +563,8 @@ export default function App() {
                           agentTimers={state.agentTimers}
                           reviewTimers={state.reviewTimers}
                           rebuttalTimers={state.rebuttalTimers}
+                          influenceReport={state.influenceReport}
+                          influenceLoading={state.influenceLoading}
                         />
                       </div>
                     ) : null}

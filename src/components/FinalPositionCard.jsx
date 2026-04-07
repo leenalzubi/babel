@@ -3,7 +3,7 @@ import AgentTimeoutNotice from './AgentTimeoutNotice.jsx'
 import AgentResponseBody from './AgentResponseBody.jsx'
 import AgentThinking from './AgentThinking.jsx'
 import AgentTimer from './AgentTimer.jsx'
-import TriangleConsensus from './TriangleConsensus.jsx'
+import InfluenceMap from './InfluenceMap.jsx'
 import { isAgentTimeoutResponse } from '../lib/debateConstants.js'
 
 const replyMd =
@@ -168,6 +168,8 @@ function FinalColumn({ agentSpec, text, finalTimer, totalMs }) {
  *   reviewTimers: Record<string, { startTime: number | null, endTime: number | null }>,
  *   rebuttalTimers: Record<string, { startTime: number | null, endTime: number | null }>,
  *   scores: { ab: number, ac: number, bc: number, average?: number } | null,
+ *   influenceReport?: Record<string, unknown> | null,
+ *   influenceLoading?: boolean,
  * }} props
  */
 function FinalPositionCard({
@@ -178,6 +180,8 @@ function FinalPositionCard({
   agentTimers,
   reviewTimers,
   rebuttalTimers,
+  influenceReport = null,
+  influenceLoading = false,
 }) {
   const { agentA, agentB, agentC } = config
   const fa = finalPositions?.a ?? ''
@@ -258,8 +262,15 @@ function FinalPositionCard({
       </div>
 
       {showTriangle && scores ? (
-        <div className="flex flex-col items-center border-t border-dashed border-[var(--border)] pt-6">
-          <TriangleConsensus scores={scores} initials={initials} />
+        <div className="border-t border-dashed border-[var(--border)] pt-6">
+          <InfluenceMap
+            scores={scores}
+            initials={initials}
+            config={config}
+            influenceReport={influenceReport}
+            influenceLoading={influenceLoading}
+            showPositionTracks
+          />
         </div>
       ) : null}
     </section>

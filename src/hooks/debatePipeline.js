@@ -19,6 +19,7 @@ import {
 } from '../lib/crossReviewCompetition.js'
 import { isModelCallTimeoutError } from '../lib/modelCallErrors.js'
 import { clipInferenceText } from '../lib/clipInferenceText.js'
+import { runInfluenceAnalysis } from '../lib/influenceAnalysis.js'
 import { logDebate } from '../lib/logDebate.js'
 import { parseSynthesisOutput } from '../lib/parseSynthesisOutput.js'
 import {
@@ -439,6 +440,27 @@ export async function runPipelineFromFinalsOnward(ctx) {
 
   await pause(2000)
 
+  dispatch({ type: 'SET_INFLUENCE_LOADING', payload: true })
+  let influenceReport = null
+  try {
+    influenceReport = await runInfluenceAnalysis(dispatch, {
+      config,
+      ra,
+      rb,
+      rc,
+      fa,
+      fb,
+      fc,
+      aRev,
+      bRev,
+      cRev,
+    })
+  } catch {
+    influenceReport = null
+  }
+  dispatch({ type: 'SET_INFLUENCE_REPORT', payload: influenceReport })
+  dispatch({ type: 'SET_INFLUENCE_LOADING', payload: false })
+
   /** @type {Record<string, unknown>} */
   const logBase = {
     prompt: userPrompt.trim(),
@@ -448,6 +470,7 @@ export async function runPipelineFromFinalsOnward(ctx) {
     finalPositions: { a: fa, b: fb, c: fc },
     config,
     synthesisWinner: synthesisWinner ?? null,
+    influenceReport,
   }
 
   if (!synthesisEnabled) {

@@ -86,6 +86,9 @@ function createInitialState() {
       scores: { gpt: number, phi: number, mistral: number },
       evaluations: unknown,
     }} */ (null),
+    /** Embedding distance + self-report per agent after finals. */
+    influenceReport: /** @type {null | Record<string, unknown>} */ (null),
+    influenceLoading: false,
     /** Completed model API calls in the current run. */
     progressCallsCompleted: 0,
     /** Last major stage that finished successfully before an error/partial stop. */
@@ -125,6 +128,8 @@ function forgeReducer(state, action) {
           auditError: null,
           validation: null,
           synthesisWinner: null,
+          influenceReport: null,
+          influenceLoading: false,
           progressCallsCompleted: 0,
           lastCompletedStage: null,
           isPartial: false,
@@ -184,6 +189,18 @@ function forgeReducer(state, action) {
             ? /** @type {NonNullable<typeof state.synthesisWinner>} */ (
                 action.payload
               )
+            : null,
+      }
+
+    case 'SET_INFLUENCE_LOADING':
+      return { ...state, influenceLoading: Boolean(action.payload) }
+
+    case 'SET_INFLUENCE_REPORT':
+      return {
+        ...state,
+        influenceReport:
+          action.payload && typeof action.payload === 'object'
+            ? /** @type {Record<string, unknown>} */ (action.payload)
             : null,
       }
 

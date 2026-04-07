@@ -7,7 +7,7 @@ import {
   copyToClipboard,
   downloadMarkdown,
 } from '../utils/exportUtils.js'
-import TriangleConsensus from './TriangleConsensus.jsx'
+import InfluenceMap from './InfluenceMap.jsx'
 import ValidationBadge from './ValidationBadge.jsx'
 
 /** Prose for synthesis body — essay-like Scriptorium typography (wrapper around ReactMarkdown). */
@@ -201,7 +201,14 @@ export default function SynthesisPanel({ synthesis }) {
       {divergence && (
         <div className="border-t border-dashed border-[var(--border)] bg-[var(--bg-synthesis)] px-6 py-6 md:px-10">
           <div className="flex justify-center">
-            <TriangleConsensus scores={divergence} initials={triInitials} />
+            <InfluenceMap
+              scores={divergence}
+              initials={triInitials}
+              config={state.config}
+              influenceReport={state.influenceReport}
+              influenceLoading={state.influenceLoading}
+              showPositionTracks
+            />
           </div>
         </div>
       )}

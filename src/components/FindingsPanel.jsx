@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
-import TriangleConsensus from './TriangleConsensus.jsx'
+import InfluenceMap from './InfluenceMap.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 
 const PAGE_SIZE = 20
@@ -73,6 +73,33 @@ function contributorDisplay(c, row) {
   return model ?? String(c).toUpperCase()
 }
 
+/** @param {unknown} changeLabel @param {string} borderColor */
+function changeBadge(changeLabel, borderColor) {
+  const s = changeLabel == null || changeLabel === '' ? '—' : String(changeLabel)
+  const low = s.toLowerCase()
+  let bg = 'bg-[var(--bg-raised)]'
+  let text = 'text-[var(--text-muted)]'
+  if (low.includes('held firm')) {
+    bg = 'bg-[#16A34A]/15'
+    text = 'text-[#15803D]'
+  } else if (low.includes('significant')) {
+    bg = 'bg-[#DC2626]/12'
+    text = 'text-[#B91C1C]'
+  } else if (low.includes('minor') || low.includes('shifted')) {
+    bg = 'bg-[#D97706]/12'
+    text = 'text-[#B45309]'
+  }
+  return (
+    <span
+      className={`inline-block max-w-[7rem] truncate rounded-full border px-1.5 py-0.5 font-mono text-[9px] font-medium ${bg} ${text}`}
+      style={{ borderColor }}
+      title={s}
+    >
+      {s}
+    </span>
+  )
+}
+
 /** @param {string} raw @param {number} fallback */
 function clampPctInput(raw, fallback) {
   const n = Number.parseInt(String(raw).trim(), 10)
@@ -94,6 +121,7 @@ function TableSkeleton() {
               'B↔C',
               'Top',
               'Rounds',
+              'Changed',
             ].map((h) => (
               <th key={h} className="px-3 py-2 font-medium">
                 {h}
@@ -104,7 +132,7 @@ function TableSkeleton() {
         <tbody>
           {Array.from({ length: 8 }, (_, i) => (
             <tr key={i} className="border-b border-[var(--border)]">
-              {Array.from({ length: 7 }, (_, j) => (
+              {Array.from({ length: 8 }, (_, j) => (
                 <td key={j} className="px-3 py-3">
                   <div className="h-4 w-full animate-pulse rounded bg-[var(--border)]/60" />
                 </td>
@@ -202,6 +230,14 @@ export default function FindingsPanel() {
             'gpt_competition_score',
             'phi_competition_score',
             'mistral_competition_score',
+            'change_a',
+            'change_b',
+            'change_c',
+            'change_type_a',
+            'change_type_b',
+            'change_type_c',
+            'most_influenced',
+            'most_resistant',
           ].join(',')
         )
         .order('created_at', { ascending: false })
@@ -439,6 +475,35 @@ export default function FindingsPanel() {
                 : 'c'
           )
 
+    const inflTally = /** @type {Map<string, number>} */ (new Map())
+    const resTally = /** @type {Map<string, number>} */ (new Map())
+    for (const r of rows) {
+      const mi = String(r.most_influenced ?? '').toLowerCase()
+      if (mi === 'a' || mi === 'b' || mi === 'c') {
+        const m = slotModel(r, /** @type {'a'|'b'|'c'} */ (mi))
+        if (m) inflTally.set(m, (inflTally.get(m) ?? 0) + 1)
+      }
+      const mr = String(r.most_resistant ?? '').toLowerCase()
+      if (mr === 'a' || mr === 'b' || mr === 'c') {
+        const m = slotModel(r, /** @type {'a'|'b'|'c'} */ (mr))
+        if (m) resTally.set(m, (resTally.get(m) ?? 0) + 1)
+      }
+    }
+    /** @param {Map<string, number>} m */
+    function mapLeader(m) {
+      let name = /** @type {string | null} */ (null)
+      let c = 0
+      for (const [k, v] of m) {
+        if (v > c) {
+          c = v
+          name = k
+        }
+      }
+      return { name, count: c }
+    }
+    const influencedLeader = mapLeader(inflTally)
+    const resistantLeader = mapLeader(resTally)
+
     return {
       n,
       combativeRow,
@@ -454,6 +519,8 @@ export default function FindingsPanel() {
       synthesisWinLeaderName,
       synthesisWinCount,
       synthesisWinDenom,
+      influencedLeader,
+      resistantLeader,
     }
   }, [rows])
 
@@ -508,10 +575,10 @@ export default function FindingsPanel() {
       >
         <p className="font-sans text-sm leading-relaxed text-[var(--text-secondary)]">
           This dataset is shared publicly as aggregate statistics and debate
-          metrics — not prompt text. Prompt excerpts are retained in the
-          database for research only and are not shown here. Never full
-          responses or personal information. By running a debate you consent to
-          contributing anonymously to this dataset.
+          metrics. Prompt excerpts are retained in the database for research only
+          and are not shown here. Full responses or personal information are
+          never shared. By running a debate you consent to contributing
+          anonymously to this dataset.
         </p>
       </div>
 
@@ -578,7 +645,7 @@ export default function FindingsPanel() {
             </p>
           ) : (
             <>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
                 <StatCard
                   title="Most combative round"
                   value={
@@ -634,6 +701,24 @@ export default function FindingsPanel() {
                         : `${agentDynamics.synthesisWinLeaderName} (${agentDynamics.synthesisWinCount} of ${agentDynamics.synthesisWinDenom})`
                   }
                   subtitle="based on peer evaluation scores"
+                />
+                <StatCard
+                  title="Most influenced model"
+                  value={
+                    agentDynamics.influencedLeader.count === 0
+                      ? '—'
+                      : `${agentDynamics.influencedLeader.name} (${agentDynamics.influencedLeader.count})`
+                  }
+                  subtitle="most often shifted most by embeddings + self-report"
+                />
+                <StatCard
+                  title="Most resistant model"
+                  value={
+                    agentDynamics.resistantLeader.count === 0
+                      ? '—'
+                      : `${agentDynamics.resistantLeader.name} (${agentDynamics.resistantLeader.count})`
+                  }
+                  subtitle="most often changed least across logged debates"
                 />
               </div>
               <div className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-metric)] p-4">
@@ -795,7 +880,7 @@ export default function FindingsPanel() {
       ) : !loading ? (
         <>
           <div className="overflow-x-auto rounded-forge-card border border-[var(--border)]">
-            <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+            <table className="w-full min-w-[800px] border-collapse text-left text-sm">
               <thead className="sticky top-0 z-[1] border-b border-[var(--border)] bg-[var(--bg-surface)] font-mono text-[10px] tracking-[0.12em] text-[var(--text-muted)]">
                 <tr>
                   <th className="whitespace-nowrap px-3 py-2 font-medium">
@@ -807,6 +892,7 @@ export default function FindingsPanel() {
                   <th className="px-3 py-2 font-medium">B↔C</th>
                   <th className="px-3 py-2 font-medium">Top</th>
                   <th className="px-3 py-2 font-medium">Rounds</th>
+                  <th className="min-w-[140px] px-3 py-2 font-medium">Changed</th>
                 </tr>
               </thead>
               <tbody>
@@ -880,10 +966,17 @@ export default function FindingsPanel() {
                         <td className="px-3 py-2 font-mono text-xs text-[var(--text-secondary)]">
                           {row.rounds != null ? String(row.rounds) : '—'}
                         </td>
+                        <td className="px-2 py-2">
+                          <div className="flex flex-wrap gap-1">
+                            {changeBadge(row.change_a, 'var(--agent-a)')}
+                            {changeBadge(row.change_b, 'var(--agent-b)')}
+                            {changeBadge(row.change_c, 'var(--agent-c)')}
+                          </div>
+                        </td>
                       </tr>
                       {expandedId === id ? (
                         <tr className="border-b border-[var(--border)] bg-[var(--bg-surface)]">
-                          <td colSpan={7} className="px-6 py-6">
+                          <td colSpan={8} className="px-6 py-6">
                             <p className="mb-2 font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
                               Pairwise claim disagreement
                             </p>
@@ -892,9 +985,30 @@ export default function FindingsPanel() {
                               labels from the debate audit.
                             </p>
                             <div className="flex justify-center md:justify-start">
-                              <TriangleConsensus
+                              <InfluenceMap
                                 scores={scores}
-                                initials={{ a: 'A', b: 'B', c: 'C' }}
+                                initials={{
+                                  a: (String(row.model_a ?? 'A')[0] ?? 'A').toUpperCase(),
+                                  b: (String(row.model_b ?? 'B')[0] ?? 'B').toUpperCase(),
+                                  c: (String(row.model_c ?? 'C')[0] ?? 'C').toUpperCase(),
+                                }}
+                                config={{
+                                  agentA: {
+                                    name: String(row.model_a ?? 'Agent A'),
+                                    color: 'var(--agent-a)',
+                                  },
+                                  agentB: {
+                                    name: String(row.model_b ?? 'Agent B'),
+                                    color: 'var(--agent-b)',
+                                  },
+                                  agentC: {
+                                    name: String(row.model_c ?? 'Agent C'),
+                                    color: 'var(--agent-c)',
+                                  },
+                                }}
+                                influenceReport={null}
+                                influenceLoading={false}
+                                showPositionTracks={false}
                               />
                             </div>
                           </td>

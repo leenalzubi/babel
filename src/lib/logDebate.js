@@ -106,6 +106,28 @@ export async function logDebate(state) {
     const sc =
       sw && typeof sw.scores === 'object' ? sw.scores : null
 
+    const inf =
+      state.influenceReport && typeof state.influenceReport === 'object'
+        ? state.influenceReport
+        : null
+    /** @param {string} k */
+    const infSlot = (k) =>
+      inf &&
+      typeof inf[k] === 'object' &&
+      inf[k] !== null
+        ? /** @type {Record<string, unknown>} */ (inf[k])
+        : null
+    const ia = infSlot('a')
+    const ib = infSlot('b')
+    const ic = infSlot('c')
+    /** @param {Record<string, unknown> | null} row */
+    const typeFrom = (row) => {
+      const s = row?.selfReport
+      return s && typeof s === 'object' && 'change_type' in s
+        ? String(/** @type {Record<string, unknown>} */ (s).change_type ?? '')
+        : null
+    }
+
     const val = state.validation
     const validation_score_b =
       val &&
@@ -173,6 +195,18 @@ export async function logDebate(state) {
         sc && typeof sc.phi === 'number' ? sc.phi : null,
       mistral_competition_score:
         sc && typeof sc.mistral === 'number' ? sc.mistral : null,
+      change_a: ia?.classification != null ? String(ia.classification) : null,
+      change_b: ib?.classification != null ? String(ib.classification) : null,
+      change_c: ic?.classification != null ? String(ic.classification) : null,
+      change_type_a: typeFrom(ia) || null,
+      change_type_b: typeFrom(ib) || null,
+      change_type_c: typeFrom(ic) || null,
+      most_influenced:
+        typeof inf?.mostInfluenced === 'string'
+          ? inf.mostInfluenced
+          : null,
+      most_resistant:
+        typeof inf?.mostResistant === 'string' ? inf.mostResistant : null,
     }
 
     console.log('Attempting Supabase insert:', insertData)
