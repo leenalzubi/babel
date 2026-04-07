@@ -1,8 +1,10 @@
 import { memo } from 'react'
+import AgentTimeoutNotice from './AgentTimeoutNotice.jsx'
 import AgentResponseBody from './AgentResponseBody.jsx'
 import AgentThinking from './AgentThinking.jsx'
 import AgentTimer from './AgentTimer.jsx'
 import TriangleConsensus from './TriangleConsensus.jsx'
+import { isAgentTimeoutResponse } from '../lib/debateConstants.js'
 
 const replyMd =
   'max-w-none text-[17px] leading-[1.85] text-[var(--text-secondary)] [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:text-[var(--text-primary)]'
@@ -92,6 +94,9 @@ function AgentRoundColumn({ agentSpec, responseText, timer }) {
     timer.startTime != null && timer.endTime == null
 
   if (hasResponse) {
+    if (isAgentTimeoutResponse(responseText)) {
+      return <AgentTimeoutNotice agentName={agentSpec.name} />
+    }
     return (
       <RoundAgentPanel
         title={agentSpec.name}

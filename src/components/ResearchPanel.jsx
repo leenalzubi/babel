@@ -1,3 +1,5 @@
+import { WELCOME_STORAGE_KEY } from './WelcomeModal.jsx'
+
 /** About tab content — editorial layout, light and spacious. */
 
 /** Default forge agent accent colors (match useForgeStore). */
@@ -171,6 +173,23 @@ export default function ResearchPanel() {
       className="mx-auto w-full min-w-0 max-w-[720px] pb-16 md:pb-24"
       aria-label="About Babel"
     >
+      <div className="mb-8">
+        <button
+          type="button"
+          onClick={() => {
+            try {
+              window.localStorage.removeItem(WELCOME_STORAGE_KEY)
+            } catch {
+              /* ignore */
+            }
+            window.location.reload()
+          }}
+          className="font-[family-name:var(--font-mono)] text-[11px] text-[var(--text-muted)] underline-offset-2 transition hover:text-[var(--text-secondary)] hover:underline"
+        >
+          Show welcome again
+        </button>
+      </div>
+
       <SectionShell num="01" title="What Babel is">
         <div className="space-y-5 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
           <p>

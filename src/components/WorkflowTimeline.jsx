@@ -4,17 +4,30 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Clock,
   Sparkles,
 } from 'lucide-react'
 import AgentTimer from './AgentTimer.jsx'
+import { isAgentTimeoutResponse } from '../lib/debateConstants.js'
+import { computeProgressUi } from '../lib/progressEstimate.js'
 import { useForge } from '../store/useForgeStore.js'
 
-/** @param {'pending' | 'active' | 'complete'} state */
+/** @param {'pending' | 'active' | 'complete' | 'partial'} state */
 function StatusDot({ state }) {
   if (state === 'complete') {
     return (
       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--agree)]/20 text-[var(--agree)] ring-1 ring-[var(--agree)]/40">
         <Check className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
+      </span>
+    )
+  }
+  if (state === 'partial') {
+    return (
+      <span
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-dashed border-amber-600/50 bg-amber-500/10 text-amber-700/90 ring-1 ring-amber-600/30"
+        title="Partial — at least one model timed out in this stage"
+      >
+        <Clock className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
       </span>
     )
   }
@@ -59,6 +72,7 @@ function useWorkflowSteps(state) {
     reviewResponses,
     rebuttals,
     finalPositions,
+    timeoutCount,
   } = state
 
   const round1Done =
@@ -99,7 +113,28 @@ function useWorkflowSteps(state) {
 
   const running = status === 'running'
 
-  /** @type {'pending' | 'active' | 'complete'} */
+  const r1 = rounds.find((r) => r.roundNum === 1)
+  const round1Timeout =
+    r1 &&
+    [r1.agentA, r1.agentB, r1.agentC].some((t) => isAgentTimeoutResponse(t))
+  const rev = reviews.find((r) => r.roundNum === 1)
+  const reviewTimeout =
+    rev &&
+    [rev.aReviews, rev.bReviews, rev.cReviews].some((t) =>
+      isAgentTimeoutResponse(t)
+    )
+  const rebuttalTimeout = [rb.a, rb.b, rb.c].some((t) =>
+    isAgentTimeoutResponse(t)
+  )
+  const finalTimeout = [fp.a, fp.b, fp.c].some((t) =>
+    isAgentTimeoutResponse(t)
+  )
+  const synthesisTimeout =
+    synthesis &&
+    typeof synthesis.output === 'string' &&
+    isAgentTimeoutResponse(synthesis.output)
+
+  /** @type {'pending' | 'active' | 'complete' | 'partial'} */
   let s1 = 'pending'
   if (status !== 'idle') s1 = 'complete'
 
@@ -126,7 +161,7 @@ function useWorkflowSteps(state) {
   let s7 = 'pending'
   if (status === 'complete') s7 = 'complete'
 
-  if (status === 'error') {
+  if (status === 'error' || status === 'partial') {
     if (round1Done) s2 = 'complete'
     if (reviewDone) s3 = 'complete'
     if (rebuttalDone) s4 = 'complete'
@@ -136,6 +171,22 @@ function useWorkflowSteps(state) {
       s7 = 'complete'
     }
   }
+
+  const markPartial = (
+    /** @type {'pending' | 'active' | 'complete' | 'partial'} */ step,
+    timeout
+  ) => {
+    if (step === 'complete' && timeout) return 'partial'
+    return step
+  }
+
+  s2 = markPartial(s2, Boolean(round1Timeout))
+  s3 = markPartial(s3, Boolean(reviewTimeout))
+  s4 = markPartial(s4, Boolean(rebuttalTimeout))
+  s5 = markPartial(s5, Boolean(finalTimeout))
+  s6 = markPartial(s6, Boolean(synthesisTimeout))
+  const tc = timeoutCount ?? 0
+  s7 = markPartial(s7, status === 'complete' && tc > 0)
 
   return {
     steps: [
@@ -184,8 +235,19 @@ export default function WorkflowTimeline({
   const { state } = useForge()
   const { steps } = useWorkflowSteps(state)
   const { config, divergenceScores } = state
+  const progress = computeProgressUi(state)
+  const [progressFadeOut, setProgressFadeOut] = useState(false)
   const [mobileStepHint, setMobileStepHint] = useState('')
   const hintClearRef = useRef(0)
+
+  useEffect(() => {
+    if (state.status !== 'complete' || (state.timeoutCount ?? 0) > 0) {
+      setProgressFadeOut(false)
+      return
+    }
+    const id = window.setTimeout(() => setProgressFadeOut(true), 2000)
+    return () => window.clearTimeout(id)
+  }, [state.status, state.timeoutCount])
 
   const showMobileHint = useCallback((label) => {
     window.clearTimeout(hintClearRef.current)
@@ -212,7 +274,7 @@ export default function WorkflowTimeline({
         : null
     const pct = score ? Math.round(Number(score.average) * 100) : 0
     const showBar =
-      step.state === 'complete' &&
+      (step.state === 'complete' || step.state === 'partial') &&
       score != null &&
       !Number.isNaN(pct)
 
@@ -247,6 +309,9 @@ export default function WorkflowTimeline({
                 {step.label}
               </span>
             </div>
+            {step.state === 'partial' ? (
+              <p className="mt-0.5 font-mono text-[9px] text-amber-800/75">Partial</p>
+            ) : null}
             {step.key === 'r1' && (
               <div className="mt-1.5 space-y-1">
                 {(['a', 'b', 'c']).map((k) => {
@@ -494,6 +559,23 @@ export default function WorkflowTimeline({
             {steps.map((step) => renderDesktopStepRow(step, state))}
           </div>
         </div>
+        {state.status === 'running' || state.status === 'complete' ? (
+          <div
+            className={`mt-4 px-3 transition-opacity duration-700 ease-out ${
+              progressFadeOut ? 'pointer-events-none opacity-0' : 'opacity-100'
+            }`}
+          >
+            <p className="min-h-[1rem] font-mono text-[11px] text-[var(--text-muted)]">
+              {progress.label || '\u00a0'}
+            </p>
+            <div className="mt-1 h-0.5 w-full overflow-hidden rounded-full bg-[var(--bg-base)]">
+              <div
+                className="h-full rounded-full bg-[#8B1A1A]/22 transition-[width] duration-500"
+                style={{ width: `${Math.min(100, progress.percent)}%` }}
+              />
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {/* Desktop: collapsed rail — icons only */}

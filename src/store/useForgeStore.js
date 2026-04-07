@@ -1,7 +1,10 @@
 import { createContext, createElement, useContext, useReducer } from 'react'
+import { AGENT_TIMEOUT_MESSAGE } from '../lib/debateConstants.js'
 import { loadForgeSettings } from '../lib/forgeSettings.js'
 
-/** @typedef {'idle' | 'running' | 'complete' | 'error'} ForgeStatus */
+/** @typedef {'idle' | 'running' | 'complete' | 'error' | 'partial'} ForgeStatus */
+
+/** @typedef {null | 'round1' | 'reviews' | 'rebuttals' | 'finalPositions' | 'synthesis' | 'audit' | 'validation'} DebateStageKey */
 
 function emptyAgentTimers() {
   return {
@@ -73,6 +76,13 @@ function createInitialState() {
     auditError: /** @type {string | null} */ (null),
     /** Peer validation of synthesis (agents B & C). Null when no run or synthesis skipped. */
     validation: null,
+    /** Completed model API calls in the current run (max 18). */
+    progressCallsCompleted: 0,
+    /** Last major stage that finished successfully before an error/partial stop. */
+    /** @type {DebateStageKey} */
+    lastCompletedStage: null,
+    isPartial: false,
+    timeoutCount: 0,
   }
 }
 
@@ -104,10 +114,51 @@ function forgeReducer(state, action) {
           auditLoading: false,
           auditError: null,
           validation: null,
+          progressCallsCompleted: 0,
+          lastCompletedStage: null,
+          isPartial: false,
+          timeoutCount: 0,
         }
       }
       return { ...state, status: next }
     }
+
+    case 'RESUME_DEBATE':
+      return {
+        ...state,
+        status: 'running',
+        error: null,
+        isPartial: false,
+      }
+
+    case 'SET_LAST_COMPLETED_STAGE':
+      return {
+        ...state,
+        lastCompletedStage:
+          action.payload && typeof action.payload === 'object' && 'stage' in action.payload
+            ? /** @type {DebateStageKey} */ (action.payload.stage)
+            : null,
+      }
+
+    case 'SET_PARTIAL':
+      return { ...state, isPartial: Boolean(action.payload) }
+
+    case 'INCREMENT_PROGRESS_CALLS': {
+      const add =
+        typeof action.payload === 'number' && Number.isFinite(action.payload)
+          ? Math.max(0, Math.round(action.payload))
+          : 1
+      return {
+        ...state,
+        progressCallsCompleted: Math.min(18, (state.progressCallsCompleted ?? 0) + add),
+      }
+    }
+
+    case 'INCREMENT_TIMEOUT_COUNT':
+      return {
+        ...state,
+        timeoutCount: (state.timeoutCount ?? 0) + 1,
+      }
 
     case 'SET_AUDIT':
       return {
@@ -165,6 +216,20 @@ function forgeReducer(state, action) {
         },
         rounds,
       }
+    }
+
+    case 'SET_AGENT_TIMEOUT': {
+      const { agent, endTime } = action.payload
+      const t = endTime ?? Date.now()
+      const next = forgeReducer(state, {
+        type: 'SET_AGENT_DONE',
+        payload: {
+          agent,
+          response: AGENT_TIMEOUT_MESSAGE,
+          endTime: t,
+        },
+      })
+      return { ...next, timeoutCount: (next.timeoutCount ?? 0) + 1 }
     }
 
     case 'SET_REVIEW_THINKING': {

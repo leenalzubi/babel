@@ -7,6 +7,7 @@
  */
 
 import { API_ERROR, isLikelyNetworkError } from '../lib/apiErrors.js'
+import { TIMEOUT_ERROR_MESSAGE } from '../lib/debateConstants.js'
 import {
   GITHUB_MODELS_CHAT_URL,
   githubModelsFetchHeaders,
@@ -106,6 +107,31 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+const DEFAULT_MODEL_CALL_TIMEOUT_MS = 120_000
+
+/**
+ * @template T
+ * @param {(signal: AbortSignal) => Promise<T>} fetchWithSignal
+ * @param {number} [timeoutMs]
+ * @returns {Promise<T>}
+ */
+async function callWithTimeout(fetchWithSignal, timeoutMs = DEFAULT_MODEL_CALL_TIMEOUT_MS) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const result = await fetchWithSignal(controller.signal)
+    clearTimeout(timeout)
+    return result
+  } catch (err) {
+    clearTimeout(timeout)
+    const name = err && typeof err === 'object' && 'name' in err ? err.name : ''
+    if (name === 'AbortError') {
+      throw new Error(TIMEOUT_ERROR_MESSAGE)
+    }
+    throw err
+  }
+}
+
 /** User-facing prefix; ErrorBanner treats messages containing "Content filter" specially. */
 export const CONTENT_FILTER_MESSAGE_PREFIX = 'Content filter:'
 
@@ -194,28 +220,40 @@ export async function callGitHubModel(model, messages, systemPrompt, options) {
     messages: [{ role: 'system', content: systemPrompt }, ...messages],
   }
 
-  let lastError = new Error('GitHub Models request failed')
+  return callWithTimeout(async (signal) => {
+    let lastError = new Error('GitHub Models request failed')
 
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (attempt > 0) {
-      await sleep(1500 * attempt)
-    }
-
-    let response
-    try {
-      response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-      })
-    } catch (err) {
-      if (isLikelyNetworkError(err)) {
-        lastError = new Error(API_ERROR.NETWORK)
-        if (attempt < 2) continue
-        throw lastError
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (signal.aborted) {
+        throw new Error(TIMEOUT_ERROR_MESSAGE)
       }
-      throw err instanceof Error ? err : new Error(String(err))
-    }
+      if (attempt > 0) {
+        await sleep(1500 * attempt)
+      }
+      if (signal.aborted) {
+        throw new Error(TIMEOUT_ERROR_MESSAGE)
+      }
+
+      let response
+      try {
+        response = await fetch(url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload),
+          signal,
+        })
+      } catch (err) {
+        const name = err && typeof err === 'object' && 'name' in err ? err.name : ''
+        if (name === 'AbortError' || signal.aborted) {
+          throw new Error(TIMEOUT_ERROR_MESSAGE)
+        }
+        if (isLikelyNetworkError(err)) {
+          lastError = new Error(API_ERROR.NETWORK)
+          if (attempt < 2) continue
+          throw lastError
+        }
+        throw err instanceof Error ? err : new Error(String(err))
+      }
 
     if (
       isProxyRequest &&
@@ -270,7 +308,8 @@ export async function callGitHubModel(model, messages, systemPrompt, options) {
     throw lastError
   }
 
-  throw lastError
+    throw lastError
+  })
 }
 
 /**

@@ -1,8 +1,11 @@
 import { memo } from 'react'
 import { ArrowLeftRight } from 'lucide-react'
+import AgentTimeoutNotice from './AgentTimeoutNotice.jsx'
 import AgentResponseBody from './AgentResponseBody.jsx'
 import AgentThinking from './AgentThinking.jsx'
 import AgentTimer from './AgentTimer.jsx'
+
+import { isAgentTimeoutResponse } from '../lib/debateConstants.js'
 
 const mdClass =
   'max-w-none text-[17px] leading-[1.85] text-[var(--text-secondary)] [&_a]:text-[var(--accent-forge)] [&_code]:rounded-[4px] [&_code]:bg-[var(--bg-raised)] [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[13px] [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_li]:my-0.5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-3 [&_p:last-child]:mb-0 [&_strong]:text-[var(--text-primary)] [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5'
@@ -105,6 +108,9 @@ function ReviewAgentColumn({
   const color = agentSpec.color
 
   if (hasBody) {
+    if (isAgentTimeoutResponse(body)) {
+      return <AgentTimeoutNotice agentName={agentSpec.name} />
+    }
     return (
       <CrossReviewAgentCard
         border={borderVar}

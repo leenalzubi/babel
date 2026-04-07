@@ -1,8 +1,10 @@
 import { memo } from 'react'
 import { MessageSquareReply } from 'lucide-react'
+import AgentTimeoutNotice from './AgentTimeoutNotice.jsx'
 import AgentResponseBody from './AgentResponseBody.jsx'
 import AgentThinking from './AgentThinking.jsx'
 import AgentTimer from './AgentTimer.jsx'
+import { isAgentTimeoutResponse } from '../lib/debateConstants.js'
 import { classifyRebuttalStance } from '../lib/rebuttalStance.js'
 
 const mdClass =
@@ -52,6 +54,9 @@ function RebuttalColumn({
   const stance = classifyRebuttalStance(body)
 
   if (hasBody) {
+    if (isAgentTimeoutResponse(body)) {
+      return <AgentTimeoutNotice agentName={agentSpec.name} />
+    }
     return (
       <article
         role="region"

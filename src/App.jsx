@@ -19,6 +19,7 @@ import RebuttalCard from './components/RebuttalCard.jsx'
 import ReviewCard from './components/ReviewCard.jsx'
 import RoundCard from './components/RoundCard.jsx'
 import SettingsDrawer from './components/SettingsDrawer.jsx'
+import WelcomeModal from './components/WelcomeModal.jsx'
 import WorkflowTimeline from './components/WorkflowTimeline.jsx'
 import { useDebateEngine } from './hooks/useDebateEngine.js'
 import { useForge } from './store/useForgeStore.js'
@@ -55,6 +56,7 @@ const DOC_TITLE_DEFAULT = 'Babel — Multi-Model Debate Engine'
 const DOC_TITLE_RUNNING = '⟳ Babel — Debate running...'
 const DOC_TITLE_COMPLETE = '✓ Babel — Debate complete'
 const DOC_TITLE_ERROR = '✗ Babel — Something went wrong'
+const DOC_TITLE_PARTIAL = '◐ Babel — Debate ended early'
 
 function HeaderAgentPill({ name, color }) {
   return (
@@ -73,7 +75,7 @@ function HeaderAgentPill({ name, color }) {
 
 export default function App() {
   const { state, dispatch } = useForge()
-  const { runDebate } = useDebateEngine()
+  const { runDebate, resumeDebate, stageLabel } = useDebateEngine()
   const [promptDraft, setPromptDraft] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [mainTab, setMainTab] = useState(
@@ -85,8 +87,19 @@ export default function App() {
   const [workflowSidebarCollapsed, setWorkflowSidebarCollapsed] = useState(
     () => readWorkflowSidebarCollapsed()
   )
+  const [showWelcome, setShowWelcome] = useState(
+    () => typeof window !== 'undefined' && !readWelcomeDismissed()
+  )
 
   const running = state.status === 'running'
+  const partial = state.status === 'partial'
+
+  const handleResume = useCallback(() => {
+    const st = state.lastCompletedStage
+    if (st) {
+      void resumeDebate(st)
+    }
+  }, [resumeDebate, state.lastCompletedStage])
 
   const navigateMainTab = useCallback(
     /** @param {'babel' | 'findings' | 'about'} tab */ (tab) => {
@@ -128,6 +141,7 @@ export default function App() {
   const showWorkflowSidebar =
     mainTab === 'babel' &&
     (state.status !== 'idle' ||
+      state.status === 'partial' ||
       state.rounds.length > 0 ||
       state.rebuttals?.a != null ||
       state.finalPositions?.a != null ||
@@ -151,6 +165,8 @@ export default function App() {
       document.title = DOC_TITLE_COMPLETE
     } else if (state.status === 'error') {
       document.title = DOC_TITLE_ERROR
+    } else if (state.status === 'partial') {
+      document.title = DOC_TITLE_PARTIAL
     } else {
       document.title = DOC_TITLE_DEFAULT
     }
@@ -345,6 +361,29 @@ export default function App() {
               onDismiss={() => dispatch({ type: 'SET_ERROR', payload: null })}
             />
 
+            {partial && state.lastCompletedStage ? (
+              <div
+                className="mb-6 rounded-forge-card border border-dashed border-amber-600/40 bg-amber-500/10 px-4 py-3 sm:px-5"
+                role="status"
+              >
+                <p className="font-mono text-[12px] leading-relaxed text-amber-950/90">
+                  Debate ended early — showing results up to{' '}
+                  <span className="font-semibold">
+                    {stageLabel(state.lastCompletedStage)}
+                  </span>
+                  .
+                </p>
+                <button
+                  type="button"
+                  onClick={handleResume}
+                  disabled={running}
+                  className="mt-3 rounded-[6px] border border-amber-800/35 bg-[var(--bg-surface)] px-3 py-2 font-mono text-[11px] font-semibold text-amber-950/90 transition hover:border-amber-800/55 disabled:opacity-50"
+                >
+                  Resume debate
+                </button>
+              </div>
+            ) : null}
+
             <div className="mt-2 flex flex-col gap-12 md:gap-14">
               {showEmptyState ? (
                 <ForgeEmptyState
@@ -451,6 +490,18 @@ export default function App() {
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       />
+
+      {showWelcome ? (
+        <WelcomeModal
+          onClose={() => setShowWelcome(false)}
+          onStartExploring={() => {
+            promptInputRef.current?.focusPrompt()
+          }}
+          onHowItWorks={() => {
+            navigateMainTab('about')
+          }}
+        />
+      ) : null}
     </div>
   )
 }

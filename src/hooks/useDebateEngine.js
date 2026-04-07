@@ -1,199 +1,75 @@
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import { callGitHubModel } from '../api/githubModelsClient.js'
 import {
   AGENT_A_ROUND1_SYSTEM,
   AGENT_B_ROUND1_SYSTEM,
   AGENT_C_ROUND1_SYSTEM,
-  CROSS_REVIEW_SYSTEM,
-  FINAL_POSITION_SYSTEM,
-  REBUTTAL_SYSTEM,
-  SYNTHESIS_SYSTEM,
-  SYNTHESIS_VALIDATION_SYSTEM,
 } from '../api/systemPrompts.js'
 import { useForgeUiSettings } from '../context/ForgeSettingsContext.jsx'
-import { runAudit } from '../lib/auditDebate.js'
-import { semanticDivergence } from '../lib/cosineSimilarity.js'
+import {
+  AGENT_TIMEOUT_MESSAGE,
+  TIMEOUT_ERROR_MESSAGE,
+  isAgentTimeoutResponse,
+} from '../lib/debateConstants.js'
 import { clipInferenceText } from '../lib/clipInferenceText.js'
-import { extractReviewSectionAboutPeer } from '../lib/extractCrossReviewSection.js'
+import { semanticDivergence } from '../lib/cosineSimilarity.js'
 import { getEmbedding } from '../lib/getEmbedding.js'
 import { logDebate } from '../lib/logDebate.js'
-import { parseSynthesisOutput } from '../lib/parseSynthesisOutput.js'
-import {
-  buildSynthesisValidationUserMessage,
-  computeValidationStatus,
-  fallbackFlaggedValidation,
-  normalizeValidationRecord,
-  parseValidationJson,
-} from '../lib/synthesisValidation.js'
 import { useForge } from '../store/useForgeStore.js'
-
-/**
- * @param {import('react').Dispatch<unknown>} dispatch
- * @param {Parameters<typeof runAudit>[0]} snapshot
- */
-function scheduleDebateAudit(dispatch, snapshot) {
-  dispatch({ type: 'SET_AUDIT_LOADING', payload: true })
-  dispatch({ type: 'SET_AUDIT_ERROR', payload: null })
-  void (async () => {
-    try {
-      const result = await runAudit(snapshot)
-      dispatch({ type: 'SET_AUDIT', payload: result })
-    } catch (err) {
-      dispatch({
-        type: 'SET_AUDIT_ERROR',
-        payload:
-          err instanceof Error ? err.message : `Audit failed: ${String(err)}`,
-      })
-    } finally {
-      dispatch({ type: 'SET_AUDIT_LOADING', payload: false })
-    }
-  })()
-}
+import {
+  resumeFromReviews,
+  resumeFromRound1,
+  runPipelineAfterRound1,
+  runPipelineFromFinalsOnward,
+  scheduleDebateAudit,
+} from './debatePipeline.js'
 
 function pause(ms) {
   return new Promise((r) => setTimeout(r, ms))
 }
 
 /**
- * @param {'a' | 'b' | 'c'} target
- * @param {string} ra
- * @param {string} rb
- * @param {string} rc
- * @param {string} aRev
- * @param {string} bRev
- * @param {string} cRev
- * @param {{ agentA: { name: string }, agentB: { name: string }, agentC: { name: string } }} config
+ * @param {import('react').Dispatch<unknown>} dispatch
  */
-function buildRebuttalUserMessage(target, ra, rb, rc, aRev, bRev, cRev, config) {
-  const { agentA, agentB, agentC } = config
-  if (target === 'a') {
-    const sB = extractReviewSectionAboutPeer(bRev, agentA.name)
-    const sC = extractReviewSectionAboutPeer(cRev, agentA.name)
-    return `Your original response was:\n${ra}\n\n${agentB.name} reviewed your response and said:\n${sB}\n\n${agentC.name} reviewed your response and said:\n${sC}\n\nDo you maintain, modify, or concede your position?`
-  }
-  if (target === 'b') {
-    const sA = extractReviewSectionAboutPeer(aRev, agentB.name)
-    const sC = extractReviewSectionAboutPeer(cRev, agentB.name)
-    return `Your original response was:\n${rb}\n\n${agentA.name} reviewed your response and said:\n${sA}\n\n${agentC.name} reviewed your response and said:\n${sC}\n\nDo you maintain, modify, or concede your position?`
-  }
-  const sA = extractReviewSectionAboutPeer(aRev, agentC.name)
-  const sB = extractReviewSectionAboutPeer(bRev, agentC.name)
-  return `Your original response was:\n${rc}\n\n${agentA.name} reviewed your response and said:\n${sA}\n\n${agentB.name} reviewed your response and said:\n${sB}\n\nDo you maintain, modify, or concede your position?`
+function bump(dispatch) {
+  dispatch({ type: 'INCREMENT_PROGRESS_CALLS', payload: 1 })
 }
 
 /**
- * @param {string} prompt
- * @param {string} ra
- * @param {string} rb
- * @param {string} rc
- * @param {string} aRev
- * @param {string} bRev
- * @param {string} cRev
- * @param {string} rebA
- * @param {string} rebB
- * @param {string} rebC
- * @param {string} fa
- * @param {string} fb
- * @param {string} fc
- * @param {{ agentA: { name: string }, agentB: { name: string }, agentC: { name: string } }} config
+ * @template T
+ * @param {() => Promise<T>} fn
  */
-/**
- * Context for round 4 — everything except final positions (those are produced in this round).
- * @param {string} prompt
- * @param {string} ra
- * @param {string} rb
- * @param {string} rc
- * @param {string} aRev
- * @param {string} bRev
- * @param {string} cRev
- * @param {string} rebA
- * @param {string} rebB
- * @param {string} rebC
- * @param {{ agentA: { name: string }, agentB: { name: string }, agentC: { name: string } }} config
- */
-function buildFinalPositionUserMessage(
-  prompt,
-  ra,
-  rb,
-  rc,
-  aRev,
-  bRev,
-  cRev,
-  rebA,
-  rebB,
-  rebC,
-  config
-) {
-  const { agentA, agentB, agentC } = config
-  return [
-    `Original prompt:\n${prompt}`,
-    `=== ${agentA.name} (round 1) ===\n${ra}`,
-    `=== ${agentB.name} (round 1) ===\n${rb}`,
-    `=== ${agentC.name} (round 1) ===\n${rc}`,
-    `=== ${agentA.name} (cross-review) ===\n${aRev}`,
-    `=== ${agentB.name} (cross-review) ===\n${bRev}`,
-    `=== ${agentC.name} (cross-review) ===\n${cRev}`,
-    `=== ${agentA.name} (rebuttal) ===\n${rebA}`,
-    `=== ${agentB.name} (rebuttal) ===\n${rebB}`,
-    `=== ${agentC.name} (rebuttal) ===\n${rebC}`,
-  ].join('\n\n')
+async function tryModel(fn) {
+  try {
+    const value = await fn()
+    return { ok: true, value }
+  } catch (e) {
+    if (e instanceof Error && e.message === TIMEOUT_ERROR_MESSAGE) {
+      return { ok: false, timeout: true }
+    }
+    throw e
+  }
 }
 
-function buildFullSynthesisUserMessage(
-  prompt,
-  ra,
-  rb,
-  rc,
-  aRev,
-  bRev,
-  cRev,
-  rebA,
-  rebB,
-  rebC,
-  fa,
-  fb,
-  fc,
-  config
-) {
-  const { agentA, agentB, agentC } = config
-  return [
-    `Original prompt:\n${prompt}`,
-    `=== ${agentA.name} (round 1) ===\n${ra}`,
-    `=== ${agentB.name} (round 1) ===\n${rb}`,
-    `=== ${agentC.name} (round 1) ===\n${rc}`,
-    `=== ${agentA.name} (cross-review) ===\n${aRev}`,
-    `=== ${agentB.name} (cross-review) ===\n${bRev}`,
-    `=== ${agentC.name} (cross-review) ===\n${cRev}`,
-    `=== ${agentA.name} (rebuttal) ===\n${rebA}`,
-    `=== ${agentB.name} (rebuttal) ===\n${rebB}`,
-    `=== ${agentC.name} (rebuttal) ===\n${rebC}`,
-    `=== ${agentA.name} (final position) ===\n${fa}`,
-    `=== ${agentB.name} (final position) ===\n${fb}`,
-    `=== ${agentC.name} (final position) ===\n${fc}`,
-  ].join('\n\n')
-}
-
-/**
- * @param {'A' | 'B' | 'C'} forKey
- * @param {{ agentA: string,  agentB: string, agentC: string }} responses
- * @param {{ agentA: { name: string }, agentB: { name: string }, agentC: { name: string } }} config
- */
-function buildCrossReviewUserMessage(forKey, { agentA: a, agentB: b, agentC: c }, config) {
-  const { agentA, agentB, agentC } = config
-  const tail =
-    'Review both responses. For each: what did they get right, what would you challenge, what did they miss?'
-
-  if (forKey === 'A') {
-    return `Here are the two other responses to the prompt you just answered:\n\n=== ${agentB.name} responded: ===\n${b}\n\n=== ${agentC.name} responded: ===\n${c}\n\n${tail}`
+/** @param {string | null} stage */
+function stageLabel(stage) {
+  if (!stage) return 'last stage'
+  const map = {
+    round1: 'Round 1',
+    reviews: 'cross-review',
+    rebuttals: 'rebuttals',
+    finalPositions: 'final positions',
+    synthesis: 'synthesis',
+    audit: 'audit',
+    validation: 'validation',
   }
-  if (forKey === 'B') {
-    return `Here are the two other responses to the prompt you just answered:\n\n=== ${agentA.name} responded: ===\n${a}\n\n=== ${agentC.name} responded: ===\n${c}\n\n${tail}`
-  }
-  return `Here are the two other responses to the prompt you just answered:\n\n=== ${agentA.name} responded: ===\n${a}\n\n=== ${agentB.name} responded: ===\n${b}\n\n${tail}`
+  return map[stage] ?? String(stage)
 }
 
 export function useDebateEngine() {
-  const { dispatch } = useForge()
+  const { dispatch, state } = useForge()
+  const stateRef = useRef(state)
+  stateRef.current = state
   const { settings: uiSettings } = useForgeUiSettings()
 
   const runDebate = useCallback(
@@ -211,16 +87,30 @@ export function useDebateEngine() {
           type: 'SET_AGENT_THINKING',
           payload: { agent: 'a', startTime: tA0 },
         })
-        const ra = await callGitHubModel(
-          config.agentA.model,
-          [{ role: 'user', content: promptClipped }],
-          AGENT_A_ROUND1_SYSTEM,
-          { agentName: config.agentA.name }
-        )
-        dispatch({
-          type: 'SET_AGENT_DONE',
-          payload: { agent: 'a', response: ra, endTime: Date.now() },
-        })
+        let ra = AGENT_TIMEOUT_MESSAGE
+        {
+          const r = await tryModel(() =>
+            callGitHubModel(
+              config.agentA.model,
+              [{ role: 'user', content: promptClipped }],
+              AGENT_A_ROUND1_SYSTEM,
+              { agentName: config.agentA.name }
+            )
+          )
+          if (r.ok && 'value' in r) {
+            ra = r.value
+            dispatch({
+              type: 'SET_AGENT_DONE',
+              payload: { agent: 'a', response: ra, endTime: Date.now() },
+            })
+          } else {
+            dispatch({
+              type: 'SET_AGENT_TIMEOUT',
+              payload: { agent: 'a', endTime: Date.now() },
+            })
+          }
+          bump(dispatch)
+        }
 
         await pause(700)
         const tB0 = Date.now()
@@ -228,16 +118,30 @@ export function useDebateEngine() {
           type: 'SET_AGENT_THINKING',
           payload: { agent: 'b', startTime: tB0 },
         })
-        const rb = await callGitHubModel(
-          config.agentB.model,
-          [{ role: 'user', content: promptClipped }],
-          AGENT_B_ROUND1_SYSTEM,
-          { agentName: config.agentB.name }
-        )
-        dispatch({
-          type: 'SET_AGENT_DONE',
-          payload: { agent: 'b', response: rb, endTime: Date.now() },
-        })
+        let rb = AGENT_TIMEOUT_MESSAGE
+        {
+          const r = await tryModel(() =>
+            callGitHubModel(
+              config.agentB.model,
+              [{ role: 'user', content: promptClipped }],
+              AGENT_B_ROUND1_SYSTEM,
+              { agentName: config.agentB.name }
+            )
+          )
+          if (r.ok && 'value' in r) {
+            rb = r.value
+            dispatch({
+              type: 'SET_AGENT_DONE',
+              payload: { agent: 'b', response: rb, endTime: Date.now() },
+            })
+          } else {
+            dispatch({
+              type: 'SET_AGENT_TIMEOUT',
+              payload: { agent: 'b', endTime: Date.now() },
+            })
+          }
+          bump(dispatch)
+        }
 
         await pause(700)
         const tC0 = Date.now()
@@ -245,445 +149,264 @@ export function useDebateEngine() {
           type: 'SET_AGENT_THINKING',
           payload: { agent: 'c', startTime: tC0 },
         })
-        const rc = await callGitHubModel(
-          config.agentC.model,
-          [{ role: 'user', content: promptClipped }],
-          AGENT_C_ROUND1_SYSTEM,
-          { agentName: config.agentC.name }
-        )
-        dispatch({
-          type: 'SET_AGENT_DONE',
-          payload: { agent: 'c', response: rc, endTime: Date.now() },
-        })
-
-        const [embA, embB, embC] = await Promise.all([
-          getEmbedding(ra),
-          getEmbedding(rb),
-          getEmbedding(rc),
-        ])
-
-        const div_ab =
-          embA && embB ? semanticDivergence(embA, embB) : null
-        const div_ac =
-          embA && embC ? semanticDivergence(embA, embC) : null
-        const div_bc =
-          embB && embC ? semanticDivergence(embB, embC) : null
-
-        const divList = [div_ab, div_ac, div_bc].filter(
-          (v) => v != null && typeof v === 'number'
-        )
-        const average =
-          divList.length > 0
-            ? Math.round(
-                (divList.reduce((a, b) => a + b, 0) / divList.length) * 10000
-              ) / 10000
-            : 0
-        const ab = div_ab ?? 0
-        const ac = div_ac ?? 0
-        const bc = div_bc ?? 0
-
-        dispatch({
-          type: 'SET_DIVERGENCE',
-          payload: { ab, ac, bc, average },
-        })
-
-        const aReviewMsg = clipInferenceText(
-          buildCrossReviewUserMessage(
-            'A',
-            { agentA: ra, agentB: rb, agentC: rc },
-            config
+        let rc = AGENT_TIMEOUT_MESSAGE
+        {
+          const r = await tryModel(() =>
+            callGitHubModel(
+              config.agentC.model,
+              [{ role: 'user', content: promptClipped }],
+              AGENT_C_ROUND1_SYSTEM,
+              { agentName: config.agentC.name }
+            )
           )
-        )
-        const bReviewMsg = clipInferenceText(
-          buildCrossReviewUserMessage(
-            'B',
-            { agentA: ra, agentB: rb, agentC: rc },
-            config
-          )
-        )
-        const cReviewMsg = clipInferenceText(
-          buildCrossReviewUserMessage(
-            'C',
-            { agentA: ra, agentB: rb, agentC: rc },
-            config
-          )
-        )
-
-        dispatch({
-          type: 'SET_REVIEW_THINKING',
-          payload: { agent: 'a', startTime: Date.now() },
-        })
-        const aRev = await callGitHubModel(
-          config.agentA.model,
-          [{ role: 'user', content: aReviewMsg }],
-          CROSS_REVIEW_SYSTEM
-        )
-        dispatch({
-          type: 'SET_REVIEW_DONE',
-          payload: { agent: 'a', review: aRev, endTime: Date.now() },
-        })
-
-        await pause(700)
-        dispatch({
-          type: 'SET_REVIEW_THINKING',
-          payload: { agent: 'b', startTime: Date.now() },
-        })
-        const bRev = await callGitHubModel(
-          config.agentB.model,
-          [{ role: 'user', content: bReviewMsg }],
-          CROSS_REVIEW_SYSTEM
-        )
-        dispatch({
-          type: 'SET_REVIEW_DONE',
-          payload: { agent: 'b', review: bRev, endTime: Date.now() },
-        })
-
-        await pause(700)
-        dispatch({
-          type: 'SET_REVIEW_THINKING',
-          payload: { agent: 'c', startTime: Date.now() },
-        })
-        const cRev = await callGitHubModel(
-          config.agentC.model,
-          [{ role: 'user', content: cReviewMsg }],
-          CROSS_REVIEW_SYSTEM
-        )
-        dispatch({
-          type: 'SET_REVIEW_DONE',
-          payload: { agent: 'c', review: cRev, endTime: Date.now() },
-        })
-
-        await pause(700)
-        dispatch({
-          type: 'SET_REBUTTAL_THINKING',
-          payload: { agent: 'a', startTime: Date.now() },
-        })
-        const rebA = await callGitHubModel(
-          config.agentA.model,
-          [
-            {
-              role: 'user',
-              content: clipInferenceText(
-                buildRebuttalUserMessage(
-                  'a',
-                  ra,
-                  rb,
-                  rc,
-                  aRev,
-                  bRev,
-                  cRev,
-                  config
-                )
-              ),
-            },
-          ],
-          REBUTTAL_SYSTEM
-        )
-        dispatch({
-          type: 'SET_REBUTTAL_DONE',
-          payload: { agent: 'a', rebuttal: rebA, endTime: Date.now() },
-        })
-
-        await pause(700)
-        dispatch({
-          type: 'SET_REBUTTAL_THINKING',
-          payload: { agent: 'b', startTime: Date.now() },
-        })
-        const rebB = await callGitHubModel(
-          config.agentB.model,
-          [
-            {
-              role: 'user',
-              content: clipInferenceText(
-                buildRebuttalUserMessage(
-                  'b',
-                  ra,
-                  rb,
-                  rc,
-                  aRev,
-                  bRev,
-                  cRev,
-                  config
-                )
-              ),
-            },
-          ],
-          REBUTTAL_SYSTEM
-        )
-        dispatch({
-          type: 'SET_REBUTTAL_DONE',
-          payload: { agent: 'b', rebuttal: rebB, endTime: Date.now() },
-        })
-
-        await pause(700)
-        dispatch({
-          type: 'SET_REBUTTAL_THINKING',
-          payload: { agent: 'c', startTime: Date.now() },
-        })
-        const rebC = await callGitHubModel(
-          config.agentC.model,
-          [
-            {
-              role: 'user',
-              content: clipInferenceText(
-                buildRebuttalUserMessage(
-                  'c',
-                  ra,
-                  rb,
-                  rc,
-                  aRev,
-                  bRev,
-                  cRev,
-                  config
-                )
-              ),
-            },
-          ],
-          REBUTTAL_SYSTEM
-        )
-        dispatch({
-          type: 'SET_REBUTTAL_DONE',
-          payload: { agent: 'c', rebuttal: rebC, endTime: Date.now() },
-        })
-
-        const finalUserBase = clipInferenceText(
-          buildFinalPositionUserMessage(
-            userPrompt,
-            ra,
-            rb,
-            rc,
-            aRev,
-            bRev,
-            cRev,
-            rebA,
-            rebB,
-            rebC,
-            config
-          )
-        )
-
-        await pause(700)
-        dispatch({
-          type: 'SET_FINAL_THINKING',
-          payload: { agent: 'a', startTime: Date.now() },
-        })
-        const fa = await callGitHubModel(
-          config.agentA.model,
-          [{ role: 'user', content: finalUserBase }],
-          FINAL_POSITION_SYSTEM
-        )
-        dispatch({
-          type: 'SET_FINAL_DONE',
-          payload: { agent: 'a', position: fa, endTime: Date.now() },
-        })
-
-        await pause(700)
-        dispatch({
-          type: 'SET_FINAL_THINKING',
-          payload: { agent: 'b', startTime: Date.now() },
-        })
-        const fb = await callGitHubModel(
-          config.agentB.model,
-          [{ role: 'user', content: finalUserBase }],
-          FINAL_POSITION_SYSTEM
-        )
-        dispatch({
-          type: 'SET_FINAL_DONE',
-          payload: { agent: 'b', position: fb, endTime: Date.now() },
-        })
-
-        await pause(700)
-        dispatch({
-          type: 'SET_FINAL_THINKING',
-          payload: { agent: 'c', startTime: Date.now() },
-        })
-        const fc = await callGitHubModel(
-          config.agentC.model,
-          [{ role: 'user', content: finalUserBase }],
-          FINAL_POSITION_SYSTEM
-        )
-        dispatch({
-          type: 'SET_FINAL_DONE',
-          payload: { agent: 'c', position: fc, endTime: Date.now() },
-        })
-
-        const shouldSynthesize =
-          uiSettings.synthesisMode === 'always' || average > 0.4
-
-        const debateBase = {
-          prompt: userPrompt.trim(),
-          rounds: [{ roundNum: 1, agentA: ra, agentB: rb, agentC: rc }],
-          reviews: [{ aReviews: aRev, bReviews: bRev, cReviews: cRev }],
-          rebuttals: { a: rebA, b: rebB, c: rebC },
-          finalPositions: { a: fa, b: fb, c: fc },
-          divergenceScores: [{ ab, ac, bc, average }],
-          config,
-          embedding_a: embA,
-          embedding_b: embB,
-          embedding_c: embC,
+          if (r.ok && 'value' in r) {
+            rc = r.value
+            dispatch({
+              type: 'SET_AGENT_DONE',
+              payload: { agent: 'c', response: rc, endTime: Date.now() },
+            })
+          } else {
+            dispatch({
+              type: 'SET_AGENT_TIMEOUT',
+              payload: { agent: 'c', endTime: Date.now() },
+            })
+          }
+          bump(dispatch)
         }
 
-        if (!shouldSynthesize) {
-          dispatch({
-            type: 'SET_SYNTHESIS',
-            payload: {
-              output:
-                '*Synthesis skipped:* your setting only runs synthesis when **average semantic divergence** (embedding distance) is above **40%**. This run was below that threshold — use the full debate transcript (rounds 1–4) as the final output.',
-              attributions: { a: '', b: '', c: '' },
-              rationale: '',
-              concessions: [],
-              heldFirm: [],
-            },
-          })
-          dispatch({ type: 'SET_STATUS', payload: 'complete' })
-          void logDebate({
-            ...debateBase,
-            synthesis: {
-              output:
-                '*Synthesis skipped:* your setting only runs synthesis when **average semantic divergence** (embedding distance) is above **40%**. This run was below that threshold — use the full debate transcript (rounds 1–4) as the final output.',
-              attributions: { a: '', b: '', c: '' },
-              concessions: [],
-              heldFirm: [],
-            },
-          })
-          scheduleDebateAudit(dispatch, {
-            config,
-            prompt: userPrompt.trim(),
-            round1: { agentA: ra, agentB: rb, agentC: rc },
-            reviews: { aReviews: aRev, bReviews: bRev, cReviews: cRev },
-            synthesis: {
-              output:
-                '*Synthesis skipped:* your setting only runs synthesis when **average semantic divergence** (embedding distance) is above **40%**. This run was below that threshold — use the full debate transcript (rounds 1–4) as the final output.',
-            },
-          })
-          return
+        if (
+          isAgentTimeoutResponse(ra) &&
+          isAgentTimeoutResponse(rb) &&
+          isAgentTimeoutResponse(rc)
+        ) {
+          throw new Error(
+            'All three models timed out in round 1. Check your connection or try again.'
+          )
         }
 
-        const synthesisUser = clipInferenceText(
-          buildFullSynthesisUserMessage(
-            userPrompt,
-            ra,
-            rb,
-            rc,
-            aRev,
-            bRev,
-            cRev,
-            rebA,
-            rebB,
-            rebC,
-            fa,
-            fb,
-            fc,
-            config
-          )
-        )
-
-        await pause(700)
-        const synthesisRaw = await callGitHubModel(
-          config.agentA.model,
-          [{ role: 'user', content: synthesisUser }],
-          SYNTHESIS_SYSTEM
-        )
-
-        const parsed = parseSynthesisOutput(synthesisRaw, config)
-
         dispatch({
-          type: 'SET_SYNTHESIS',
-          payload: {
-            output: parsed.output,
-            attributions: parsed.attributions,
-            rationale: parsed.rationale,
-            concessions: parsed.concessions,
-            heldFirm: parsed.heldFirm,
-          },
+          type: 'SET_LAST_COMPLETED_STAGE',
+          payload: { stage: 'round1' },
         })
 
-        dispatch({
-          type: 'SET_VALIDATION',
-          payload: { status: 'pending', b: null, c: null },
-        })
-
-        const msgB = clipInferenceText(
-          buildSynthesisValidationUserMessage(
-            userPrompt.trim(),
-            rb,
-            parsed.output
-          ),
-          48_000
-        )
-        const msgC = clipInferenceText(
-          buildSynthesisValidationUserMessage(
-            userPrompt.trim(),
-            rc,
-            parsed.output
-          ),
-          48_000
-        )
-
-        const [rawB, rawC] = await Promise.all([
-          callGitHubModel(
-            config.agentB.model,
-            [{ role: 'user', content: msgB }],
-            SYNTHESIS_VALIDATION_SYSTEM,
-            { agentName: config.agentB.name, maxTokens: 1024 }
-          ),
-          callGitHubModel(
-            config.agentC.model,
-            [{ role: 'user', content: msgC }],
-            SYNTHESIS_VALIDATION_SYSTEM,
-            { agentName: config.agentC.name, maxTokens: 1024 }
-          ),
-        ])
-
-        const normB =
-          normalizeValidationRecord(parseValidationJson(rawB)) ??
-          fallbackFlaggedValidation()
-        const normC =
-          normalizeValidationRecord(parseValidationJson(rawC)) ??
-          fallbackFlaggedValidation()
-        const validationStatus = computeValidationStatus(normB, normC)
-
-        dispatch({
-          type: 'SET_VALIDATION',
-          payload: {
-            b: normB,
-            c: normC,
-            status: validationStatus,
-          },
-        })
-
-        dispatch({ type: 'SET_STATUS', payload: 'complete' })
-        void logDebate({
-          ...debateBase,
-          synthesis: {
-            output: parsed.output,
-            attributions: parsed.attributions,
-            rationale: parsed.rationale,
-            concessions: parsed.concessions,
-            heldFirm: parsed.heldFirm,
-          },
-          validation: {
-            b: normB,
-            c: normC,
-            status: validationStatus,
-          },
-        })
-        scheduleDebateAudit(dispatch, {
+        await runPipelineAfterRound1({
+          dispatch,
+          uiSettings,
+          userPrompt,
           config,
-          prompt: userPrompt.trim(),
-          round1: { agentA: ra, agentB: rb, agentC: rc },
-          reviews: { aReviews: aRev, bReviews: bRev, cReviews: cRev },
-          synthesis: { output: parsed.output },
+          ra,
+          rb,
+          rc,
         })
       } catch (err) {
         const message =
           err instanceof Error ? err.message : `Debate failed: ${String(err)}`
-        dispatch({ type: 'SET_ERROR', payload: message })
-        dispatch({ type: 'SET_STATUS', payload: 'error' })
+        const snap = stateRef.current
+        const lastStage = snap.lastCompletedStage
+        if (lastStage) {
+          dispatch({ type: 'SET_PARTIAL', payload: true })
+          dispatch({ type: 'SET_STATUS', payload: 'partial' })
+          dispatch({ type: 'SET_ERROR', payload: null })
+          void logDebate({
+            prompt: snap.prompt,
+            rounds: snap.rounds,
+            reviews: snap.reviews,
+            rebuttals: snap.rebuttals,
+            finalPositions: snap.finalPositions,
+            divergenceScores: snap.divergenceScores,
+            synthesis: snap.synthesis,
+            validation: snap.validation,
+            config: snap.config,
+            is_partial: true,
+            last_completed_stage: lastStage,
+            timeout_count: snap.timeoutCount,
+          })
+        } else {
+          dispatch({ type: 'SET_ERROR', payload: message })
+          dispatch({ type: 'SET_STATUS', payload: 'error' })
+        }
       }
     },
     [dispatch, uiSettings.synthesisMode]
   )
 
-  return { runDebate }
+  const resumeDebate = useCallback(
+    async (/** @type {string} */ fromStage) => {
+      const snap = state
+      const userPrompt = snap.prompt
+      const config = snap.config
+      const r0 = snap.rounds.find((r) => r.roundNum === 1)
+      const ra = String(r0?.agentA ?? snap.agentResponses?.a ?? '')
+      const rb = String(r0?.agentB ?? snap.agentResponses?.b ?? '')
+      const rc = String(r0?.agentC ?? snap.agentResponses?.c ?? '')
+      const rev = snap.reviews.find((r) => r.roundNum === 1)
+      const aRev = String(rev?.aReviews ?? snap.reviewResponses?.a ?? '')
+      const bRev = String(rev?.bReviews ?? snap.reviewResponses?.b ?? '')
+      const cRev = String(rev?.cReviews ?? snap.reviewResponses?.c ?? '')
+      const rbRef = snap.rebuttals ?? { a: '', b: '', c: '' }
+      const rebA = String(rbRef.a ?? '')
+      const rebB = String(rbRef.b ?? '')
+      const rebC = String(rbRef.c ?? '')
+      const fp = snap.finalPositions ?? { a: '', b: '', c: '' }
+      const fa = String(fp.a ?? '')
+      const fb = String(fp.b ?? '')
+      const fc = String(fp.c ?? '')
+
+      dispatch({ type: 'RESUME_DEBATE' })
+
+      try {
+        if (fromStage === 'round1') {
+          await resumeFromRound1({
+            dispatch,
+            uiSettings,
+            userPrompt,
+            config,
+            ra,
+            rb,
+            rc,
+          })
+          return
+        }
+        if (fromStage === 'reviews') {
+          await resumeFromReviews({
+            dispatch,
+            uiSettings,
+            userPrompt,
+            config,
+            ra,
+            rb,
+            rc,
+            aRev,
+            bRev,
+            cRev,
+          })
+          return
+        }
+        if (fromStage === 'rebuttals') {
+          const [embA, embB, embC] = await Promise.all([
+            getEmbedding(ra),
+            getEmbedding(rb),
+            getEmbedding(rc),
+          ])
+          const div_ab = embA && embB ? semanticDivergence(embA, embB) : null
+          const div_ac = embA && embC ? semanticDivergence(embA, embC) : null
+          const div_bc = embB && embC ? semanticDivergence(embB, embC) : null
+          const divList = [div_ab, div_ac, div_bc].filter(
+            (v) => v != null && typeof v === 'number'
+          )
+          const average =
+            divList.length > 0
+              ? Math.round(
+                  (divList.reduce((a, b) => a + b, 0) / divList.length) * 10000
+                ) / 10000
+              : 0
+          const ab = div_ab ?? 0
+          const ac = div_ac ?? 0
+          const bc = div_bc ?? 0
+          dispatch({
+            type: 'SET_DIVERGENCE',
+            payload: { ab, ac, bc, average },
+          })
+          await runPipelineFromFinalsOnward({
+            dispatch,
+            uiSettings,
+            userPrompt,
+            config,
+            ra,
+            rb,
+            rc,
+            aRev,
+            bRev,
+            cRev,
+            rebA,
+            rebB,
+            rebC,
+            embA,
+            embB,
+            embC,
+            ab,
+            ac,
+            bc,
+            average,
+          })
+          return
+        }
+        if (fromStage === 'finalPositions') {
+          const [embA, embB, embC] = await Promise.all([
+            getEmbedding(ra),
+            getEmbedding(rb),
+            getEmbedding(rc),
+          ])
+          const div_ab = embA && embB ? semanticDivergence(embA, embB) : null
+          const div_ac = embA && embC ? semanticDivergence(embA, embC) : null
+          const div_bc = embB && embC ? semanticDivergence(embB, embC) : null
+          const divList = [div_ab, div_ac, div_bc].filter(
+            (v) => v != null && typeof v === 'number'
+          )
+          const average =
+            divList.length > 0
+              ? Math.round(
+                  (divList.reduce((a, b) => a + b, 0) / divList.length) * 10000
+                ) / 10000
+              : 0
+          const ab = div_ab ?? 0
+          const ac = div_ac ?? 0
+          const bc = div_bc ?? 0
+          dispatch({
+            type: 'SET_DIVERGENCE',
+            payload: { ab, ac, bc, average },
+          })
+          await runPipelineFromFinalsOnward({
+            dispatch,
+            uiSettings,
+            userPrompt,
+            config,
+            ra,
+            rb,
+            rc,
+            aRev,
+            bRev,
+            cRev,
+            rebA,
+            rebB,
+            rebC,
+            embA,
+            embB,
+            embC,
+            ab,
+            ac,
+            bc,
+            average,
+            skipFinalModelCalls: true,
+            precomputedFinals: { a: fa, b: fb, c: fc },
+          })
+          return
+        }
+        if (fromStage === 'synthesis') {
+          const out = snap.synthesis?.output
+            ? String(snap.synthesis.output)
+            : ''
+          if (!out) {
+            throw new Error('No synthesis output to resume from.')
+          }
+          scheduleDebateAudit(dispatch, {
+            config,
+            prompt: userPrompt.trim(),
+            round1: { agentA: ra, agentB: rb, agentC: rc },
+            reviews: { aReviews: aRev, bReviews: bRev, cReviews: cRev },
+            synthesis: { output: out },
+          })
+          dispatch({ type: 'SET_STATUS', payload: 'complete' })
+        }
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : `Resume failed: ${String(e)}`
+        dispatch({ type: 'SET_ERROR', payload: message })
+        dispatch({ type: 'SET_STATUS', payload: 'error' })
+      }
+    },
+    [dispatch, state, uiSettings]
+  )
+
+  return { runDebate, resumeDebate, stageLabel }
 }

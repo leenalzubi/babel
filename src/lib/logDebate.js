@@ -72,10 +72,14 @@ export async function logDebate(state) {
       Array.isArray(state.rounds) && state.rounds.length > 0
         ? state.rounds[0]
         : null
+    const isPartial = Boolean(state.is_partial)
     const ar = state.agentResponses?.a ?? r0?.agentA
     const br = state.agentResponses?.b ?? r0?.agentB
     const cr = state.agentResponses?.c ?? r0?.agentC
-    if (ar == null || br == null || cr == null) {
+    if (
+      !isPartial &&
+      (ar == null || br == null || cr == null)
+    ) {
       console.warn(
         '[logDebate] Skipping Supabase insert: missing round 1 agent response(s)'
       )
@@ -122,7 +126,19 @@ export async function logDebate(state) {
       val && typeof val.status === 'string' ? val.status : null
     const bias_flagged = validation_status === 'flagged'
 
+    const lastCompletedStage =
+      typeof state.last_completed_stage === 'string'
+        ? state.last_completed_stage
+        : null
+    const timeoutCount =
+      typeof state.timeout_count === 'number' && Number.isFinite(state.timeout_count)
+        ? Math.max(0, Math.round(state.timeout_count))
+        : null
+
     const insertData = {
+      is_partial: isPartial,
+      last_completed_stage: lastCompletedStage,
+      timeout_count: timeoutCount,
       prompt_length,
       prompt_preview,
       divergence_ab,

@@ -1,8 +1,10 @@
 import { memo, useMemo } from 'react'
 import { Gavel } from 'lucide-react'
+import AgentTimeoutNotice from './AgentTimeoutNotice.jsx'
 import AgentResponseBody from './AgentResponseBody.jsx'
 import AgentThinking from './AgentThinking.jsx'
 import AgentTimer from './AgentTimer.jsx'
+import { isAgentTimeoutResponse } from '../lib/debateConstants.js'
 
 const replyMd =
   'max-w-none text-[17px] leading-[1.85] text-[var(--text-secondary)] [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:text-[var(--text-primary)]'
@@ -83,6 +85,9 @@ function FinalColumn({ agentSpec, text, finalTimer, totalMs }) {
     finalTimer.startTime != null && finalTimer.endTime == null
 
   if (hasText) {
+    if (isAgentTimeoutResponse(text)) {
+      return <AgentTimeoutNotice agentName={agentSpec.name} />
+    }
     return (
       <div
         role="region"
