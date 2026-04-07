@@ -240,9 +240,16 @@ export function useDebateEngine() {
           dispatch({ type: 'SET_STATUS', payload: 'complete' })
           void logDebate({
             prompt: userPrompt.trim(),
-            rounds: [{ roundNum: 1 }],
+            rounds: [
+              { roundNum: 1, agentA: ra, agentB: rb, agentC: rc },
+            ],
+            reviews: [{ aReviews: aRev, bReviews: bRev, cReviews: cRev }],
             divergenceScores: [{ ab, ac, bc, average }],
-            synthesis: { attributions: { a: '', b: '', c: '' } },
+            synthesis: {
+              output:
+                '*Synthesis skipped:* your setting only runs synthesis when **average pairwise divergence** is above **40%**. This run was below that threshold — use the round responses and cross-reviews as the final output.',
+              attributions: { a: '', b: '', c: '' },
+            },
             config,
           })
           return
@@ -282,9 +289,16 @@ export function useDebateEngine() {
         dispatch({ type: 'SET_STATUS', payload: 'complete' })
         void logDebate({
           prompt: userPrompt.trim(),
-          rounds: [{ roundNum: 1 }],
+          rounds: [
+            { roundNum: 1, agentA: ra, agentB: rb, agentC: rc },
+          ],
+          reviews: [{ aReviews: aRev, bReviews: bRev, cReviews: cRev }],
           divergenceScores: [{ ab, ac, bc, average }],
-          synthesis: { attributions: parsed.attributions },
+          synthesis: {
+            output: parsed.output,
+            attributions: parsed.attributions,
+            rationale: parsed.rationale,
+          },
           config,
         })
       } catch (err) {

@@ -1,3 +1,4 @@
+import { analyseDebate } from './analyseDebate.js'
 import { supabase } from './supabaseClient.js'
 
 /**
@@ -61,6 +62,8 @@ export async function logDebate(state) {
     const model_b = typeof agentB.model === 'string' ? agentB.model : null
     const model_c = typeof agentC.model === 'string' ? agentC.model : null
 
+    const analysis = analyseDebate(state)
+
     const insertData = {
       prompt_length,
       prompt_preview,
@@ -73,6 +76,7 @@ export async function logDebate(state) {
       model_a,
       model_b,
       model_c,
+      ...analysis,
     }
 
     console.log('Attempting Supabase insert:', insertData)

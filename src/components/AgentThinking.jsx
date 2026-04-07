@@ -52,14 +52,15 @@ export default function AgentThinking({
       role="region"
       aria-label={regionLabel}
       aria-busy="true"
-      className="relative flex flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-surface)]"
+      className="relative flex flex-col overflow-hidden rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)]"
       style={{
-        borderLeftWidth: 4,
-        borderLeftColor: borderColor,
+        borderTopWidth: 2,
+        borderTopStyle: 'solid',
+        borderTopColor: borderColor,
       }}
     >
       <div
-        className={`relative z-[1] flex items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-raised)] ${headerPad}`}
+        className={`relative z-[1] flex items-center gap-2 border-b border-dashed border-[var(--border)] bg-transparent ${headerPad}`}
       >
         {dotClass && (
           <span

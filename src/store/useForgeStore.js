@@ -22,17 +22,17 @@ function createInitialState() {
       agentA: {
         name: 'GPT-4o mini',
         model: 'openai/gpt-4o-mini',
-        color: '#10A37F',
+        color: '#1A4A6B',
       },
       agentB: {
         name: 'Phi-4 Reasoning',
         model: 'microsoft/phi-4-reasoning',
-        color: '#0078D4',
+        color: '#2D5A3D',
       },
       agentC: {
         name: 'Mistral Small',
         model: 'mistral-ai/mistral-small-2503',
-        color: '#FF7000',
+        color: '#6B3D1A',
       },
     },
   }

@@ -37,13 +37,13 @@ const DEFAULT_SCORES = { ab: 0, ac: 0, bc: 0, average: 0 }
 
 function HeaderAgentPill({ name, color }) {
   return (
-    <div className="inline-flex max-w-[140px] items-center gap-2 truncate rounded-full border border-[var(--border)] bg-[var(--bg-surface)] py-1.5 pl-2.5 pr-3 shadow-forge-card sm:max-w-none">
+    <div className="inline-flex max-w-[160px] items-center gap-2 truncate sm:max-w-none">
       <span
-        className="h-2 w-2 shrink-0 rounded-full"
+        className="h-1.5 w-1.5 shrink-0 rounded-full"
         style={{ backgroundColor: color }}
         aria-hidden
       />
-      <span className="truncate font-mono text-[10px] font-semibold text-[var(--text-primary)]">
+      <span className="truncate font-mono text-[10px] font-medium text-[var(--text-primary)]">
         {name}
       </span>
     </div>
@@ -138,10 +138,13 @@ export default function App() {
 
   const mainMobilePt = showWorkflowSidebar
     ? 'pt-[calc(5.25rem+env(safe-area-inset-top,0px))]'
-    : 'pt-[calc(1rem+env(safe-area-inset-top,0px))]'
+    : 'pt-0'
   const headerStickyTopMobile = showWorkflowSidebar
     ? 'top-[calc(5.25rem+env(safe-area-inset-top,0px))]'
     : 'top-0'
+  const headerPaddingY = showWorkflowSidebar
+    ? 'py-4 md:pt-10 md:pb-5'
+    : 'pt-[calc(1rem+env(safe-area-inset-top,0px))] pb-4 md:pt-10 md:pb-5'
   const mainMdPr =
     showWorkflowSidebar && !workflowSidebarCollapsed
       ? 'md:pr-[272px]'
@@ -153,13 +156,13 @@ export default function App() {
   return (
     <div className="app-shell relative flex min-h-dvh w-full flex-row bg-[var(--bg-base)] text-[var(--text-primary)]">
       <main
-        className={`main-content relative z-[2] flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-4 pb-16 sm:px-6 md:min-h-0 md:pb-20 md:pl-10 md:pt-10 ${mainMobilePt} ${mainMdPr}`}
+        className={`main-content relative z-[2] flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-4 pb-16 sm:px-6 md:min-h-0 md:pb-20 md:pl-10 md:pt-0 ${mainMobilePt} ${mainMdPr}`}
       >
         <header
-          className={`sticky z-20 -mx-4 mb-8 border-b border-[var(--border)] bg-[var(--bg-surface)] px-4 py-4 shadow-forge-card sm:-mx-6 sm:px-6 md:top-0 md:-mx-10 md:mb-10 md:px-10 md:py-5 ${headerStickyTopMobile}`}
+          className={`sticky z-20 -mx-4 mb-8 border-b border-[var(--border)] bg-[var(--bg-base)] px-4 sm:-mx-6 sm:px-6 md:top-0 md:-mx-10 md:mb-10 md:px-10 ${headerPaddingY} ${headerStickyTopMobile}`}
         >
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <span className="font-mono text-[11px] font-semibold tracking-[0.28em] text-[var(--text-primary)]">
+            <span className="font-display text-2xl font-normal tracking-[0.12em] text-[var(--text-primary)]">
               BABEL
             </span>
             <div className="order-3 flex w-full flex-wrap items-center justify-center gap-2 md:order-none md:flex-1 md:justify-end md:pr-4">
@@ -170,7 +173,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setSettingsOpen(true)}
-              className="rounded-forge-card order-2 border border-[var(--border)] bg-[var(--bg-surface)] p-2.5 text-[var(--text-secondary)] shadow-forge-card transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] md:order-none"
+              className="order-2 rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] p-2.5 text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] md:order-none"
               aria-label="Open settings"
             >
               <Settings className="h-4 w-4" aria-hidden />
@@ -179,17 +182,17 @@ export default function App() {
         </header>
 
         <nav
-          className="-mx-4 mb-8 flex justify-center border-b border-[var(--border)] bg-[var(--bg-surface)] px-4 pb-4 sm:-mx-6 sm:px-6 md:-mx-10 md:justify-start md:px-10"
+          className="-mx-4 mb-8 flex justify-center border-b border-[var(--border)] bg-[var(--bg-base)] px-4 pb-4 sm:-mx-6 sm:px-6 md:-mx-10 md:justify-start md:px-10"
           aria-label="Main views"
         >
-          <div className="inline-flex max-w-full flex-wrap justify-center gap-1 rounded-full border border-[var(--border)] bg-[var(--bg-raised)] p-1 shadow-forge-card">
+          <div className="inline-flex max-w-full flex-wrap justify-center gap-0.5 rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] p-0.5">
             <button
               type="button"
               onClick={() => setMainTab('forge')}
               aria-pressed={mainTab === 'forge'}
-              className={`rounded-full px-3 py-2 font-mono text-xs font-semibold transition sm:px-4 ${
+              className={`rounded-[4px] px-3 py-2 font-mono text-xs font-semibold transition sm:px-4 ${
                 mainTab === 'forge'
-                  ? 'bg-[var(--accent-forge)] text-white shadow-md'
+                  ? 'bg-[var(--accent-forge)] text-white'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -199,9 +202,9 @@ export default function App() {
               type="button"
               onClick={() => setMainTab('findings')}
               aria-pressed={mainTab === 'findings'}
-              className={`rounded-full px-3 py-2 font-mono text-xs font-semibold transition sm:px-4 ${
+              className={`rounded-[4px] px-3 py-2 font-mono text-xs font-semibold transition sm:px-4 ${
                 mainTab === 'findings'
-                  ? 'bg-[var(--accent-forge)] text-white shadow-md'
+                  ? 'bg-[var(--accent-forge)] text-white'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -211,9 +214,9 @@ export default function App() {
               type="button"
               onClick={() => setMainTab('about')}
               aria-pressed={mainTab === 'about'}
-              className={`rounded-full px-3 py-2 font-mono text-xs font-semibold transition sm:px-4 ${
+              className={`rounded-[4px] px-3 py-2 font-mono text-xs font-semibold transition sm:px-4 ${
                 mainTab === 'about'
-                  ? 'bg-[var(--accent-forge)] text-white shadow-md'
+                  ? 'bg-[var(--accent-forge)] text-white'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -236,13 +239,6 @@ export default function App() {
                 onReset={handleReset}
                 disabled={running}
               />
-              <p
-                className="mt-4 max-w-2xl font-mono text-[10px] leading-relaxed text-[var(--text-muted)]"
-                role="note"
-              >
-                By running a debate you consent to contributing anonymously to
-                this dataset.
-              </p>
             </div>
 
             {running ? <LiveAgentStrip state={state} /> : null}
@@ -296,7 +292,7 @@ export default function App() {
                   <Suspense
                     fallback={
                       <div
-                        className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] px-6 py-12 text-center font-mono text-xs text-[var(--text-muted)] shadow-forge-card"
+                        className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] px-6 py-12 text-center font-mono text-xs text-[var(--text-muted)]"
                         role="status"
                         aria-live="polite"
                       >

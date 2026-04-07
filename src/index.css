@@ -6,10 +6,16 @@ body {
   background-color: var(--bg-base);
   color: var(--text-primary);
   font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.85;
+}
+
+.font-display {
+  font-family: var(--font-display);
 }
 
 .shadow-forge-card {
-  box-shadow: var(--card-shadow);
+  box-shadow: none;
 }
 
 .rounded-forge-card {
@@ -64,24 +70,19 @@ body {
   animation: live-dot-pulse 1s ease-in-out infinite;
 }
 
-@keyframes shimmer-slide {
-  0% {
-    background-position: 120% 0;
-  }
+@keyframes manuscript-shimmer {
+  0%,
   100% {
-    background-position: -120% 0;
+    opacity: 0.82;
+  }
+  50% {
+    opacity: 1;
   }
 }
 
 .agent-thinking-shimmer {
-  background: linear-gradient(
-    100deg,
-    transparent 28%,
-    rgba(0, 0, 0, 0.035) 48%,
-    transparent 68%
-  );
-  background-size: 240% 100%;
-  animation: shimmer-slide 2.2s ease-in-out infinite;
+  background-color: var(--bg-raised);
+  animation: manuscript-shimmer 2.2s ease-in-out infinite;
 }
 
 @keyframes run-banner-enter {

@@ -15,7 +15,7 @@ export default function RunStatusBanner({ step }) {
       key={step}
       role="status"
       aria-live="polite"
-      className="run-status-banner mb-6 rounded-forge-card border border-[var(--accent-forge)]/35 bg-[color-mix(in_srgb,var(--accent-forge)_10%,white)] px-4 py-3 font-mono text-xs text-[var(--text-primary)] shadow-forge-card"
+      className="run-status-banner mb-6 rounded-forge-card border border-[var(--accent-forge)]/40 bg-[color-mix(in_srgb,var(--highlight)_45%,var(--bg-surface))] px-4 py-3 font-mono text-xs text-[var(--text-primary)]"
     >
       {LABELS[step] ?? step}
     </div>

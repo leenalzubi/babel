@@ -1,5 +1,3 @@
-import { Anvil, Flame } from 'lucide-react'
-
 const EXAMPLES = [
   'Is the ocean more dangerous than it was 100 years ago, or have we just gotten better at measuring the risk?',
   'At what point does a field of study become too specialized to be useful?',
@@ -7,20 +5,88 @@ const EXAMPLES = [
   'Is expertise overrated in an age where information is free?',
 ]
 
+function ThreeBubblesIllustration() {
+  return (
+    <svg
+      width={80}
+      height={64}
+      viewBox="0 0 80 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="shrink-0"
+      aria-hidden
+    >
+      <rect
+        x="0"
+        y="4"
+        width="36"
+        height="24"
+        rx="8"
+        fill="#1A4A6B"
+        fillOpacity="0.15"
+        stroke="#1A4A6B"
+        strokeWidth="1.5"
+      />
+      <polygon
+        points="8,28 6,36 16,28"
+        fill="#1A4A6B"
+        fillOpacity="0.15"
+        stroke="#1A4A6B"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <rect
+        x="44"
+        y="4"
+        width="36"
+        height="24"
+        rx="8"
+        fill="#2D5A3D"
+        fillOpacity="0.15"
+        stroke="#2D5A3D"
+        strokeWidth="1.5"
+      />
+      <polygon
+        points="64,28 62,36 72,28"
+        fill="#2D5A3D"
+        fillOpacity="0.15"
+        stroke="#2D5A3D"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <rect
+        x="22"
+        y="18"
+        width="36"
+        height="24"
+        rx="8"
+        fill="#6B3D1A"
+        fillOpacity="0.15"
+        stroke="#6B3D1A"
+        strokeWidth="1.5"
+      />
+      <polygon
+        points="30,42 28,50 38,42"
+        fill="#6B3D1A"
+        fillOpacity="0.15"
+        stroke="#6B3D1A"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 /**
  * @param {{ onPickExample: (text: string) => void }} props
  */
 export default function ForgeEmptyState({ onPickExample }) {
   return (
     <div className="mx-auto flex max-w-lg flex-col items-center px-4 py-12 text-center md:py-16">
-      <div className="mb-6 flex items-center justify-center gap-2 text-[var(--accent-forge)]">
-        <Anvil className="h-14 w-14 md:h-16 md:w-16" strokeWidth={1.25} aria-hidden />
-        <Flame className="h-12 w-12 md:h-14 md:w-14" strokeWidth={1.25} aria-hidden />
+      <div className="mb-6 flex items-center justify-center">
+        <ThreeBubblesIllustration />
       </div>
-      <h2 className="font-mono text-xl font-bold tracking-tight text-[var(--text-primary)] md:text-2xl">
-        Welcome to Babel
-      </h2>
-      <p className="mt-3 max-w-md font-sans text-sm leading-relaxed text-[var(--text-secondary)]">
+      <p className="mt-3 max-w-md text-sm italic leading-relaxed text-[var(--text-secondary)]">
         Enter a prompt above. Three agents debate it, cross-review each other, and
         synthesize a refined answer.
       </p>
@@ -34,7 +100,7 @@ export default function ForgeEmptyState({ onPickExample }) {
               key={ex}
               type="button"
               onClick={() => onPickExample(ex)}
-              className="rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2.5 text-left font-sans text-xs leading-snug text-[var(--text-secondary)] transition hover:border-[var(--accent-forge)]/40 hover:text-[var(--text-primary)]"
+              className="rounded-[4px] border-l border-l-[var(--accent-forge)] bg-transparent py-2.5 pl-3 pr-2 text-left text-xs italic leading-snug text-[var(--text-secondary)] transition hover:bg-[var(--bg-synthesis)]"
             >
               {ex}
             </button>

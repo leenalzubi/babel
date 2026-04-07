@@ -65,32 +65,27 @@ export default function PromptInput({
     : tokenHint ?? 'GitHub Models unavailable'
 
   return (
-    <section className="rounded-forge-card flex flex-col gap-5 border border-[var(--border)] bg-[var(--bg-surface)] p-6 shadow-forge-card sm:p-8">
+    <section className="flex flex-col gap-5 rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] p-6 sm:p-8">
       <div className="flex flex-col gap-2">
-        <h2 className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
-          Your prompt
-        </h2>
-        <p className="font-sans text-sm text-[var(--text-secondary)]">
+        <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
           Three models answer independently, cross-review, then (optionally) synthesize.
         </p>
         <div
-          className="flex flex-wrap gap-2"
+          className="flex flex-wrap gap-4"
           aria-label="Models in this Babel run"
         >
           {modelBadges.map((agent) => (
             <span
               key={agent.model}
               title={agent.model}
-              className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--bg-notebook)] py-1 pl-2 pr-2.5 font-mono text-[10px] text-[var(--text-secondary)]"
+              className="inline-flex max-w-full items-center gap-2 font-mono text-[10px] text-[var(--text-primary)]"
             >
               <span
                 className="h-1.5 w-1.5 shrink-0 rounded-full"
                 style={{ backgroundColor: agent.color }}
                 aria-hidden
               />
-              <span className="min-w-0 truncate font-medium text-[var(--text-primary)]">
-                {agent.name}
-              </span>
+              <span className="min-w-0 truncate font-medium">{agent.name}</span>
             </span>
           ))}
         </div>
@@ -108,13 +103,11 @@ export default function PromptInput({
         disabled={disabled}
         rows={7}
         placeholder={placeholder}
-        className="min-h-[180px] w-full min-w-0 max-w-full resize-y rounded-forge-card border border-[var(--border)] bg-[var(--bg-notebook)] px-4 py-4 font-sans text-[15px] leading-relaxed text-[var(--text-primary)] placeholder:text-[var(--text-muted)]/80 focus:border-[var(--accent-forge)]/45 focus:outline-none focus:ring-2 focus:ring-[var(--accent-forge)]/20 disabled:opacity-50"
+        className="min-h-[180px] w-full min-w-0 max-w-full resize-y rounded-forge-card border border-[var(--border)] bg-[var(--bg-notebook)] px-4 py-4 text-[17px] leading-[1.85] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent-forge)]/55 focus:outline-none focus:ring-1 focus:ring-[var(--accent-forge)]/25 disabled:opacity-50"
         aria-label="Debate prompt"
       />
 
-      <div
-        className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-5"
-      >
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-dashed border-[var(--border)] pt-5">
         <div
           className="flex items-center gap-2 font-mono text-[10px] text-[var(--text-secondary)]"
           role="status"
@@ -132,7 +125,7 @@ export default function PromptInput({
             disabled={disabled}
             title="Run Babel's full debate pipeline via GitHub Models"
             aria-label="Run Babel (⌘ or Ctrl + Enter from prompt)"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[var(--accent-forge)] px-6 py-3 font-mono text-sm font-semibold text-white shadow-forge-card transition hover:brightness-[1.03] disabled:cursor-not-allowed disabled:opacity-45 sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-[6px] bg-[var(--accent-forge)] px-6 py-3 font-mono text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-45 sm:w-auto"
           >
             <Flame className="h-4 w-4 shrink-0" aria-hidden />
             Run Babel
@@ -142,12 +135,20 @@ export default function PromptInput({
             onClick={onReset}
             disabled={disabled}
             aria-label="Reset debate and clear prompt"
-            className="w-full rounded-full border border-[var(--border)] bg-[var(--bg-surface)] px-5 py-3 font-mono text-sm font-medium text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-45 sm:w-auto"
+            className="w-full rounded-[6px] border border-[var(--border)] bg-transparent px-5 py-3 font-mono text-sm font-medium text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-45 sm:w-auto"
           >
             Reset
           </button>
         </div>
       </div>
+
+      <p
+        className="mt-1 max-w-xl text-pretty text-center font-mono text-[9px] leading-relaxed text-[var(--text-muted)]/80 sm:mx-auto"
+        role="note"
+      >
+        By running a debate you consent to contributing anonymously to this
+        dataset.
+      </p>
     </section>
   )
 }

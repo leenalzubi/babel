@@ -3,7 +3,7 @@ import { ArrowLeftRight } from 'lucide-react'
 import AgentResponseBody from './AgentResponseBody.jsx'
 
 const mdClass =
-  'max-w-none text-sm leading-relaxed text-[var(--text-secondary)] [&_a]:text-[var(--accent-forge)] [&_code]:rounded-md [&_code]:bg-[var(--bg-raised)] [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[13px] [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_li]:my-0.5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-3 [&_p:last-child]:mb-0 [&_strong]:text-[var(--text-primary)] [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5'
+  'max-w-none text-[17px] leading-[1.85] text-[var(--text-secondary)] [&_a]:text-[var(--accent-forge)] [&_code]:rounded-[4px] [&_code]:bg-[var(--bg-raised)] [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[13px] [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_li]:my-0.5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-3 [&_p:last-child]:mb-0 [&_strong]:text-[var(--text-primary)] [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5'
 
 /**
  * @param {{
@@ -19,21 +19,22 @@ function CrossReviewAgentCard({ border, dot, title, body, regionLabel }) {
     <article
       role="region"
       aria-label={regionLabel}
-      className="rounded-forge-card overflow-hidden border border-[var(--border)] bg-[var(--bg-surface)] shadow-forge-card"
-      style={{ borderTopWidth: 3, borderTopColor: border }}
+      className="rounded-forge-card overflow-hidden border border-[var(--border)] bg-[var(--bg-surface)]"
+      style={{ borderTopWidth: 2, borderTopColor: border }}
     >
-      <header
-        className="flex items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-raised)]/50 px-4 py-3"
-      >
+      <div className="flex items-center gap-2 px-4 pb-2 pt-4">
         <span
-          className={`h-2.5 w-2.5 shrink-0 rounded-full ${dot}`}
+          className={`h-1.5 w-1.5 shrink-0 rounded-full ${dot}`}
           aria-hidden
         />
-        <h4 className="font-mono text-[11px] font-semibold uppercase tracking-wide text-[var(--text-primary)]">
+        <h4
+          className="font-mono text-[10px] font-semibold uppercase tracking-wide"
+          style={{ color: border }}
+        >
           {title}
         </h4>
-      </header>
-      <div className="px-4 py-4">
+      </div>
+      <div className="border-t border-dashed border-[var(--border)] px-4 pb-4 pt-3">
         <AgentResponseBody rawText={body} markdownClassName={mdClass} />
       </div>
     </article>
@@ -57,17 +58,17 @@ function ReviewCard({ roundNum, aReviews, bReviews, cReviews, config }) {
   const { agentA, agentB, agentC } = config
   return (
     <section className="flex flex-col gap-6">
-      <header className="flex flex-col gap-1">
+      <header className="flex flex-col gap-1 border-b border-dashed border-[var(--border)] pb-4">
         <div className="flex items-center gap-2">
           <ArrowLeftRight
             className="h-4 w-4 shrink-0 text-[var(--accent-forge)]"
             aria-hidden
           />
-          <h3 className="font-mono text-sm font-semibold uppercase tracking-wide text-[var(--text-primary)]">
+          <h3 className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
             Cross-Review — Round {roundNum}
           </h3>
         </div>
-        <p className="pl-6 font-sans text-xs text-[var(--text-secondary)]">
+        <p className="pl-6 text-xs leading-relaxed text-[var(--text-secondary)]">
           Each agent reviewed the other two
         </p>
       </header>

@@ -3,12 +3,12 @@ import AgentResponseBody from './AgentResponseBody.jsx'
 import TriangleConsensus from './TriangleConsensus.jsx'
 
 const replyMd =
-  'max-w-none text-sm leading-relaxed text-[var(--text-secondary)] [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:text-[var(--text-primary)]'
+  'max-w-none text-[17px] leading-[1.85] text-[var(--text-secondary)] [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:text-[var(--text-primary)]'
 
 /** @param {{ label: string, color: string, pct: number }} props */
 function DivergenceChip({ label, color, pct }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--bg-raised)] px-2.5 py-1 font-mono text-[10px] text-[var(--text-secondary)]">
+    <span className="inline-flex items-center gap-1.5 rounded-[4px] border border-[var(--border)] bg-transparent px-2 py-1 font-mono text-[10px] text-[var(--text-secondary)]">
       <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} aria-hidden />
       {label}
       <span className="font-medium text-[var(--text-primary)]">{pct}%</span>
@@ -24,12 +24,12 @@ function RoundAgentPanel({ title, color, text }) {
     <div
       role="region"
       aria-label={`${title} response`}
-      className="rounded-forge-card flex min-h-0 flex-col overflow-hidden border border-[var(--border)] bg-[var(--bg-surface)] shadow-forge-card"
-      style={{ borderTopWidth: 3, borderTopColor: color }}
+      className="rounded-forge-card flex min-h-0 flex-col overflow-hidden border border-[var(--border)] bg-[var(--bg-surface)]"
+      style={{ borderTopWidth: 2, borderTopColor: color }}
     >
       <div className="px-4 pb-1 pt-4">
         <span
-          className="font-mono text-[10px] font-bold uppercase tracking-wide"
+          className="font-mono text-[10px] font-semibold uppercase tracking-wide"
           style={{ color }}
         >
           {title}
@@ -46,7 +46,7 @@ function RoundAgentPanel({ title, color, text }) {
 function DivergenceRow({ scores, initials, colors }) {
   const pct = (n) => Math.min(100, Math.max(0, Math.round(Number(n) * 100)))
   return (
-    <div className="mt-6 flex flex-col gap-4 border-t border-[var(--border)] pt-6 md:flex-row md:items-center md:justify-between">
+    <div className="mt-6 flex flex-col gap-4 border-t border-dashed border-[var(--border)] pt-6 md:flex-row md:items-center md:justify-between">
       <div className="flex flex-wrap gap-2">
         <DivergenceChip
           label={`${initials.a}–${initials.b}`}
@@ -95,8 +95,8 @@ function RoundCard({ roundNum, scores, round, config }) {
   const colors = { a: agentA.color, b: agentB.color, c: agentC.color }
 
   return (
-    <section className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] p-6 shadow-forge-card sm:p-8">
-      <h2 className="mb-6 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+    <section className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] p-6 sm:p-8">
+      <h2 className="mb-6 border-b border-dashed border-[var(--border)] pb-4 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
         Round {roundNum} — independent responses
       </h2>
 

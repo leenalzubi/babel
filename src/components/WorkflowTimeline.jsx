@@ -21,15 +21,15 @@ function StatusDot({ state }) {
     return (
       <span className="relative flex h-6 w-6 shrink-0 items-center justify-center">
         <span
-          className="absolute inline-flex h-4 w-4 animate-ping rounded-full bg-[var(--accent-forge)] opacity-40"
+          className="absolute inline-flex h-4 w-4 animate-ping rounded-full bg-[var(--accent-forge)] opacity-35"
           aria-hidden
         />
-        <span className="relative h-3 w-3 rounded-full bg-[var(--accent-forge)] shadow-[0_0_12px_rgba(224,92,42,0.6)]" />
+        <span className="relative h-3 w-3 rounded-full bg-[var(--accent-forge)]" />
       </span>
     )
   }
   return (
-    <span className="h-6 w-6 shrink-0 rounded-full border border-[var(--border)] bg-[var(--bg-base)] ring-1 ring-black/[0.06]" />
+    <span className="h-6 w-6 shrink-0 rounded-full border border-[var(--border)] bg-[var(--bg-base)]" />
   )
 }
 
@@ -38,10 +38,10 @@ function DivergenceBar({ pct, muted }) {
   const w = Math.max(0, Math.min(100, pct))
   return (
     <div
-      className={`mt-1.5 h-1 w-full overflow-hidden rounded-full bg-[var(--bg-base)] ${muted ? 'opacity-50' : ''}`}
+      className={`mt-1.5 h-1 w-full overflow-hidden rounded-[2px] bg-[var(--bg-base)] ${muted ? 'opacity-50' : ''}`}
     >
       <div
-        className="h-full rounded-full bg-gradient-to-r from-[var(--agent-a)] via-[var(--agent-b)] to-[var(--agent-c)] transition-[width] duration-500"
+        className="h-full rounded-[2px] bg-[var(--accent-forge)]/70 transition-[width] duration-500"
         style={{ width: `${w}%` }}
       />
     </div>
@@ -238,7 +238,7 @@ export default function WorkflowTimeline({
 
   return (
     <aside
-      className={`fixed left-0 right-0 top-0 z-30 border-b border-[var(--border)] bg-[var(--bg-surface)] shadow-forge-card md:bottom-0 md:left-auto md:right-0 md:top-0 md:h-screen md:border-b-0 md:border-l md:shadow-none ${
+      className={`fixed left-0 right-0 top-0 z-30 border-b border-[var(--border)] bg-[var(--bg-sidebar)] md:bottom-0 md:left-auto md:right-0 md:top-0 md:h-screen md:border-b-0 md:border-l ${
         collapsed
           ? 'md:w-[40px] md:min-w-[40px] md:px-1.5 md:py-3'
           : 'md:w-[240px] md:min-w-[240px] md:px-4 md:py-5'
@@ -294,7 +294,7 @@ export default function WorkflowTimeline({
           <button
             type="button"
             onClick={() => onCollapsedChange(true)}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--bg-raised)] text-[var(--text-muted)] shadow-forge-card transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] text-[var(--text-muted)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)]"
             aria-label="Collapse workflow sidebar"
           >
             <ChevronRight className="h-4 w-4" aria-hidden />
@@ -315,7 +315,7 @@ export default function WorkflowTimeline({
         <button
           type="button"
           onClick={() => onCollapsedChange(false)}
-          className="mb-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--bg-raised)] text-[var(--text-muted)] shadow-forge-card transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)]"
+          className="mb-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] text-[var(--text-muted)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)]"
           aria-label="Expand workflow sidebar"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden />

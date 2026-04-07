@@ -15,7 +15,7 @@ function envKeySet(key) {
 function StatusPill({ label, ok }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10px] font-medium ${
+      className={`inline-flex items-center gap-1.5 rounded-[4px] border px-2.5 py-1 font-mono text-[10px] font-medium ${
         ok
           ? 'border-[var(--agree)]/50 bg-[var(--agree)]/15 text-[var(--agree)]'
           : 'border-[var(--border)] bg-[var(--bg-base)] text-[var(--text-muted)]'

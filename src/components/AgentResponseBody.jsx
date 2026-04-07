@@ -32,7 +32,7 @@ export default function AgentResponseBody({ rawText, markdownClassName }) {
             aria-expanded={open}
             aria-controls={`${panelId}-thinking`}
             onClick={() => setOpen((v) => !v)}
-            className="rounded px-0 py-0.5 font-sans text-[11px] font-medium text-[var(--text-muted)] transition hover:bg-black/[0.04] hover:text-[var(--text-secondary)]"
+            className="rounded-[4px] px-0 py-0.5 font-mono text-[11px] font-medium text-[var(--text-muted)] transition hover:bg-[var(--bg-raised)] hover:text-[var(--text-secondary)]"
           >
             {open ? 'DeepSeek reasoning ▴' : 'DeepSeek reasoning ▾'}
           </button>
@@ -42,8 +42,7 @@ export default function AgentResponseBody({ rawText, markdownClassName }) {
               id={`${panelId}-thinking`}
               role="region"
               aria-labelledby={`${panelId}-trigger`}
-              className="mt-2 border-l-2 border-[#E8E8E4] py-2 pl-4 pr-3 font-sans text-[14px] leading-relaxed text-[#6B6B6B]"
-              style={{ backgroundColor: '#F8F8F6' }}
+              className="mt-2 border-l-2 border-[var(--border)] bg-[var(--bg-notebook)] py-2 pl-4 pr-3 text-[15px] leading-relaxed text-[var(--text-secondary)]"
             >
               <div className="whitespace-pre-wrap break-words">{thinking}</div>
             </div>

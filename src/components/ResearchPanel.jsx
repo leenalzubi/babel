@@ -3,7 +3,7 @@
 function SectionDivider() {
   return (
     <div
-      className="mt-12 border-t border-[var(--border)]/80"
+      className="mt-12 border-t border-dashed border-[var(--border)]"
       aria-hidden
     />
   )
@@ -19,7 +19,7 @@ function SectionShell({ num, title, children }) {
         <p className="font-mono text-[11px] font-medium tracking-[0.2em] text-[var(--text-muted)]">
           {num}
         </p>
-        <h2 className="font-sans text-xl font-semibold tracking-tight text-[var(--text-primary)] md:text-2xl">
+        <h2 className="font-display text-xl font-semibold tracking-tight text-[var(--text-primary)] md:text-2xl">
           {title}
         </h2>
       </div>
@@ -33,11 +33,11 @@ function SectionShell({ num, title, children }) {
  */
 function ObservationCard({ title, children }) {
   return (
-    <div className="rounded-lg border border-[var(--border)] border-l-[3px] border-l-[var(--accent-forge)] bg-[var(--bg-surface)] py-5 pl-5 pr-6 shadow-forge-card">
-      <h3 className="font-sans text-base font-semibold text-[var(--text-primary)]">
+    <div className="rounded-forge-card border border-[var(--border)] border-l-2 border-l-[var(--accent-forge)] bg-[var(--bg-surface)] py-5 pl-5 pr-6">
+      <h3 className="text-base font-semibold text-[var(--text-primary)]">
         {title}
       </h3>
-      <p className="mt-3 font-sans text-[15px] leading-[1.7] text-[var(--text-secondary)]">
+      <p className="mt-3 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
         {children}
       </p>
     </div>
@@ -49,11 +49,11 @@ function ObservationCard({ title, children }) {
  */
 function DirectionCard({ title, children }) {
   return (
-    <div className="h-full rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-6 shadow-forge-card">
-      <h3 className="font-sans text-base font-semibold text-[var(--text-primary)]">
+    <div className="h-full rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] p-6">
+      <h3 className="text-base font-semibold text-[var(--text-primary)]">
         {title}
       </h3>
-      <p className="mt-3 font-sans text-[15px] leading-[1.7] text-[var(--text-secondary)]">
+      <p className="mt-3 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
         {children}
       </p>
     </div>
@@ -63,11 +63,11 @@ function DirectionCard({ title, children }) {
 export default function ResearchPanel() {
   return (
     <article
-      className="w-full min-w-0 pb-16 md:pb-24"
+      className="mx-auto w-full min-w-0 max-w-[720px] pb-16 md:pb-24"
       aria-label="About Babel"
     >
       <SectionShell num="01" title="What Babel Is">
-        <div className="space-y-5 font-sans text-[15px] leading-[1.75] text-[var(--text-secondary)]">
+        <div className="space-y-5 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
           <p>
             Babel sends a single prompt to three AI models simultaneously:
             GPT-4o mini, Phi-4 mini reasoning, and Mistral Small. Each model
@@ -107,9 +107,9 @@ export default function ResearchPanel() {
             reveals how robust or brittle models are to phrasing.
           </ObservationCard>
           <ObservationCard title="Naturalistic data">
-            Most multi-model research happens in controlled lab conditions. The
-            Babel collects real questions from real people, which is a
-            different and valuable dataset.
+            Most multi-model research happens in controlled lab conditions. Babel
+            collects real questions from real people, which is a different and
+            valuable dataset.
           </ObservationCard>
         </div>
       </SectionShell>
@@ -145,7 +145,7 @@ export default function ResearchPanel() {
       <SectionDivider />
 
       <SectionShell num="04" title="About">
-        <div className="space-y-6 font-sans text-[15px] leading-[1.75] text-[var(--text-secondary)]">
+        <div className="space-y-6 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
           <p>
             Built by Leen Al-Zu&apos;bi, Senior Product Manager at Softchoice,
             as self-directed study in AI research. No lab, no grant, just

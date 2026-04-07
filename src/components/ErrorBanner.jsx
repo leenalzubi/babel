@@ -10,7 +10,7 @@ export default function ErrorBanner({ message, onDismiss }) {
 
   return (
     <div
-      className="mb-6 flex items-start gap-3 rounded-forge-card border border-red-200 bg-red-50 px-4 py-3 text-red-900 shadow-forge-card"
+      className="mb-6 flex items-start gap-3 rounded-forge-card border border-[var(--diverge)]/35 bg-[color-mix(in_srgb,var(--diverge)_8%,var(--bg-surface))] px-4 py-3 text-[var(--text-primary)]"
       role="alert"
     >
       <AlertTriangle

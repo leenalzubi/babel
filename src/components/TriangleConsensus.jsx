@@ -58,7 +58,7 @@ export function ConsensusMeterBar({ scores, initials = { a: 'A', b: 'B', c: 'C' 
 
   return (
     <div
-      className="w-full rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-3 shadow-forge-card"
+      className="w-full rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-3"
       aria-label="Pairwise divergence summary"
     >
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -69,9 +69,9 @@ export function ConsensusMeterBar({ scores, initials = { a: 'A', b: 'B', c: 'C' 
           {avgP}% · {contextLabel(average)}
         </span>
       </div>
-      <div className="mb-3 h-2.5 w-full overflow-hidden rounded-full bg-[var(--bg-surface)]">
+      <div className="mb-3 h-2 w-full overflow-hidden rounded-[2px] border border-[var(--border)] bg-[var(--bg-base)]">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-[var(--agent-a)] via-[var(--agent-b)] to-[var(--agent-c)] transition-[width] duration-500"
+          className="h-full rounded-[1px] bg-[var(--accent-forge)]/65 transition-[width] duration-500"
           style={{ width: `${avgP}%` }}
         />
       </div>
