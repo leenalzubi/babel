@@ -1,5 +1,7 @@
 import { memo } from 'react'
 import AgentResponseBody from './AgentResponseBody.jsx'
+import AgentThinking from './AgentThinking.jsx'
+import AgentTimer from './AgentTimer.jsx'
 import TriangleConsensus from './TriangleConsensus.jsx'
 
 const replyMd =
@@ -9,7 +11,11 @@ const replyMd =
 function DivergenceChip({ label, color, pct }) {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-[4px] border border-[var(--border)] bg-transparent px-2 py-1 font-mono text-[10px] text-[var(--text-secondary)]">
-      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} aria-hidden />
+      <span
+        className="h-1.5 w-1.5 rounded-full"
+        style={{ backgroundColor: color }}
+        aria-hidden
+      />
       {label}
       <span className="font-medium text-[var(--text-primary)]">{pct}%</span>
     </span>
@@ -17,29 +23,89 @@ function DivergenceChip({ label, color, pct }) {
 }
 
 /**
- * @param {{ title: string, color: string, text: string }} props
+ * @param {{ title: string, color: string, text: string, startTime: number | null, endTime: number | null }} props
  */
-function RoundAgentPanel({ title, color, text }) {
+function RoundAgentPanel({ title, color, text, startTime, endTime }) {
   return (
     <div
       role="region"
       aria-label={`${title} response`}
-      className="rounded-forge-card flex min-h-0 flex-col overflow-hidden border border-[var(--border)] bg-[var(--bg-surface)]"
+      className="forge-reveal-card rounded-forge-card flex min-h-0 flex-col overflow-hidden border border-[var(--border)] bg-[var(--bg-surface)]"
       style={{ borderTopWidth: 2, borderTopColor: color }}
     >
-      <div className="px-4 pb-1 pt-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-1 pt-4">
         <span
           className="font-mono text-[10px] font-semibold uppercase tracking-wide"
           style={{ color }}
         >
           {title}
         </span>
+        {startTime != null ? (
+          <AgentTimer startTime={startTime} endTime={endTime} />
+        ) : null}
       </div>
       <div className="max-h-[360px] overflow-y-auto px-4 pb-4 pt-1">
         <AgentResponseBody rawText={text} markdownClassName={replyMd} />
       </div>
     </div>
   )
+}
+
+/**
+ * @param {{ title: string, color: string }} props
+ */
+function RoundAgentWaiting({ title, color }) {
+  return (
+    <div className="rounded-forge-card flex min-h-[200px] flex-col items-center justify-center border border-dashed border-[var(--border)] bg-[var(--bg-surface)]/50 px-4 py-10">
+      <span
+        className="font-mono text-[10px] font-semibold uppercase tracking-wide"
+        style={{ color }}
+      >
+        {title}
+      </span>
+      <p className="mt-3 text-center text-xs text-[var(--text-muted)]">Queued…</p>
+    </div>
+  )
+}
+
+/**
+ * @param {{
+ *   agentSpec: { name: string, color: string },
+ *   responseText: string,
+ *   timer: { startTime: number | null, endTime: number | null },
+ * }} props
+ */
+function AgentRoundColumn({ agentSpec, responseText, timer }) {
+  const hasResponse =
+    typeof responseText === 'string' && responseText.length > 0
+  const live =
+    timer.startTime != null && timer.endTime == null
+
+  if (hasResponse) {
+    return (
+      <RoundAgentPanel
+        title={agentSpec.name}
+        color={agentSpec.color}
+        text={responseText}
+        startTime={timer.startTime}
+        endTime={timer.endTime}
+      />
+    )
+  }
+
+  if (live) {
+    return (
+      <AgentThinking
+        title={agentSpec.name}
+        color={agentSpec.color}
+        line="Thinking through your prompt…"
+        startTime={timer.startTime}
+        endTime={timer.endTime}
+      />
+    )
+  }
+
+  return <RoundAgentWaiting title={agentSpec.name} color={agentSpec.color} />
 }
 
 /** @param {{ scores: { ab: number, ac: number, bc: number }, initials: { a: string, b: string, c: string }, colors: { a: string, b: string, c: string } }} props */
@@ -81,9 +147,14 @@ function DivergenceRow({ scores, initials, colors }) {
  *     agentB: { name: string, color: string },
  *     agentC: { name: string, color: string },
  *   },
+ *   agentTimers: {
+ *     a: { startTime: number | null, endTime: number | null },
+ *     b: { startTime: number | null, endTime: number | null },
+ *     c: { startTime: number | null, endTime: number | null },
+ *   },
  * }} props
  */
-function RoundCard({ roundNum, scores, round, config }) {
+function RoundCard({ roundNum, scores, round, config, agentTimers }) {
   const { agentA, agentB, agentC } = config
 
   const initials = {
@@ -94,6 +165,13 @@ function RoundCard({ roundNum, scores, round, config }) {
 
   const colors = { a: agentA.color, b: agentB.color, c: agentC.color }
 
+  const showDivergence =
+    round.agentA &&
+    round.agentB &&
+    round.agentC &&
+    scores &&
+    typeof scores.ab === 'number'
+
   return (
     <section className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] p-6 sm:p-8">
       <h2 className="mb-6 border-b border-dashed border-[var(--border)] pb-4 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
@@ -101,12 +179,26 @@ function RoundCard({ roundNum, scores, round, config }) {
       </h2>
 
       <div className="flex flex-col gap-4 lg:grid lg:grid-cols-3 lg:gap-6">
-        <RoundAgentPanel title={agentA.name} color={agentA.color} text={round.agentA} />
-        <RoundAgentPanel title={agentB.name} color={agentB.color} text={round.agentB} />
-        <RoundAgentPanel title={agentC.name} color={agentC.color} text={round.agentC} />
+        <AgentRoundColumn
+          agentSpec={agentA}
+          responseText={round.agentA}
+          timer={agentTimers.a}
+        />
+        <AgentRoundColumn
+          agentSpec={agentB}
+          responseText={round.agentB}
+          timer={agentTimers.b}
+        />
+        <AgentRoundColumn
+          agentSpec={agentC}
+          responseText={round.agentC}
+          timer={agentTimers.c}
+        />
       </div>
 
-      <DivergenceRow scores={scores} initials={initials} colors={colors} />
+      {showDivergence ? (
+        <DivergenceRow scores={scores} initials={initials} colors={colors} />
+      ) : null}
     </section>
   )
 }

@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Sparkles,
 } from 'lucide-react'
+import AgentTimer from './AgentTimer.jsx'
 import { useForge } from '../store/useForgeStore.js'
 
 /** @param {'pending' | 'active' | 'complete'} state */
@@ -49,10 +50,39 @@ function DivergenceBar({ pct, muted }) {
 }
 
 function useWorkflowSteps(state) {
-  const { status, rounds, reviews, synthesis, config } = state
+  const {
+    status,
+    rounds,
+    reviews,
+    synthesis,
+    config,
+    agentResponses,
+    reviewResponses,
+  } = state
 
-  const round1Done = rounds.some((r) => r.roundNum === 1)
-  const reviewDone = reviews.some((r) => r.roundNum === 1)
+  const round1Done =
+    (agentResponses?.a &&
+      agentResponses?.b &&
+      agentResponses?.c) ||
+    rounds.some(
+      (r) =>
+        r.roundNum === 1 &&
+        String(r.agentA ?? '').length > 0 &&
+        String(r.agentB ?? '').length > 0 &&
+        String(r.agentC ?? '').length > 0
+    )
+
+  const reviewDone =
+    (reviewResponses?.a &&
+      reviewResponses?.b &&
+      reviewResponses?.c) ||
+    reviews.some(
+      (r) =>
+        r.roundNum === 1 &&
+        String(r.aReviews ?? '').length > 0 &&
+        String(r.bReviews ?? '').length > 0 &&
+        String(r.cReviews ?? '').length > 0
+    )
   const running = status === 'running'
   const round2Applicable = config.maxRounds >= 2
 
@@ -150,7 +180,7 @@ export default function WorkflowTimeline({
     />
   )
 
-  const renderDesktopStepRow = (step) => {
+  const renderDesktopStepRow = (step, timelineState) => {
     const score =
       step.divergenceIdx != null
         ? divergenceScores[step.divergenceIdx]
@@ -193,28 +223,83 @@ export default function WorkflowTimeline({
               </span>
             </div>
             {step.key === 'r1' && (
-              <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
-                <span className="flex items-center gap-1 font-mono text-[9px] text-[var(--text-muted)]">
-                  <span
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{ background: config.agentA.color }}
-                  />
-                  {config.agentA.name}
-                </span>
-                <span className="flex items-center gap-1 font-mono text-[9px] text-[var(--text-muted)]">
-                  <span
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{ background: config.agentB.color }}
-                  />
-                  {config.agentB.name}
-                </span>
-                <span className="flex items-center gap-1 font-mono text-[9px] text-[var(--text-muted)]">
-                  <span
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{ background: config.agentC.color }}
-                  />
-                  {config.agentC.name}
-                </span>
+              <div className="mt-1.5 space-y-1">
+                {(['a', 'b', 'c']).map((k) => {
+                  const spec =
+                    k === 'a'
+                      ? config.agentA
+                      : k === 'b'
+                        ? config.agentB
+                        : config.agentC
+                  const tm = timelineState.agentTimers?.[k] ?? {
+                    startTime: null,
+                    endTime: null,
+                  }
+                  return (
+                    <div
+                      key={k}
+                      className="flex items-center justify-between gap-2 pr-1 font-mono"
+                    >
+                      <span className="flex min-w-0 flex-1 items-center gap-1 text-[9px] text-[var(--text-muted)]">
+                        <span
+                          className="h-1.5 w-1.5 shrink-0 rounded-full"
+                          style={{ background: spec.color }}
+                        />
+                        <span className="truncate">{spec.name}</span>
+                      </span>
+                      {tm.startTime != null ? (
+                        <AgentTimer
+                          startTime={tm.startTime}
+                          endTime={tm.endTime}
+                        />
+                      ) : (
+                        <span className="shrink-0 text-[9px] text-[var(--text-muted)]/50">
+                          —
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            {step.key === 'cross' && (
+              <div className="mt-1.5 space-y-1">
+                {(['a', 'b', 'c']).map((k) => {
+                  const spec =
+                    k === 'a'
+                      ? config.agentA
+                      : k === 'b'
+                        ? config.agentB
+                        : config.agentC
+                  const tm = timelineState.reviewTimers?.[k] ?? {
+                    startTime: null,
+                    endTime: null,
+                  }
+                  return (
+                    <div
+                      key={k}
+                      className="flex items-center justify-between gap-2 pr-1 font-mono"
+                    >
+                      <span className="flex min-w-0 flex-1 items-center gap-1 text-[9px] text-[var(--text-muted)]">
+                        <span
+                          className="h-1.5 w-1.5 shrink-0 rounded-full"
+                          style={{ background: spec.color }}
+                        />
+                        <span className="truncate">{spec.name}</span>
+                      </span>
+                      {tm.startTime != null ? (
+                        <AgentTimer
+                          startTime={tm.startTime}
+                          endTime={tm.endTime}
+                        />
+                      ) : (
+                        <span className="shrink-0 text-[9px] text-[var(--text-muted)]/50">
+                          —
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
             {step.key === 'r2' && !round2Applicable && step.state === 'complete' && (
@@ -303,7 +388,7 @@ export default function WorkflowTimeline({
         <div className="relative">
           {line}
           <div className="relative space-y-0">
-            {steps.map((step) => renderDesktopStepRow(step))}
+            {steps.map((step) => renderDesktopStepRow(step, state))}
           </div>
         </div>
       </div>

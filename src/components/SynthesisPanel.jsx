@@ -9,8 +9,19 @@ import {
 } from '../utils/exportUtils.js'
 import TriangleConsensus from './TriangleConsensus.jsx'
 
-const mdClass =
-  'max-w-none text-[18px] leading-[1.85] text-[var(--text-primary)] [&_a]:text-[var(--accent-forge)] [&_code]:rounded-[4px] [&_code]:bg-[var(--bg-raised)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.9em] [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:text-xl [&_h3]:text-lg [&_li]:my-1 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mb-4 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_strong]:text-[var(--text-primary)] [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6'
+/** Prose for synthesis body — essay-like Scriptorium typography (wrapper around ReactMarkdown). */
+const synthesisOutputMarkdownClass =
+  'synthesis-output-md max-w-none text-[var(--text-primary)] ' +
+  '[&_a]:text-[var(--accent-forge)] ' +
+  '[&_code]:rounded-[4px] [&_code]:bg-[var(--bg-raised)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.9em] ' +
+  '[&_h1]:mt-8 [&_h1]:mb-4 [&_h1]:[font-family:var(--font-display)] [&_h1]:text-3xl [&_h1]:font-semibold [&_h1]:leading-tight [&_h1]:text-[#1C1814] [&_h1:first-child]:mt-0 ' +
+  '[&_h2]:mt-8 [&_h2]:mb-3 [&_h2]:[font-family:var(--font-display)] [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:leading-snug [&_h2]:text-[#1C1814] [&_h2:first-child]:mt-0 ' +
+  '[&_h3]:mt-6 [&_h3]:mb-3 [&_h3]:[font-family:var(--font-display)] [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:leading-snug [&_h3]:text-[#1C1814] [&_h3:first-child]:mt-0 ' +
+  '[&_p]:mb-4 [&_p]:[font-family:var(--font-body)] [&_p]:text-[17px] [&_p]:leading-[1.85] [&_p:last-child]:mb-0 ' +
+  '[&_strong]:font-semibold ' +
+  '[&_ul]:mb-4 [&_ul]:list-disc [&_ul]:pl-8 [&_ul]:[font-family:var(--font-body)] [&_ul]:text-[17px] ' +
+  '[&_ol]:mb-4 [&_ol]:list-decimal [&_ol]:pl-8 [&_ol]:[font-family:var(--font-body)] [&_ol]:text-[17px] ' +
+  '[&_li]:my-1 [&_li]:leading-[1.75]'
 
 /**
  * @param {{
@@ -176,7 +187,9 @@ export default function SynthesisPanel({ synthesis }) {
       )}
 
       <div className="px-6 py-8 md:px-10 md:py-10">
-        <ReactMarkdown className={mdClass}>{output}</ReactMarkdown>
+        <div className={synthesisOutputMarkdownClass}>
+          <ReactMarkdown>{output}</ReactMarkdown>
+        </div>
       </div>
 
       <div className="border-t border-dashed border-[var(--border)] px-6 py-6 md:px-10">

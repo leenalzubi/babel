@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { Flame } from 'lucide-react'
 import {
   fetchGithubModelsProxyConfigured,
   hasGithubModelsClientToken,
 } from '../api/githubModelsClient.js'
 import { useForge } from '../store/useForgeStore.js'
+
+/**
+ * @typedef {{ focusPrompt: () => void }} PromptInputHandle
+ */
 
 /**
  * @param {{
@@ -15,15 +19,30 @@ import { useForge } from '../store/useForgeStore.js'
  *   disabled?: boolean,
  *   placeholder?: string,
  * }} props
+ * @param {import('react').Ref<PromptInputHandle | null>} ref
  */
-export default function PromptInput({
-  value,
-  onChange,
-  onRun,
-  onReset,
-  disabled = false,
-  placeholder = 'What should the team debate? Be specific — the richer the prompt, the sharper the debate.',
-}) {
+function PromptInputInner(
+  {
+    value,
+    onChange,
+    onRun,
+    onReset,
+    disabled = false,
+    placeholder = 'Write a prompt to see the models debate',
+  },
+  ref
+) {
+  const textareaRef = useRef(/** @type {HTMLTextAreaElement | null} */ (null))
+
+  useImperativeHandle(ref, () => ({
+    focusPrompt() {
+      const el = textareaRef.current
+      if (!el) return
+      el.focus()
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    },
+  }))
+
   const { state } = useForge()
   const { agentA, agentB, agentC } = state.config
   const modelBadges = [agentA, agentB, agentC]
@@ -92,6 +111,7 @@ export default function PromptInput({
       </div>
 
       <textarea
+        ref={textareaRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
@@ -152,3 +172,8 @@ export default function PromptInput({
     </section>
   )
 }
+
+const PromptInput = forwardRef(PromptInputInner)
+PromptInput.displayName = 'PromptInput'
+
+export default PromptInput

@@ -85,6 +85,21 @@ body {
   animation: manuscript-shimmer 2.2s ease-in-out infinite;
 }
 
+@keyframes forge-card-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.forge-reveal-card {
+  animation: forge-card-reveal 400ms ease-out forwards;
+}
+
 @keyframes run-banner-enter {
   from {
     opacity: 0;

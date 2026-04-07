@@ -8,9 +8,33 @@ import {
   SYNTHESIS_SYSTEM,
 } from '../api/systemPrompts.js'
 import { useForgeUiSettings } from '../context/ForgeSettingsContext.jsx'
+import { runAudit } from '../lib/auditDebate.js'
 import { clipInferenceText } from '../lib/clipInferenceText.js'
 import { logDebate } from '../lib/logDebate.js'
 import { useForge } from '../store/useForgeStore.js'
+
+/**
+ * @param {import('react').Dispatch<unknown>} dispatch
+ * @param {Parameters<typeof runAudit>[0]} snapshot
+ */
+function scheduleDebateAudit(dispatch, snapshot) {
+  dispatch({ type: 'SET_AUDIT_LOADING', payload: true })
+  dispatch({ type: 'SET_AUDIT_ERROR', payload: null })
+  void (async () => {
+    try {
+      const result = await runAudit(snapshot)
+      dispatch({ type: 'SET_AUDIT', payload: result })
+    } catch (err) {
+      dispatch({
+        type: 'SET_AUDIT_ERROR',
+        payload:
+          err instanceof Error ? err.message : `Audit failed: ${String(err)}`,
+      })
+    } finally {
+      dispatch({ type: 'SET_AUDIT_LOADING', payload: false })
+    }
+  })()
+}
 
 function pause(ms) {
   return new Promise((r) => setTimeout(r, ms))
@@ -145,28 +169,51 @@ export function useDebateEngine() {
 
         const promptClipped = clipInferenceText(userPrompt.trim(), 48_000)
 
-        /* Sequential calls + pacing reduce rate limits and upstream 5xx from GitHub Models. */
+        const tA0 = Date.now()
+        dispatch({
+          type: 'SET_AGENT_THINKING',
+          payload: { agent: 'a', startTime: tA0 },
+        })
         const ra = await callGitHubModel(
           config.agentA.model,
           [{ role: 'user', content: promptClipped }],
           AGENT_A_ROUND1_SYSTEM
         )
+        dispatch({
+          type: 'SET_AGENT_DONE',
+          payload: { agent: 'a', response: ra, endTime: Date.now() },
+        })
+
         await pause(700)
+        const tB0 = Date.now()
+        dispatch({
+          type: 'SET_AGENT_THINKING',
+          payload: { agent: 'b', startTime: tB0 },
+        })
         const rb = await callGitHubModel(
           config.agentB.model,
           [{ role: 'user', content: promptClipped }],
           AGENT_B_ROUND1_SYSTEM
         )
+        dispatch({
+          type: 'SET_AGENT_DONE',
+          payload: { agent: 'b', response: rb, endTime: Date.now() },
+        })
+
         await pause(700)
+        const tC0 = Date.now()
+        dispatch({
+          type: 'SET_AGENT_THINKING',
+          payload: { agent: 'c', startTime: tC0 },
+        })
         const rc = await callGitHubModel(
           config.agentC.model,
           [{ role: 'user', content: promptClipped }],
           AGENT_C_ROUND1_SYSTEM
         )
-
         dispatch({
-          type: 'ADD_ROUND',
-          payload: { roundNum: 1, agentA: ra, agentB: rb, agentC: rc },
+          type: 'SET_AGENT_DONE',
+          payload: { agent: 'c', response: rc, endTime: Date.now() },
         })
 
         const ab = diverge(ra, rb)
@@ -201,27 +248,48 @@ export function useDebateEngine() {
           )
         )
 
+        dispatch({
+          type: 'SET_REVIEW_THINKING',
+          payload: { agent: 'a', startTime: Date.now() },
+        })
         const aRev = await callGitHubModel(
           config.agentA.model,
           [{ role: 'user', content: aReviewMsg }],
           CROSS_REVIEW_SYSTEM
         )
+        dispatch({
+          type: 'SET_REVIEW_DONE',
+          payload: { agent: 'a', review: aRev, endTime: Date.now() },
+        })
+
         await pause(700)
+        dispatch({
+          type: 'SET_REVIEW_THINKING',
+          payload: { agent: 'b', startTime: Date.now() },
+        })
         const bRev = await callGitHubModel(
           config.agentB.model,
           [{ role: 'user', content: bReviewMsg }],
           CROSS_REVIEW_SYSTEM
         )
+        dispatch({
+          type: 'SET_REVIEW_DONE',
+          payload: { agent: 'b', review: bRev, endTime: Date.now() },
+        })
+
         await pause(700)
+        dispatch({
+          type: 'SET_REVIEW_THINKING',
+          payload: { agent: 'c', startTime: Date.now() },
+        })
         const cRev = await callGitHubModel(
           config.agentC.model,
           [{ role: 'user', content: cReviewMsg }],
           CROSS_REVIEW_SYSTEM
         )
-
         dispatch({
-          type: 'ADD_REVIEW',
-          payload: { roundNum: 1, aReviews: aRev, bReviews: bRev, cReviews: cRev },
+          type: 'SET_REVIEW_DONE',
+          payload: { agent: 'c', review: cRev, endTime: Date.now() },
         })
 
         const shouldSynthesize =
@@ -251,6 +319,16 @@ export function useDebateEngine() {
               attributions: { a: '', b: '', c: '' },
             },
             config,
+          })
+          scheduleDebateAudit(dispatch, {
+            config,
+            prompt: userPrompt.trim(),
+            round1: { agentA: ra, agentB: rb, agentC: rc },
+            reviews: { aReviews: aRev, bReviews: bRev, cReviews: cRev },
+            synthesis: {
+              output:
+                '*Synthesis skipped:* your setting only runs synthesis when **average pairwise divergence** is above **40%**. This run was below that threshold — use the round responses and cross-reviews as the final output.',
+            },
           })
           return
         }
@@ -300,6 +378,13 @@ export function useDebateEngine() {
             rationale: parsed.rationale,
           },
           config,
+        })
+        scheduleDebateAudit(dispatch, {
+          config,
+          prompt: userPrompt.trim(),
+          round1: { agentA: ra, agentB: rb, agentC: rc },
+          reviews: { aReviews: aRev, bReviews: bRev, cReviews: cRev },
+          synthesis: { output: parsed.output },
         })
       } catch (err) {
         const message =

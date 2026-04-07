@@ -22,16 +22,16 @@ function ThreeBubblesIllustration() {
         width="36"
         height="24"
         rx="8"
-        fill="#1A4A6B"
+        fill="#2563EB"
         fillOpacity="0.15"
-        stroke="#1A4A6B"
+        stroke="#2563EB"
         strokeWidth="1.5"
       />
       <polygon
         points="8,28 6,36 16,28"
-        fill="#1A4A6B"
+        fill="#2563EB"
         fillOpacity="0.15"
-        stroke="#1A4A6B"
+        stroke="#2563EB"
         strokeWidth="1.5"
         strokeLinejoin="round"
       />
@@ -41,16 +41,16 @@ function ThreeBubblesIllustration() {
         width="36"
         height="24"
         rx="8"
-        fill="#2D5A3D"
+        fill="#16A34A"
         fillOpacity="0.15"
-        stroke="#2D5A3D"
+        stroke="#16A34A"
         strokeWidth="1.5"
       />
       <polygon
         points="64,28 62,36 72,28"
-        fill="#2D5A3D"
+        fill="#16A34A"
         fillOpacity="0.15"
-        stroke="#2D5A3D"
+        stroke="#16A34A"
         strokeWidth="1.5"
         strokeLinejoin="round"
       />
@@ -60,16 +60,16 @@ function ThreeBubblesIllustration() {
         width="36"
         height="24"
         rx="8"
-        fill="#6B3D1A"
+        fill="#DC2626"
         fillOpacity="0.15"
-        stroke="#6B3D1A"
+        stroke="#DC2626"
         strokeWidth="1.5"
       />
       <polygon
         points="30,42 28,50 38,42"
-        fill="#6B3D1A"
+        fill="#DC2626"
         fillOpacity="0.15"
-        stroke="#6B3D1A"
+        stroke="#DC2626"
         strokeWidth="1.5"
         strokeLinejoin="round"
       />
@@ -78,9 +78,12 @@ function ThreeBubblesIllustration() {
 }
 
 /**
- * @param {{ onPickExample: (text: string) => void }} props
+ * @param {{
+ *   onPickExample: (text: string) => void,
+ *   onAfterExamplePick?: () => void,
+ * }} props
  */
-export default function ForgeEmptyState({ onPickExample }) {
+export default function ForgeEmptyState({ onPickExample, onAfterExamplePick }) {
   return (
     <div className="mx-auto flex max-w-lg flex-col items-center px-4 py-12 text-center md:py-16">
       <div className="mb-6 flex items-center justify-center">
@@ -99,7 +102,12 @@ export default function ForgeEmptyState({ onPickExample }) {
             <button
               key={ex}
               type="button"
-              onClick={() => onPickExample(ex)}
+              onClick={() => {
+                onPickExample(ex)
+                setTimeout(() => {
+                  onAfterExamplePick?.()
+                }, 0)
+              }}
               className="rounded-[4px] border-l border-l-[var(--accent-forge)] bg-transparent py-2.5 pl-3 pr-2 text-left text-xs italic leading-snug text-[var(--text-secondary)] transition hover:bg-[var(--bg-synthesis)]"
             >
               {ex}

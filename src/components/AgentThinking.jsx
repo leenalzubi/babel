@@ -1,94 +1,53 @@
-import RunStatusBanner from './RunStatusBanner.jsx'
-
-/**
- * Run-step status line (delegates to {@link RunStatusBanner}).
- * @param {{ step: 'round1' | 'crossReview' | 'synthesis' | null }} props
- */
-export function StatusBanner(props) {
-  return <RunStatusBanner {...props} />
-}
+import AgentTimer from './AgentTimer.jsx'
 
 /**
  * @param {{
- *   agentName: string
- *   borderColor?: string
- *   message?: string
- *   variant?: 'round' | 'review' | 'wide'
- *   headerBadge?: string
- *   dotClass?: string
+ *   title: string,
+ *   color: string,
+ *   line: string,
+ *   startTime: number | null,
+ *   endTime: number | null,
  * }} props
  */
 export default function AgentThinking({
-  agentName,
-  borderColor = 'var(--border)',
-  message,
-  variant = 'round',
-  headerBadge,
-  dotClass,
+  title,
+  color,
+  line,
+  startTime,
+  endTime,
 }) {
-  const label = message ?? `${agentName} is thinking...`
-
-  const bodyMin =
-    variant === 'review'
-      ? 'min-h-[220px]'
-      : variant === 'wide'
-        ? 'min-h-[140px]'
-        : 'min-h-[280px]'
-
-  const headerPad = variant === 'review' ? 'px-4 py-3' : 'px-3 py-2'
-  const bodyPad = variant === 'review' ? 'px-4 py-3' : 'px-3 py-6'
-
-  const titleText = headerBadge ?? agentName
-
-  const regionLabel =
-    variant === 'review'
-      ? `${agentName} cross-review`
-      : variant === 'wide'
-        ? 'Synthesis facilitator'
-        : `${agentName} response`
-
   return (
     <div
-      role="region"
-      aria-label={regionLabel}
-      aria-busy="true"
-      className="relative flex flex-col overflow-hidden rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)]"
-      style={{
-        borderTopWidth: 2,
-        borderTopStyle: 'solid',
-        borderTopColor: borderColor,
-      }}
+      role="status"
+      aria-live="polite"
+      aria-label={`${title}: ${line}`}
+      className="rounded-forge-card flex min-h-[200px] flex-col overflow-hidden border border-dashed border-[var(--border)] bg-[var(--bg-surface)]/80"
+      style={{ borderTopWidth: 2, borderTopColor: color }}
     >
-      <div
-        className={`relative z-[1] flex items-center gap-2 border-b border-dashed border-[var(--border)] bg-transparent ${headerPad}`}
-      >
-        {dotClass && (
-          <span
-            className={`h-2.5 w-2.5 shrink-0 rounded-full ${dotClass}`}
-            aria-hidden
-          />
-        )}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-dashed border-[var(--border)] px-4 py-3">
         <span
-          className={`font-mono font-bold uppercase tracking-wide text-[var(--text-primary)] ${variant === 'review' ? 'text-[11px]' : 'text-[10px]'}`}
+          className="font-mono text-[10px] font-semibold uppercase tracking-wide"
+          style={{ color }}
         >
-          {titleText}
+          {title}
         </span>
+        {startTime != null ? (
+          <AgentTimer startTime={startTime} endTime={endTime} />
+        ) : null}
       </div>
-      <div
-        className={`relative flex flex-1 flex-col ${bodyMin} max-h-[320px] overflow-hidden ${bodyPad}`}
-      >
+      <div className="relative flex flex-1 flex-col items-center justify-center px-4 py-8">
         <div
-          className="pointer-events-none absolute inset-0 z-0 opacity-90 agent-thinking-shimmer"
+          className="pointer-events-none absolute inset-0 z-0 agent-thinking-shimmer opacity-40"
           aria-hidden
         />
-        <div className="relative z-[1] flex flex-1 flex-col items-center justify-center gap-3">
-          <div className="relative flex items-center gap-2" aria-hidden>
-            <span className="thinking-dot" />
-            <span className="thinking-dot" />
-            <span className="thinking-dot" />
-          </div>
-          <p className="text-center font-mono text-[11px] text-[var(--text-muted)]">
-            {label}
+        <div className="relative z-[1] flex flex-col items-center gap-3">
+          <div
+            className="live-agent-dot-pulse h-2.5 w-2.5 rounded-full"
+            style={{ backgroundColor: color }}
+            aria-hidden
+          />
+          <p className="max-w-[14rem] text-center font-sans text-sm italic leading-snug text-[var(--text-secondary)]">
+            {line}
           </p>
         </div>
       </div>

@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react'
 import { Settings } from 'lucide-react'
+import AuditTrail from './components/AuditTrail.jsx'
 import ErrorBanner from './components/ErrorBanner.jsx'
 import FindingsPanel from './components/FindingsPanel.jsx'
 import ResearchPanel from './components/ResearchPanel.jsx'
@@ -103,6 +104,14 @@ export default function App() {
     dispatch({ type: 'RESET' })
     setPromptDraft('')
   }, [dispatch])
+
+  const promptInputRef = useRef(
+    /** @type {{ focusPrompt: () => void } | null} */ (null)
+  )
+
+  const focusPromptAfterExample = useCallback(() => {
+    promptInputRef.current?.focusPrompt()
+  }, [])
 
   const roundsLenRef = useRef(0)
   useEffect(() => {
@@ -233,6 +242,7 @@ export default function App() {
           <>
             <div className="mb-10 shrink-0">
               <PromptInput
+                ref={promptInputRef}
                 value={promptDraft}
                 onChange={setPromptDraft}
                 onRun={handleRun}
@@ -250,7 +260,10 @@ export default function App() {
 
             <div className="mt-2 flex flex-col gap-12 md:gap-14">
               {showEmptyState ? (
-                <ForgeEmptyState onPickExample={setPromptDraft} />
+                <ForgeEmptyState
+                  onPickExample={setPromptDraft}
+                  onAfterExamplePick={focusPromptAfterExample}
+                />
               ) : null}
 
               {sortedRounds.map((round, roundIdx) => {
@@ -269,6 +282,7 @@ export default function App() {
                       scores={scores}
                       round={round}
                       config={cfg}
+                      agentTimers={state.agentTimers}
                     />
                     {review ? (
                       <ReviewCard
@@ -278,6 +292,7 @@ export default function App() {
                         bReviews={review.bReviews}
                         cReviews={review.cReviews}
                         config={cfg}
+                        reviewTimers={state.reviewTimers}
                       />
                     ) : null}
                   </div>
@@ -285,24 +300,31 @@ export default function App() {
               })}
 
               {state.synthesis ? (
-                <div
-                  id="forge-synthesis"
-                  className={`${roundScrollMt} md:scroll-mt-8`}
-                >
-                  <Suspense
-                    fallback={
-                      <div
-                        className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] px-6 py-12 text-center font-mono text-xs text-[var(--text-muted)]"
-                        role="status"
-                        aria-live="polite"
-                      >
-                        Loading synthesis…
-                      </div>
-                    }
+                <>
+                  <div
+                    id="forge-synthesis"
+                    className={`${roundScrollMt} md:scroll-mt-8`}
                   >
-                    <SynthesisPanel synthesis={state.synthesis} />
-                  </Suspense>
-                </div>
+                    <Suspense
+                      fallback={
+                        <div
+                          className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] px-6 py-12 text-center font-mono text-xs text-[var(--text-muted)]"
+                          role="status"
+                          aria-live="polite"
+                        >
+                          Loading synthesis…
+                        </div>
+                      }
+                    >
+                      <SynthesisPanel synthesis={state.synthesis} />
+                    </Suspense>
+                  </div>
+                  <div
+                    className="my-8 w-full border-t border-dashed border-[#D4C9B0]"
+                    role="presentation"
+                  />
+                  <AuditTrail />
+                </>
               ) : null}
             </div>
           </>

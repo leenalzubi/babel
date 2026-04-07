@@ -110,9 +110,10 @@ function sleep(ms) {
  * @param {string} model
  * @param {Array<{ role: 'user' | 'assistant', content: string }>} messages
  * @param {string} systemPrompt
+ * @param {{ maxTokens?: number } | undefined} [options]
  * @returns {Promise<string>}
  */
-export async function callGitHubModel(model, messages, systemPrompt) {
+export async function callGitHubModel(model, messages, systemPrompt, options) {
   const { url, authorization } = resolveGithubChatRequest()
   const isProxyRequest = url === PROXY_PATH
 
@@ -137,9 +138,17 @@ export async function callGitHubModel(model, messages, systemPrompt) {
     headers.Authorization = authorization
   }
 
+  const maxTokens =
+    options &&
+    typeof options === 'object' &&
+    typeof options.maxTokens === 'number' &&
+    Number.isFinite(options.maxTokens)
+      ? Math.min(32_000, Math.max(256, Math.round(options.maxTokens)))
+      : 1024
+
   const payload = {
     model,
-    max_tokens: 1024,
+    max_tokens: maxTokens,
     messages: [{ role: 'system', content: systemPrompt }, ...messages],
   }
 

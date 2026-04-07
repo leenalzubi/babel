@@ -3,6 +3,14 @@ import { loadForgeSettings } from '../lib/forgeSettings.js'
 
 /** @typedef {'idle' | 'running' | 'complete' | 'error'} ForgeStatus */
 
+function emptyAgentTimers() {
+  return {
+    a: { startTime: /** @type {number | null} */ (null), endTime: null },
+    b: { startTime: /** @type {number | null} */ (null), endTime: null },
+    c: { startTime: /** @type {number | null} */ (null), endTime: null },
+  }
+}
+
 function createInitialState() {
   return {
     prompt: '',
@@ -22,19 +30,35 @@ function createInitialState() {
       agentA: {
         name: 'GPT-4o mini',
         model: 'openai/gpt-4o-mini',
-        color: '#1A4A6B',
+        color: '#2563EB',
       },
       agentB: {
         name: 'Phi-4 Reasoning',
         model: 'microsoft/phi-4-reasoning',
-        color: '#2D5A3D',
+        color: '#16A34A',
       },
       agentC: {
         name: 'Mistral Small',
         model: 'mistral-ai/mistral-small-2503',
-        color: '#6B3D1A',
+        color: '#DC2626',
       },
     },
+    agentTimers: emptyAgentTimers(),
+    agentResponses: {
+      a: /** @type {string | null} */ (null),
+      b: null,
+      c: null,
+    },
+    reviewTimers: emptyAgentTimers(),
+    reviewResponses: {
+      a: /** @type {string | null} */ (null),
+      b: null,
+      c: null,
+    },
+    /** @type {{ claims: { id: string, text: string }[], positions: unknown[], traces: unknown[] } | null} */
+    audit: null,
+    auditLoading: false,
+    auditError: /** @type {string | null} */ (null),
   }
 }
 
@@ -43,8 +67,136 @@ function forgeReducer(state, action) {
     case 'SET_PROMPT':
       return { ...state, prompt: action.payload ?? '' }
 
-    case 'SET_STATUS':
-      return { ...state, status: action.payload }
+    case 'SET_STATUS': {
+      const next = action.payload
+      if (next === 'running') {
+        return {
+          ...state,
+          status: 'running',
+          rounds: [],
+          reviews: [],
+          divergenceScores: [],
+          synthesis: null,
+          error: null,
+          agentTimers: emptyAgentTimers(),
+          agentResponses: { a: null, b: null, c: null },
+          reviewTimers: emptyAgentTimers(),
+          reviewResponses: { a: null, b: null, c: null },
+          audit: null,
+          auditLoading: false,
+          auditError: null,
+        }
+      }
+      return { ...state, status: next }
+    }
+
+    case 'SET_AUDIT':
+      return {
+        ...state,
+        audit: action.payload ?? null,
+        auditError: null,
+      }
+
+    case 'SET_AUDIT_LOADING':
+      return { ...state, auditLoading: Boolean(action.payload) }
+
+    case 'SET_AUDIT_ERROR':
+      return {
+        ...state,
+        auditError:
+          typeof action.payload === 'string' ? action.payload : null,
+      }
+
+    case 'SET_AGENT_THINKING': {
+      const { agent, startTime } = action.payload
+      const k = /** @type {'a' | 'b' | 'c'} */ (agent)
+      let rounds = state.rounds
+      if (k === 'a' && !rounds.some((r) => r.roundNum === 1)) {
+        rounds = [
+          ...rounds,
+          { roundNum: 1, agentA: '', agentB: '', agentC: '' },
+        ]
+      }
+      return {
+        ...state,
+        rounds,
+        agentTimers: {
+          ...state.agentTimers,
+          [k]: { startTime, endTime: null },
+        },
+      }
+    }
+
+    case 'SET_AGENT_DONE': {
+      const { agent, response, endTime } = action.payload
+      const k = /** @type {'a' | 'b' | 'c'} */ (agent)
+      const field =
+        k === 'a' ? 'agentA' : k === 'b' ? 'agentB' : 'agentC'
+      const idx = state.rounds.findIndex((r) => r.roundNum === 1)
+      const rounds = [...state.rounds]
+      if (idx >= 0) {
+        rounds[idx] = { ...rounds[idx], [field]: response ?? '' }
+      }
+      return {
+        ...state,
+        agentResponses: { ...state.agentResponses, [k]: response ?? '' },
+        agentTimers: {
+          ...state.agentTimers,
+          [k]: { ...state.agentTimers[k], endTime },
+        },
+        rounds,
+      }
+    }
+
+    case 'SET_REVIEW_THINKING': {
+      const { agent, startTime } = action.payload
+      const k = /** @type {'a' | 'b' | 'c'} */ (agent)
+      let reviews = state.reviews
+      const rIdx = reviews.findIndex((r) => r.roundNum === 1)
+      if (rIdx === -1) {
+        reviews = [
+          ...reviews,
+          { roundNum: 1, aReviews: '', bReviews: '', cReviews: '' },
+        ]
+      }
+      return {
+        ...state,
+        reviews,
+        reviewTimers: {
+          ...state.reviewTimers,
+          [k]: { startTime, endTime: null },
+        },
+      }
+    }
+
+    case 'SET_REVIEW_DONE': {
+      const { agent, review, endTime } = action.payload
+      const k = /** @type {'a' | 'b' | 'c'} */ (agent)
+      const field =
+        k === 'a' ? 'aReviews' : k === 'b' ? 'bReviews' : 'cReviews'
+      const rIdx = state.reviews.findIndex((r) => r.roundNum === 1)
+      const reviews = [...state.reviews]
+      const text = review ?? ''
+      if (rIdx >= 0) {
+        reviews[rIdx] = { ...reviews[rIdx], [field]: text }
+      } else {
+        reviews.push({
+          roundNum: 1,
+          aReviews: k === 'a' ? text : '',
+          bReviews: k === 'b' ? text : '',
+          cReviews: k === 'c' ? text : '',
+        })
+      }
+      return {
+        ...state,
+        reviews,
+        reviewResponses: { ...state.reviewResponses, [k]: text },
+        reviewTimers: {
+          ...state.reviewTimers,
+          [k]: { ...state.reviewTimers[k], endTime },
+        },
+      }
+    }
 
     case 'ADD_ROUND': {
       const { roundNum, agentA, agentB, agentC } = action.payload
