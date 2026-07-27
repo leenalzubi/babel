@@ -242,7 +242,7 @@ Cases where Babel does not outperform the simpler baseline are part of the resul
 
 Babel's visual system combines three influences around one shared principle: form should serve the person and the argument.
 
-* **Base** material honesty, warmth, shelter, and local architectural intelligence
+* **Base:** material honesty, warmth, shelter, and local architectural intelligence
 * **Restraint:** clarity, muted surfaces, generous reading space, and function-first composition
 * **Weight:** measure, courtesy, proportion, and room for dissent
 
