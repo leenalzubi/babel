@@ -1,8 +1,42 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import InfluenceMap from './InfluenceMap.jsx'
+import PageHeader from './layout/PageHeader.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 
 const PAGE_SIZE = 20
+
+/**
+ * Turn opaque network failures into actionable copy.
+ * @param {unknown} err
+ */
+function formatFindingsFetchError(err) {
+  const raw =
+    err && typeof err === 'object' && 'message' in err
+      ? String(/** @type {{ message?: unknown }} */ (err).message ?? '')
+      : err instanceof Error
+        ? err.message
+        : String(err ?? '')
+  const lower = raw.toLowerCase()
+  if (
+    lower.includes('failed to fetch') ||
+    lower.includes('networkerror') ||
+    lower.includes('load failed') ||
+    lower.includes('network request failed')
+  ) {
+    return (
+      'Could not reach Supabase (network / DNS). Check that VITE_SUPABASE_URL ' +
+      'points to an active project (Dashboard → Project Settings → API), ' +
+      'then restart the Vite dev server so .env.local is reloaded.'
+    )
+  }
+  if (lower.includes('jwt') || lower.includes('invalid api key')) {
+    return (
+      'Supabase rejected the anon key. Update VITE_SUPABASE_ANON_KEY from the ' +
+      'project API settings and restart the dev server.'
+    )
+  }
+  return raw || 'Failed to load debates.'
+}
 
 /** @param {unknown} n */
 function pct(n) {
@@ -23,7 +57,7 @@ function divergenceCellClass(val) {
 /** @param {unknown} val */
 function fmtPct(val) {
   const p = pct(val)
-  return p === null ? '—' : `${p}%`
+  return p === null ? '-' : `${p}%`
 }
 
 /** Prefer claim-based average; fall back to legacy semantic `divergence_avg`. */
@@ -66,7 +100,7 @@ function rowClaimScores(r) {
  * @param {{ model_a?: string, model_b?: string, model_c?: string }} row
  */
 function contributorDisplay(c, row) {
-  if (!c) return '—'
+  if (!c) return '-'
   const u = String(c).toLowerCase()
   const map = { a: row.model_a, b: row.model_b, c: row.model_c }
   const model = map[u]
@@ -75,23 +109,23 @@ function contributorDisplay(c, row) {
 
 /** @param {unknown} changeLabel @param {string} borderColor */
 function changeBadge(changeLabel, borderColor) {
-  const s = changeLabel == null || changeLabel === '' ? '—' : String(changeLabel)
+  const s = changeLabel == null || changeLabel === '' ? '-' : String(changeLabel)
   const low = s.toLowerCase()
   let bg = 'bg-[var(--bg-raised)]'
   let text = 'text-[var(--text-muted)]'
   if (low.includes('held firm')) {
-    bg = 'bg-[#16A34A]/15'
-    text = 'text-[#15803D]'
+    bg = 'bg-[#4C6647]/15'
+    text = 'text-[#3D5439]'
   } else if (low.includes('significant')) {
-    bg = 'bg-[#DC2626]/12'
-    text = 'text-[#B91C1C]'
+    bg = 'bg-[#97372B]/12'
+    text = 'text-[#7A2C23]'
   } else if (low.includes('minor') || low.includes('shifted')) {
     bg = 'bg-[#D97706]/12'
     text = 'text-[#B45309]'
   }
   return (
     <span
-      className={`inline-block max-w-[7rem] truncate rounded-full border px-1.5 py-0.5 font-mono text-[9px] font-medium ${bg} ${text}`}
+      className={`inline-block max-w-[8rem] truncate rounded-[var(--radius)] border px-2 py-1 font-mono text-[0.8125rem] font-medium leading-snug ${bg} ${text}`}
       style={{ borderColor }}
       title={s}
     >
@@ -110,8 +144,8 @@ function clampPctInput(raw, fallback) {
 function TableSkeleton() {
   return (
     <div className="overflow-hidden rounded-forge-card border border-[var(--border)]">
-      <table className="w-full border-collapse text-left font-sans text-sm">
-        <thead className="border-b border-[var(--border)] bg-[var(--bg-raised)]/60 font-mono text-[10px] tracking-[0.12em] text-[var(--text-muted)]">
+      <table className="babel-table w-full">
+        <thead>
           <tr>
             {[
               'Date',
@@ -123,9 +157,7 @@ function TableSkeleton() {
               'Rounds',
               'Changed',
             ].map((h) => (
-              <th key={h} className="px-3 py-2 font-medium">
-                {h}
-              </th>
+              <th key={h}>{h}</th>
             ))}
           </tr>
         </thead>
@@ -145,21 +177,20 @@ function TableSkeleton() {
   )
 }
 
-/** @param {{ title: string, value: string | number, subtitle?: string }} props */
-function StatCard({ title, value, subtitle }) {
+/** @param {{ title: string, value: string | number, subtitle?: string, emptyLabel?: string }} props */
+function StatCard({ title, value, subtitle, emptyLabel = 'Not enough data yet' }) {
+  const isEmpty =
+    value === '-' ||
+    value === null ||
+    value === undefined ||
+    value === ''
+  const display = isEmpty ? emptyLabel : value
+
   return (
-    <div className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-metric)] p-4">
-      <p className="mb-1 font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
-        {title}
-      </p>
-      <p className="text-lg font-semibold text-[var(--text-primary)]">
-        {value}
-      </p>
-      {subtitle ? (
-        <p className="mt-1 line-clamp-3 text-xs leading-snug text-[var(--text-secondary)]">
-          {subtitle}
-        </p>
-      ) : null}
+    <div className="metric-card">
+      <p className="metric-label">{title}</p>
+      <p className={`metric-value ${isEmpty ? 'is-empty' : ''}`}>{display}</p>
+      {subtitle ? <p className="metric-subtitle">{subtitle}</p> : null}
     </div>
   )
 }
@@ -188,66 +219,72 @@ export default function FindingsPanel() {
       }
       setLoading(true)
       setFetchError(null)
-      const { data, error } = await supabase
-        .from('debates')
-        .select(
-          [
-            'id',
-            'created_at',
-            'model_a',
-            'model_b',
-            'model_c',
-            'claim_divergence_ab',
-            'claim_divergence_ac',
-            'claim_divergence_bc',
-            'claim_divergence_avg',
-            'divergence_ab',
-            'divergence_ac',
-            'divergence_bc',
-            'divergence_avg',
-            'total_claims',
-            'contested_claims',
-            'unanimous_claims',
-            'hard_disagreements',
-            'rounds',
-            'top_contributor',
-            'conflict_score_ab',
-            'conflict_score_ac',
-            'conflict_score_bc',
-            'challenged_most',
-            'dominant_agent',
-            'named_references_a',
-            'named_references_b',
-            'named_references_c',
-            'response_length_a',
-            'response_length_b',
-            'response_length_c',
-            'most_flexible',
-            'most_combative',
-            'bias_flagged',
-            'validation_status',
-            'synthesis_winner',
-            'gpt_competition_score',
-            'phi_competition_score',
-            'mistral_competition_score',
-            'change_a',
-            'change_b',
-            'change_c',
-            'change_type_a',
-            'change_type_b',
-            'change_type_c',
-            'most_influenced',
-            'most_resistant',
-          ].join(',')
-        )
-        .order('created_at', { ascending: false })
+      try {
+        const { data, error } = await supabase
+          .from('debates')
+          .select(
+            [
+              'id',
+              'created_at',
+              'model_a',
+              'model_b',
+              'model_c',
+              'claim_divergence_ab',
+              'claim_divergence_ac',
+              'claim_divergence_bc',
+              'claim_divergence_avg',
+              'divergence_ab',
+              'divergence_ac',
+              'divergence_bc',
+              'divergence_avg',
+              'total_claims',
+              'contested_claims',
+              'unanimous_claims',
+              'hard_disagreements',
+              'rounds',
+              'top_contributor',
+              'conflict_score_ab',
+              'conflict_score_ac',
+              'conflict_score_bc',
+              'challenged_most',
+              'dominant_agent',
+              'named_references_a',
+              'named_references_b',
+              'named_references_c',
+              'response_length_a',
+              'response_length_b',
+              'response_length_c',
+              'most_flexible',
+              'most_combative',
+              'bias_flagged',
+              'validation_status',
+              'synthesis_winner',
+              'gpt_competition_score',
+              'phi_competition_score',
+              'mistral_competition_score',
+              'change_a',
+              'change_b',
+              'change_c',
+              'change_type_a',
+              'change_type_b',
+              'change_type_c',
+              'most_influenced',
+              'most_resistant',
+            ].join(',')
+          )
+          .order('created_at', { ascending: false })
 
-      if (cancelled) return
-      if (error) {
-        setFetchError(error.message)
+        if (cancelled) return
+        if (error) {
+          setFetchError(formatFindingsFetchError(error))
+          setRows([])
+        } else {
+          setRows(Array.isArray(data) ? data : [])
+        }
+      } catch (err) {
+        if (cancelled) return
+        setFetchError(formatFindingsFetchError(err))
         setRows([])
-      } else {
-        setRows(Array.isArray(data) ? data : [])
       }
       setLoading(false)
     }
@@ -568,12 +605,14 @@ export default function FindingsPanel() {
   const supabaseConfigured = Boolean(supabase)
 
   return (
-    <div className="flex flex-col gap-8 pb-16">
-      <div
-        className="rounded-forge-card border border-[var(--border)] border-l-[3px] border-l-[var(--accent-forge)] bg-[var(--bg-surface)] p-4 md:p-5"
-        role="note"
-      >
-        <p className="font-sans text-sm leading-relaxed text-[var(--text-secondary)]">
+    <div className="data-page flex flex-col gap-8 sm:gap-10">
+      <PageHeader
+        eyebrow="Findings"
+        title="An open record of disagreement"
+        lede="Aggregate metrics from debates logged here: divergence, influence, and how models move under challenge."
+      />
+      <div className="babel-notice consent-banner -mt-4" role="note">
+        <p>
           This dataset is shared publicly as aggregate statistics and debate
           metrics. Prompt excerpts are retained in the database for research only
           and are not shown here. Full responses or personal information are
@@ -583,7 +622,7 @@ export default function FindingsPanel() {
       </div>
 
       {!supabaseConfigured ? (
-        <p className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-notebook)] px-4 py-3 font-mono text-xs text-[var(--text-secondary)]">
+        <p className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-notebook)] px-4 py-3 babel-meta text-[var(--text-secondary)]">
           Set <code className="text-[var(--text-primary)]">VITE_SUPABASE_URL</code>{' '}
           and <code className="text-[var(--text-primary)]">VITE_SUPABASE_ANON_KEY</code>{' '}
           to load findings.
@@ -591,56 +630,67 @@ export default function FindingsPanel() {
       ) : null}
 
       {fetchError ? (
-        <p className="font-mono text-sm text-[var(--diverge)]">{fetchError}</p>
+        <div
+          className="rounded-forge-card border border-[var(--madder)]/35 bg-[color-mix(in_srgb,var(--madder)_8%,var(--plaster))] px-4 py-3"
+          role="alert"
+        >
+          <p className="babel-eyebrow text-[var(--madder)]">
+            Findings unavailable
+          </p>
+          <p className="mt-2 babel-meta leading-relaxed text-[var(--text-secondary)]">
+            {fetchError}
+          </p>
+        </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div
+        className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${
+          stats.mostFlexible.name != null || stats.mostCombative.name != null
+            ? 'xl:grid-cols-4'
+            : 'xl:grid-cols-2'
+        }`}
+      >
         <StatCard title="Total debates" value={stats.total} />
         <StatCard
           title="Avg. claim disagreement"
           value={
-            stats.avgDiv == null ? '—' : `${pct(stats.avgDiv)}%`
+            stats.avgDiv == null ? '-' : `${pct(stats.avgDiv)}%`
           }
           subtitle="mean pairwise claim tension across debates"
+          emptyLabel="Not enough data yet"
         />
-        <StatCard
-          title="Most flexible agent"
-          value={
-            stats.mostFlexible.name == null
-              ? '—'
-              : `${stats.mostFlexible.name}${
-                  stats.mostFlexible.count > 0
-                    ? ` (${stats.mostFlexible.count})`
-                    : ''
-                }`
-          }
-        />
-        <StatCard
-          title="Most combative agent"
-          value={
-            stats.mostCombative.name == null
-              ? '—'
-              : `${stats.mostCombative.name}${
-                  stats.mostCombative.count > 0
-                    ? ` (${stats.mostCombative.count})`
-                    : ''
-                }`
-          }
-        />
+        {stats.mostFlexible.name != null ? (
+          <StatCard
+            title="Most flexible agent"
+            value={`${stats.mostFlexible.name}${
+              stats.mostFlexible.count > 0
+                ? ` (${stats.mostFlexible.count})`
+                : ''
+            }`}
+          />
+        ) : null}
+        {stats.mostCombative.name != null ? (
+          <StatCard
+            title="Most combative agent"
+            value={`${stats.mostCombative.name}${
+              stats.mostCombative.count > 0
+                ? ` (${stats.mostCombative.count})`
+                : ''
+            }`}
+          />
+        ) : null}
       </div>
 
-      <p className="rounded-forge-card border border-dashed border-[var(--border)] bg-[var(--bg-surface)]/80 px-4 py-3 text-center font-sans text-xs italic leading-relaxed text-[var(--text-muted)]">
+      <p className="methodology-note rounded-forge-card border border-dashed border-[var(--border)] bg-[var(--bg-surface)]/80 px-4 py-3 text-center">
         Claim disagreement is derived from audited claims: how often agents agreed,
-        disagreed, or split on each extracted claim — not embedding similarity.
+        disagreed, or split on each extracted claim, not embedding similarity.
       </p>
 
       {supabaseConfigured ? (
         <section className="flex flex-col gap-4">
-          <h2 className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
-            Agent dynamics
-          </h2>
+          <span className="babel-eyebrow">Agent dynamics</span>
           {agentDynamics.n < 5 ? (
-            <p className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] px-4 py-6 text-center text-sm text-[var(--text-secondary)]">
+            <p className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] px-4 py-6 text-center babel-meta text-[var(--text-secondary)]">
               Run 5 debates to unlock agent personality patterns.
             </p>
           ) : (
@@ -651,7 +701,7 @@ export default function FindingsPanel() {
                   value={
                     agentDynamics.combativeRow == null ||
                     agentDynamics.maxComb < 0
-                      ? '—'
+                      ? '-'
                       : `${Math.round(agentDynamics.maxComb * 100)}%`
                   }
                 />
@@ -659,7 +709,7 @@ export default function FindingsPanel() {
                   title="Most challenged agent"
                   value={
                     agentDynamics.mostChallengedName == null
-                      ? '—'
+                      ? '-'
                       : `${agentDynamics.mostChallengedName} (${agentDynamics.mostChallengedCount})`
                   }
                 />
@@ -668,7 +718,7 @@ export default function FindingsPanel() {
                   value={
                     agentDynamics.dominantName == null ||
                     agentDynamics.dominantPct == null
-                      ? '—'
+                      ? '-'
                       : `${agentDynamics.dominantName} (${agentDynamics.dominantPct}%)`
                   }
                   subtitle={
@@ -686,7 +736,7 @@ export default function FindingsPanel() {
                   title="Synthesis bias rate"
                   value={
                     agentDynamics.synthesisBiasRate == null
-                      ? '—'
+                      ? '-'
                       : `${agentDynamics.synthesisBiasRate}%`
                   }
                   subtitle="Debates where validators flagged the synthesis as unfair to one or more positions"
@@ -695,9 +745,9 @@ export default function FindingsPanel() {
                   title="Synthesis wins"
                   value={
                     agentDynamics.synthesisWinDenom === 0
-                      ? '—'
+                      ? '-'
                       : agentDynamics.synthesisWinLeaderName == null
-                        ? '—'
+                        ? '-'
                         : `${agentDynamics.synthesisWinLeaderName} (${agentDynamics.synthesisWinCount} of ${agentDynamics.synthesisWinDenom})`
                   }
                   subtitle="based on peer evaluation scores"
@@ -706,7 +756,7 @@ export default function FindingsPanel() {
                   title="Most influenced model"
                   value={
                     agentDynamics.influencedLeader.count === 0
-                      ? '—'
+                      ? '-'
                       : `${agentDynamics.influencedLeader.name} (${agentDynamics.influencedLeader.count})`
                   }
                   subtitle="most often shifted most by embeddings + self-report"
@@ -715,14 +765,14 @@ export default function FindingsPanel() {
                   title="Most resistant model"
                   value={
                     agentDynamics.resistantLeader.count === 0
-                      ? '—'
+                      ? '-'
                       : `${agentDynamics.resistantLeader.name} (${agentDynamics.resistantLeader.count})`
                   }
                   subtitle="most often changed least across logged debates"
                 />
               </div>
               <div className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-metric)] p-4">
-                <h3 className="mb-4 font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
+                <h3 className="mb-4 babel-eyebrow">
                   Personality patterns
                 </h3>
                 <div className="space-y-4">
@@ -761,15 +811,15 @@ export default function FindingsPanel() {
                           ? p.label
                           : `Agent ${slot.toUpperCase()}`
                       const words =
-                        p.avg == null ? '—' : `${Math.round(p.avg)} avg words`
+                        p.avg == null ? '-' : `${Math.round(p.avg)} avg words`
                       return (
                         <div key={slot}>
-                          <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2 font-sans text-xs text-[var(--text-primary)]">
+                          <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2 babel-meta text-[var(--text-primary)]">
                             <span className="font-medium" style={{ color }}>
                               {label}
                             </span>
                             <span className="text-[var(--text-secondary)]">
-                              {words}
+                              {words === '-' ? 'Not enough data yet' : words}
                             </span>
                           </div>
                           <div className="h-2.5 overflow-hidden rounded bg-[var(--border)]/80">
@@ -792,17 +842,15 @@ export default function FindingsPanel() {
         </section>
       ) : null}
 
-      <div className="flex flex-col gap-4 rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] p-4 md:flex-row md:flex-wrap md:items-end">
+      <div className="babel-card flex flex-col gap-4 md:flex-row md:flex-wrap md:items-end">
         <div className="flex min-w-[200px] flex-1 flex-col gap-2">
-          <p className="font-[family-name:var(--font-mono)] text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
-            Divergence range
-          </p>
-          <div className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 font-[family-name:var(--font-mono)] text-[11px] text-[var(--text-primary)]">
+          <p className="babel-eyebrow m-0">Divergence range</p>
+          <div className="inline-flex flex-wrap items-center gap-x-3 gap-y-2 babel-meta text-[var(--ink)]">
             <label
               htmlFor="findings-div-min"
               className="inline-flex items-center gap-1.5"
             >
-              <span className="text-[var(--text-muted)]">Min</span>
+              <span className="meta-label">Min</span>
               <input
                 id="findings-div-min"
                 type="number"
@@ -813,19 +861,19 @@ export default function FindingsPanel() {
                   const v = clampPctInput(e.target.value, divMin)
                   setDivMin(Math.min(v, divMax))
                 }}
-                className="w-[3.25rem] rounded border border-[var(--border)] bg-[var(--bg-base)] px-1.5 py-1 text-[11px] tabular-nums text-[var(--text-primary)] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                className="min-h-12 w-[4rem] rounded border border-[var(--border)] bg-[var(--bg-base)] px-2 py-2 text-[var(--text-control)] tabular-nums text-[var(--ink)] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 aria-label="Minimum divergence percent"
               />
-              <span className="text-[var(--text-muted)]">%</span>
+              <span aria-hidden>%</span>
             </label>
-            <span className="text-[var(--text-muted)]" aria-hidden>
-              —
+            <span className="text-[var(--ink-faint)]" aria-hidden>
+              to
             </span>
             <label
               htmlFor="findings-div-max"
               className="inline-flex items-center gap-1.5"
             >
-              <span className="text-[var(--text-muted)]">Max</span>
+              <span className="meta-label">Max</span>
               <input
                 id="findings-div-max"
                 type="number"
@@ -836,18 +884,15 @@ export default function FindingsPanel() {
                   const v = clampPctInput(e.target.value, divMax)
                   setDivMax(Math.max(v, divMin))
                 }}
-                className="w-[3.25rem] rounded border border-[var(--border)] bg-[var(--bg-base)] px-1.5 py-1 text-[11px] tabular-nums text-[var(--text-primary)] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                className="min-h-12 w-[4rem] rounded border border-[var(--border)] bg-[var(--bg-base)] px-2 py-2 text-[var(--text-control)] tabular-nums text-[var(--ink)] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 aria-label="Maximum divergence percent"
               />
-              <span className="text-[var(--text-muted)]">%</span>
+              <span aria-hidden>%</span>
             </label>
           </div>
         </div>
         <div className="flex min-w-[180px] flex-col gap-1">
-          <label
-            htmlFor="findings-sort"
-            className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]"
-          >
+          <label htmlFor="findings-sort" className="babel-eyebrow m-0">
             Sort
           </label>
           <select
@@ -856,7 +901,7 @@ export default function FindingsPanel() {
             onChange={(e) =>
               setSort(/** @type {'recent' | 'contested' | 'aligned'} */ (e.target.value))
             }
-            className="rounded-lg border border-[var(--border)] bg-[var(--bg-base)] px-3 py-2 font-mono text-xs text-[var(--text-primary)]"
+            className="min-h-12 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-base)] px-3 py-2 text-[var(--text-control)] text-[var(--ink)]"
           >
             <option value="recent">Most recent</option>
             <option value="contested">Most contested</option>
@@ -868,11 +913,11 @@ export default function FindingsPanel() {
       {loading && supabaseConfigured ? (
         <TableSkeleton />
       ) : !loading && filteredSorted.length === 0 ? (
-        <div className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] px-6 py-16 text-center text-sm text-[var(--text-secondary)]">
+        <div className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] px-6 py-10 text-center babel-meta text-[var(--text-secondary)]">
           {!supabaseConfigured ? (
             <>Connect Supabase to see aggregated findings.</>
           ) : rows.length === 0 ? (
-            <>No debates logged yet — run the first one!</>
+            <>No debates logged yet: run the first one!</>
           ) : (
             <>No debates match your filters.</>
           )}
@@ -880,19 +925,17 @@ export default function FindingsPanel() {
       ) : !loading ? (
         <>
           <div className="overflow-x-auto rounded-forge-card border border-[var(--border)]">
-            <table className="w-full min-w-[800px] border-collapse text-left text-sm">
-              <thead className="sticky top-0 z-[1] border-b border-[var(--border)] bg-[var(--bg-surface)] font-mono text-[10px] tracking-[0.12em] text-[var(--text-muted)]">
+            <table className="babel-table w-full min-w-[800px]">
+              <thead className="sticky top-0 z-[1] bg-[var(--bg-surface)]">
                 <tr>
-                  <th className="whitespace-nowrap px-3 py-2 font-medium">
-                    Date
-                  </th>
-                  <th className="px-3 py-2 font-medium">Avg Δ</th>
-                  <th className="px-3 py-2 font-medium">A↔B</th>
-                  <th className="px-3 py-2 font-medium">A↔C</th>
-                  <th className="px-3 py-2 font-medium">B↔C</th>
-                  <th className="px-3 py-2 font-medium">Top</th>
-                  <th className="px-3 py-2 font-medium">Rounds</th>
-                  <th className="min-w-[140px] px-3 py-2 font-medium">Changed</th>
+                  <th className="whitespace-nowrap">Date</th>
+                  <th>Avg Δ</th>
+                  <th>A↔B</th>
+                  <th>A↔C</th>
+                  <th>B↔C</th>
+                  <th>Top</th>
+                  <th>Rounds</th>
+                  <th className="min-w-[140px]">Changed</th>
                 </tr>
               </thead>
               <tbody>
@@ -913,7 +956,7 @@ export default function FindingsPanel() {
                         dateStyle: 'medium',
                         timeStyle: 'short',
                       })
-                    : '—'
+                    : '-'
                   return (
                     <Fragment key={id}>
                       <tr
@@ -926,31 +969,31 @@ export default function FindingsPanel() {
                           setExpandedId((e) => (e === id ? null : id))
                         }
                       >
-                        <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-[var(--text-secondary)]">
+                        <td className="whitespace-nowrap px-3 py-3 babel-meta-tech text-[var(--text-secondary)]">
                           {dateStr}
                         </td>
                         <td
-                          className={`px-3 py-2 font-mono text-xs ${divergenceCellClass(rowClaimAvg(row))}`}
+                          className={`px-3 py-3 babel-meta-tech ${divergenceCellClass(rowClaimAvg(row))}`}
                         >
                           {fmtPct(rowClaimAvg(row))}
                         </td>
                         <td
-                          className={`px-3 py-2 font-mono text-xs ${divergenceCellClass(scores.ab)}`}
+                          className={`px-3 py-3 babel-meta-tech ${divergenceCellClass(scores.ab)}`}
                         >
                           {fmtPct(scores.ab)}
                         </td>
                         <td
-                          className={`px-3 py-2 font-mono text-xs ${divergenceCellClass(scores.ac)}`}
+                          className={`px-3 py-3 babel-meta-tech ${divergenceCellClass(scores.ac)}`}
                         >
                           {fmtPct(scores.ac)}
                         </td>
                         <td
-                          className={`px-3 py-2 font-mono text-xs ${divergenceCellClass(scores.bc)}`}
+                          className={`px-3 py-3 babel-meta-tech ${divergenceCellClass(scores.bc)}`}
                         >
                           {fmtPct(scores.bc)}
                         </td>
                         <td
-                          className="max-w-[120px] truncate px-3 py-2 font-mono text-xs text-[var(--text-secondary)]"
+                          className="max-w-[120px] truncate px-3 py-3 babel-meta-tech text-[var(--text-secondary)]"
                           title={String(
                             contributorDisplay(
                               /** @type {string} */ (row.top_contributor),
@@ -963,8 +1006,8 @@ export default function FindingsPanel() {
                             row
                           )}
                         </td>
-                        <td className="px-3 py-2 font-mono text-xs text-[var(--text-secondary)]">
-                          {row.rounds != null ? String(row.rounds) : '—'}
+                        <td className="px-3 py-3 babel-meta-tech text-[var(--text-secondary)]">
+                          {row.rounds != null ? String(row.rounds) : '-'}
                         </td>
                         <td className="px-2 py-2">
                           <div className="flex flex-wrap gap-1">
@@ -977,10 +1020,10 @@ export default function FindingsPanel() {
                       {expandedId === id ? (
                         <tr className="border-b border-[var(--border)] bg-[var(--bg-surface)]">
                           <td colSpan={8} className="px-6 py-6">
-                            <p className="mb-2 font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
+                            <p className="mb-2 babel-eyebrow">
                               Pairwise claim disagreement
                             </p>
-                            <p className="mb-3 max-w-md font-sans text-[11px] italic leading-relaxed text-[var(--text-muted)]">
+                            <p className="mb-3 max-w-md babel-meta italic">
                               Edges aggregate agree / disagree / partial / silent
                               labels from the debate audit.
                             </p>
@@ -1021,17 +1064,21 @@ export default function FindingsPanel() {
             </table>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 font-mono text-xs text-[var(--text-secondary)]">
+          <div className="flex flex-wrap items-center justify-between gap-3 babel-meta">
             <span>
-              Page {safePage} of {totalPages} · {filteredSorted.length} debate
+              Page {safePage} of {totalPages}
+              <span className="mx-2 text-[var(--ink-faint)]" aria-hidden>
+                |
+              </span>
+              {filteredSorted.length} debate
               {filteredSorted.length !== 1 ? 's' : ''}
             </span>
-            <div className="flex gap-2">
+            <div className="action-group">
               <button
                 type="button"
                 disabled={safePage <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-1.5 font-medium transition enabled:hover:border-[var(--text-muted)] disabled:opacity-40"
+                className="babel-btn babel-btn-ghost"
               >
                 Previous
               </button>
@@ -1041,7 +1088,7 @@ export default function FindingsPanel() {
                 onClick={() =>
                   setPage((p) => Math.min(totalPages, p + 1))
                 }
-                className="rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-1.5 font-medium transition enabled:hover:border-[var(--text-muted)] disabled:opacity-40"
+                className="babel-btn babel-btn-ghost"
               >
                 Next
               </button>
@@ -1051,7 +1098,7 @@ export default function FindingsPanel() {
       ) : null}
 
       {!loading && supabaseConfigured ? (
-        <p className="font-mono text-[10px] text-[var(--text-muted)]">
+        <p className="babel-meta m-0">
           Showing debates with average claim disagreement between {divMin}% and{' '}
           {divMax}%. Rows without a stored average are hidden while filtering.
         </p>

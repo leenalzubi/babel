@@ -1,9 +1,7 @@
-const EXAMPLES = [
-  'Is the ocean more dangerous than it was 100 years ago, or have we just gotten better at measuring the risk?',
-  'At what point does a field of study become too specialized to be useful?',
-  'Did the novel as a form peak in the 19th century?',
-  'Is expertise overrated in an age where information is free?',
-]
+import Eyebrow from './Eyebrow.jsx'
+import { EVAL_PROMPT_SUITE } from '../lib/evalPromptSuite.js'
+
+const EXAMPLES = EVAL_PROMPT_SUITE.slice(0, 4).map((p) => p.decision)
 
 function ThreeBubblesIllustration() {
   return (
@@ -22,16 +20,16 @@ function ThreeBubblesIllustration() {
         width="36"
         height="24"
         rx="8"
-        fill="#2563EB"
+        fill="#1E4E5E"
         fillOpacity="0.15"
-        stroke="#2563EB"
+        stroke="#1E4E5E"
         strokeWidth="1.5"
       />
       <polygon
         points="8,28 6,36 16,28"
-        fill="#2563EB"
+        fill="#1E4E5E"
         fillOpacity="0.15"
-        stroke="#2563EB"
+        stroke="#1E4E5E"
         strokeWidth="1.5"
         strokeLinejoin="round"
       />
@@ -41,16 +39,16 @@ function ThreeBubblesIllustration() {
         width="36"
         height="24"
         rx="8"
-        fill="#16A34A"
+        fill="#4C6647"
         fillOpacity="0.15"
-        stroke="#16A34A"
+        stroke="#4C6647"
         strokeWidth="1.5"
       />
       <polygon
         points="64,28 62,36 72,28"
-        fill="#16A34A"
+        fill="#4C6647"
         fillOpacity="0.15"
-        stroke="#16A34A"
+        stroke="#4C6647"
         strokeWidth="1.5"
         strokeLinejoin="round"
       />
@@ -60,16 +58,16 @@ function ThreeBubblesIllustration() {
         width="36"
         height="24"
         rx="8"
-        fill="#DC2626"
+        fill="#97372B"
         fillOpacity="0.15"
-        stroke="#DC2626"
+        stroke="#97372B"
         strokeWidth="1.5"
       />
       <polygon
         points="30,42 28,50 38,42"
-        fill="#DC2626"
+        fill="#97372B"
         fillOpacity="0.15"
-        stroke="#DC2626"
+        stroke="#97372B"
         strokeWidth="1.5"
         strokeLinejoin="round"
       />
@@ -89,15 +87,14 @@ export default function ForgeEmptyState({ onPickExample, onAfterExamplePick }) {
       <div className="mb-6 flex items-center justify-center">
         <ThreeBubblesIllustration />
       </div>
-      <p className="mt-3 max-w-md text-sm italic leading-relaxed text-[var(--text-secondary)]">
-        Enter a prompt above. Three agents debate it, cross-review each other, and
-        synthesize a refined answer.
+      <Eyebrow className="justify-center">Begin a debate</Eyebrow>
+      <p className="babel-lede mt-4 text-center">
+        Enter a prompt above. Three agents debate it, cross-review each other,
+        and synthesize a refined answer.
       </p>
       <div className="mt-8 flex w-full max-w-md flex-col gap-2">
-        <span className="font-mono text-[10px] font-medium tracking-[0.12em] text-[var(--text-muted)]">
-          Try an example
-        </span>
-        <div className="flex flex-col gap-2">
+        <Eyebrow className="justify-center">Try an example</Eyebrow>
+        <div className="mt-2 flex flex-col gap-2">
           {EXAMPLES.map((ex) => (
             <button
               key={ex}
@@ -108,7 +105,7 @@ export default function ForgeEmptyState({ onPickExample, onAfterExamplePick }) {
                   onAfterExamplePick?.()
                 }, 0)
               }}
-              className="rounded-[4px] border-l border-l-[var(--accent-forge)] bg-transparent py-2.5 pl-3 pr-2 text-left text-xs italic leading-snug text-[var(--text-secondary)] transition hover:bg-[var(--bg-synthesis)]"
+              className="rounded-[4px] border-l-[3px] border-l-[var(--ochre)] bg-[var(--plaster)] py-3 pl-3 pr-2 text-left babel-meta italic leading-snug text-[var(--ink-soft)] shadow-forge-card transition hover:bg-[var(--ochre-wash)]"
             >
               {ex}
             </button>

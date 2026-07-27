@@ -9,12 +9,12 @@ const PATH_AC = `M ${VA.x} ${VA.y} L ${VC.x} ${VC.y}`
 const PATH_BC = `M ${VB.x} ${VB.y} L ${VC.x} ${VC.y}`
 
 const EDGE_STROKE = {
-  ab: '#2563EB',
-  ac: '#DC2626',
-  bc: '#16A34A',
+  ab: '#1E4E5E',
+  ac: '#97372B',
+  bc: '#4C6647',
 }
 
-/** @param {number} s 0–1 */
+/** @param {number} s 0-1 */
 function edgeWidthForScore(s) {
   const p = Math.min(100, Math.max(0, Math.round(Number(s) * 100)))
   if (p <= 30) return 3
@@ -118,9 +118,9 @@ function r3PercentFromDistance(d) {
 function classificationBadgeClass(cls) {
   const c = String(cls).toLowerCase()
   if (c.includes('held firm'))
-    return 'bg-[#16A34A]/15 text-[#15803D] border-[#16A34A]/35'
+    return 'bg-[#4C6647]/15 text-[#3D5439] border-[#4C6647]/35'
   if (c.includes('significant'))
-    return 'bg-[#DC2626]/12 text-[#B91C1C] border-[#DC2626]/35'
+    return 'bg-[#97372B]/12 text-[#7A2C23] border-[#97372B]/35'
   if (c.includes('minor'))
     return 'bg-[#D97706]/12 text-[#B45309] border-[#D97706]/35'
   if (c.includes('shifted'))
@@ -132,10 +132,10 @@ function classificationBadgeClass(cls) {
 function changeTypeBadge(ct) {
   const t = String(ct)
   const map = {
-    genuine_update: 'bg-[#16A34A]/12 text-[#15803D] border-[#16A34A]/30',
+    genuine_update: 'bg-[#4C6647]/12 text-[#3D5439] border-[#4C6647]/30',
     social_capitulation:
       'bg-[#D97706]/12 text-[#B45309] border-[#D97706]/35',
-    clarification: 'bg-[#2563EB]/10 text-[#1D4ED8] border-[#2563EB]/30',
+    clarification: 'bg-[#1E4E5E]/10 text-[#163B47] border-[#1E4E5E]/30',
     no_change: 'bg-[var(--bg-base)] text-[var(--text-muted)] border-[var(--border)]',
   }
   const label = {
@@ -154,7 +154,7 @@ function changeTypeBadge(ct) {
  * @param {{ agentA: { name: string, color: string }, agentB: { name: string, color: string }, agentC: { name: string, color: string } }} config
  */
 function highlightAgentsInText(text, config) {
-  if (!text) return '—'
+  if (!text) return '-'
   const agents = [
     { name: config.agentA.name, color: config.agentA.color },
     { name: config.agentB.name, color: config.agentB.color },
@@ -222,7 +222,7 @@ function PositionTrack({ agentSpec, row, config }) {
 
   const towardConsensus = toward === true
   const away = toward === false
-  const gradTo = towardConsensus ? '#9ca3af' : away ? '#DC2626' : '#a8a29e'
+  const gradTo = towardConsensus ? '#9ca3af' : away ? '#97372B' : '#a8a29e'
   const gradient = `linear-gradient(90deg, ${agentSpec.color}33 0%, ${gradTo}55 100%)`
 
   const { cls: typeCls, lab: typeLab } = changeTypeBadge(
@@ -230,7 +230,7 @@ function PositionTrack({ agentSpec, row, config }) {
   )
 
   return (
-    <div className="rounded-[6px] border border-[var(--border)] bg-[#FDFAF4]/90 px-3 py-3">
+    <div className="rounded-[6px] border border-[var(--border)] bg-[var(--plaster-hi)]/90 px-3 py-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="flex min-w-[140px] items-center gap-2">
           <span
@@ -298,7 +298,7 @@ function PositionTrack({ agentSpec, row, config }) {
             <span className="font-medium text-[var(--text-muted)]">
               What changed:{' '}
             </span>
-            {self.what_changed ? String(self.what_changed) : '—'}
+            {self.what_changed ? String(self.what_changed) : '-'}
           </p>
           <p>
             <span className="font-medium text-[var(--text-muted)]">
@@ -306,13 +306,13 @@ function PositionTrack({ agentSpec, row, config }) {
             </span>
             {self.what_caused_it
               ? highlightAgentsInText(String(self.what_caused_it), config)
-              : '—'}
+              : '-'}
           </p>
           <p>
             <span className="font-medium text-[var(--text-muted)]">
               Held firm on:{' '}
             </span>
-            {self.what_held_firm ? String(self.what_held_firm) : '—'}
+            {self.what_held_firm ? String(self.what_held_firm) : '-'}
           </p>
           <p>
             <span className="font-medium text-[var(--text-muted)]">
@@ -320,7 +320,7 @@ function PositionTrack({ agentSpec, row, config }) {
             </span>
             {self.what_would_change_mind
               ? String(self.what_would_change_mind)
-              : '—'}
+              : '-'}
           </p>
         </div>
       ) : null}
@@ -339,6 +339,8 @@ function PositionTrack({ agentSpec, row, config }) {
  *   },
  *   influenceReport: Record<string, unknown> | null,
  *   influenceLoading?: boolean,
+ *   influenceError?: { title?: string, detail?: string, userMessage?: string } | null,
+ *   onRetryInfluence?: () => void,
  *   showPositionTracks?: boolean,
  *   divergenceReady?: boolean,
  * }} props
@@ -349,6 +351,8 @@ export default function InfluenceMap({
   config,
   influenceReport,
   influenceLoading = false,
+  influenceError = null,
+  onRetryInfluence,
   showPositionTracks = true,
   divergenceReady = true,
 }) {
@@ -408,10 +412,31 @@ export default function InfluenceMap({
               Analysing position changes...
             </div>
           ) : null}
+          {!influenceLoading && influenceError && !influenceReport ? (
+            <div
+              className="rounded-[6px] border border-dashed border-amber-700/40 bg-[color-mix(in_srgb,var(--highlight)_12%,var(--bg-surface))] px-3 py-3"
+              role="status"
+            >
+              <p className="font-[family-name:var(--font-mono)] text-[11px] text-[var(--text-secondary)]">
+                {influenceError.userMessage ||
+                  influenceError.detail ||
+                  'Position-change metrics are unavailable.'}
+              </p>
+              {typeof onRetryInfluence === 'function' ? (
+                <button
+                  type="button"
+                  className="babel-btn babel-btn-ghost mt-3"
+                  onClick={onRetryInfluence}
+                >
+                  Retry influence analysis
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           {tracksVisible ? (
             <>
-              <p className="mb-4 font-[family-name:var(--font-mono)] text-[11px] text-[var(--text-muted)]">
-                {summary.firm} models held firm · {summary.shifted} shifted ·{' '}
+              <p className="mb-4 babel-meta">
+                {summary.firm} models held firm; {summary.shifted} shifted;{' '}
                 {summary.sig} changed significantly
               </p>
               <div className="flex flex-col gap-4">
@@ -450,7 +475,7 @@ export default function InfluenceMap({
                 />
               </div>
             </>
-          ) : !influenceLoading ? (
+          ) : !influenceLoading && !influenceError ? (
             <p className="font-[family-name:var(--font-mono)] text-[10px] text-[var(--text-muted)]">
               Position tracks appear after final positions are analysed.
             </p>

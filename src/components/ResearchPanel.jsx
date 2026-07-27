@@ -1,12 +1,16 @@
 import { WELCOME_STORAGE_KEY } from './WelcomeModal.jsx'
+import Eyebrow from './Eyebrow.jsx'
+import PageHeader from './layout/PageHeader.jsx'
+import ReadingColumn from './layout/ReadingColumn.jsx'
+import React from 'react'
 
-/** About tab content — editorial layout, light and spacious. */
+/** About tab content: editorial layout, light and spacious. */
 
 /** Default forge agent accent colors (match useForgeStore). */
 const AGENT_DOT = {
-  a: '#2563EB',
-  b: '#16A34A',
-  c: '#DC2626',
+  a: '#1E4E5E',
+  b: '#4C6647',
+  c: '#97372B',
 }
 
 function TriangleDivergenceIllustration() {
@@ -44,7 +48,7 @@ function TriangleDivergenceIllustration() {
         role="img"
       >
         <title>Triangle consensus map patterns</title>
-        {/* Column centers ~33, 100, 167 — small eq */}
+        {/* Column centers ~33, 100, 167: small eq */}
         {tri(33, 28, 24, 44, 42, 44)}
         {/* Large eq */}
         {tri(100, 18, 82, 48, 118, 48, 1.35)}
@@ -107,30 +111,16 @@ function TriangleDivergenceIllustration() {
   )
 }
 
-function SectionDivider() {
+function SectionShell({ num, title, children, first = false }) {
   return (
-    <div
-      className="mt-12 border-t border-dashed border-[var(--border)]"
-      aria-hidden
-    />
-  )
-}
-
-/**
- * @param {{ num: string, title: string, children: React.ReactNode }} props
- */
-function SectionShell({ num, title, children }) {
-  return (
-    <section className="scroll-mt-8">
+    <section
+      className={`page-section scroll-mt-8 ${first ? 'is-first' : ''}`.trim()}
+    >
       <div className="flex flex-col gap-1">
-        <p className="font-mono text-[11px] font-medium tracking-[0.2em] text-[var(--text-muted)]">
-          {num}
-        </p>
-        <h2 className="font-display text-xl font-semibold tracking-tight text-[var(--text-primary)] md:text-2xl">
-          {title}
-        </h2>
+        <Eyebrow>{num}</Eyebrow>
+        <h2 className="babel-display babel-display-section mt-3">{title}</h2>
       </div>
-      <div className="mt-8 space-y-5">{children}</div>
+      <div className="mt-6 space-y-5">{children}</div>
     </section>
   )
 }
@@ -140,13 +130,9 @@ function SectionShell({ num, title, children }) {
  */
 function ObservationCard({ title, children }) {
   return (
-    <div className="rounded-forge-card border border-[var(--border)] border-l-2 border-l-[var(--accent-forge)] bg-[var(--bg-surface)] py-5 pl-5 pr-6">
-      <h3 className="text-base font-semibold text-[var(--text-primary)]">
-        {title}
-      </h3>
-      <div className="mt-3 space-y-4 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
-        {children}
-      </div>
+    <div className="babel-card border-l-[3px] border-l-[var(--accent-forge)]">
+      <h3 className="babel-display babel-display-card m-0">{title}</h3>
+      <div className="babel-prose mt-3 space-y-4">{children}</div>
     </div>
   )
 }
@@ -156,24 +142,17 @@ function ObservationCard({ title, children }) {
  */
 function DirectionCard({ title, children }) {
   return (
-    <div className="h-full rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] p-6">
-      <h3 className="text-base font-semibold text-[var(--text-primary)]">
-        {title}
-      </h3>
-      <div className="mt-3 space-y-4 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
-        {children}
-      </div>
+    <div className="babel-card h-full">
+      <h3 className="babel-display babel-display-card m-0">{title}</h3>
+      <div className="babel-prose mt-3 space-y-4">{children}</div>
     </div>
   )
 }
 
 export default function ResearchPanel() {
   return (
-    <article
-      className="mx-auto w-full min-w-0 max-w-[720px] pb-16 md:pb-24"
-      aria-label="About Babel"
-    >
-      <div className="mb-8">
+    <article className="reading-page" aria-label="About Babel">
+      <div className="mb-6">
         <button
           type="button"
           onClick={() => {
@@ -184,14 +163,22 @@ export default function ResearchPanel() {
             }
             window.location.reload()
           }}
-          className="font-[family-name:var(--font-mono)] text-[11px] text-[var(--text-muted)] underline-offset-2 transition hover:text-[var(--text-secondary)] hover:underline"
+          className="babel-btn babel-btn-quiet px-2"
         >
           Show welcome again
         </button>
       </div>
 
-      <SectionShell num="01" title="What Babel is">
-        <div className="space-y-5 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
+      <PageHeader
+        eyebrow="About Babel"
+        title="What Babel is"
+        lede="Babel sends one question to three AI models, then lets them challenge each other so you can study disagreement, influence, and synthesis."
+      />
+
+      <ReadingColumn>
+
+      <SectionShell num="01" title="How the debate works" first>
+        <div className="babel-prose space-y-4">
           <p>
             Babel sends one question to three AI models. Each answers without
             seeing the others. Then they read each other&apos;s responses and the
@@ -215,9 +202,6 @@ export default function ResearchPanel() {
           </p>
         </div>
       </SectionShell>
-
-      <SectionDivider />
-
       <SectionShell num="02" title="Why model disagreement is worth studying">
         <div className="flex flex-col gap-6">
           <ObservationCard title="Divergence as signal">
@@ -275,16 +259,13 @@ export default function ResearchPanel() {
           </ObservationCard>
         </div>
       </SectionShell>
-
-      <SectionDivider />
-
       <SectionShell num="03" title="Measuring disagreement">
-        <div className="space-y-8 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
+        <div className="babel-prose space-y-8">
           <div>
-            <h3 className="mb-4 font-[family-name:var(--font-body)] text-lg font-semibold text-[var(--text-primary)]">
+            <h3 className="babel-display babel-display-card mb-4">
               Claim-based disagreement
             </h3>
-            <div className="space-y-5">
+            <div className="space-y-4">
               <p>
                 After round one, each response is analysed to extract the most
                 specific, falsifiable assertions made by each model. Position
@@ -301,7 +282,7 @@ export default function ResearchPanel() {
           </div>
 
           <div>
-            <h3 className="mb-4 font-[family-name:var(--font-body)] text-lg font-semibold text-[var(--text-primary)]">
+            <h3 className="babel-display babel-display-card mb-4">
               Pairwise scoring
             </h3>
             <p>
@@ -313,7 +294,7 @@ export default function ResearchPanel() {
           </div>
 
           <div>
-            <h3 className="mb-4 font-[family-name:var(--font-body)] text-lg font-semibold text-[var(--text-primary)]">
+            <h3 className="babel-display babel-display-card mb-4">
               What the triangle shows
             </h3>
             <p className="mb-6">
@@ -326,10 +307,10 @@ export default function ResearchPanel() {
           </div>
 
           <div>
-            <h3 className="mb-4 font-[family-name:var(--font-body)] text-lg font-semibold text-[var(--text-primary)]">
+            <h3 className="babel-display babel-display-card mb-4">
               Position change detection
             </h3>
-            <div className="space-y-5">
+            <div className="space-y-4">
               <p>
                 Babel compares each model&apos;s round one response to its round
                 three response using embedding distance. High distance means the
@@ -345,25 +326,19 @@ export default function ResearchPanel() {
           </div>
 
           <div>
-            <h3 className="mb-4 font-[family-name:var(--font-body)] text-lg font-semibold text-[var(--text-primary)]">
+            <h3 className="babel-display babel-display-card mb-4">
               Debate structure
             </h3>
-            <div className="space-y-5">
+            <div className="space-y-4">
               <p>
-                <span
-                  className="font-mono font-medium text-[#8B1A1A]"
-                  style={{ fontFamily: 'var(--font-mono)' }}
-                >
+                <span className="babel-meta-tech text-[var(--blue)]">
                   Round 1
                 </span>
                 : Three models answer independently. This is their uncontaminated
                 position.
               </p>
               <p>
-                <span
-                  className="font-mono font-medium text-[#8B1A1A]"
-                  style={{ fontFamily: 'var(--font-mono)' }}
-                >
+                <span className="babel-meta-tech text-[var(--blue)]">
                   Round 2
                 </span>
                 : Each model reads the other two responses, challenges what it
@@ -371,10 +346,7 @@ export default function ResearchPanel() {
                 earns synthesis.
               </p>
               <p>
-                <span
-                  className="font-mono font-medium text-[#8B1A1A]"
-                  style={{ fontFamily: 'var(--font-mono)' }}
-                >
+                <span className="babel-meta-tech text-[var(--blue)]">
                   Round 3
                 </span>
                 : Each model states its final position having seen the full
@@ -388,20 +360,17 @@ export default function ResearchPanel() {
           </div>
 
           <div>
-            <h3 className="mb-4 font-[family-name:var(--font-body)] text-lg font-semibold text-[var(--text-primary)]">
+            <h3 className="babel-display babel-display-card mb-4">
               Peer validation
             </h3>
-            <div
-              className="space-y-5 text-[17px] leading-[1.85] text-[var(--text-secondary)]"
-              style={{ fontFamily: 'var(--font-body), Georgia, serif' }}
-            >
+            <div className="space-y-4">
               <p>
                 The synthesis model participated in the debate. It cannot be a
                 neutral arbiter. After synthesis, the two non-synthesizing models
                 score it for fairness. If either scores below six or flags bias,
                 the synthesis is marked as peer-flagged.
               </p>
-              <p className="text-[17px] font-semibold leading-[1.75] text-[var(--text-primary)]">
+              <p className="font-semibold text-[var(--ink)]">
                 This reduces the problem. It does not solve it.
               </p>
               <p>
@@ -415,9 +384,6 @@ export default function ResearchPanel() {
           </div>
         </div>
       </SectionShell>
-
-      <SectionDivider />
-
       <SectionShell num="04" title="Future directions">
         <div className="grid gap-6 md:grid-cols-2">
           <DirectionCard title="More models, more diversity">
@@ -452,14 +418,8 @@ export default function ResearchPanel() {
           </DirectionCard>
         </div>
       </SectionShell>
-
-      <SectionDivider />
-
       <SectionShell num="05" title="Limitations and open questions">
-        <div
-          className="space-y-5 text-[15px] leading-[1.85] text-[#6B5E4E]"
-          style={{ fontFamily: 'var(--font-body), Georgia, serif' }}
-        >
+        <div className="babel-caution space-y-4">
           <p>
             These three models were selected for reliability on the GitHub
             Models free tier. GPT-4o mini, Phi-4, and Mistral Small share
@@ -487,11 +447,8 @@ export default function ResearchPanel() {
           </p>
         </div>
       </SectionShell>
-
-      <SectionDivider />
-
       <SectionShell num="06" title="About">
-        <div className="space-y-6 text-[17px] leading-[1.85] text-[var(--text-secondary)]">
+        <div className="babel-prose space-y-6">
           <p>
             Built by Leen Al-Zu&apos;bi, Senior Product Manager at Softchoice,
             as self-directed study in AI research. No lab, no grant, just genuine
@@ -507,13 +464,15 @@ export default function ResearchPanel() {
               href="https://www.linkedin.com/in/leenalzubi/"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-mono text-sm font-semibold text-[var(--accent-forge)] underline decoration-[var(--accent-forge)]/30 underline-offset-4 transition hover:decoration-[var(--accent-forge)]"
+              className="font-semibold text-[var(--accent-forge)] underline decoration-[var(--accent-forge)]/30 underline-offset-4 transition hover:decoration-[var(--accent-forge)]"
             >
               Get in touch
             </a>
           </p>
         </div>
       </SectionShell>
+      </ReadingColumn>
     </article>
   )
 }
+

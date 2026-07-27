@@ -1,13 +1,17 @@
 import { memo, useMemo } from 'react'
-import AgentTimeoutNotice from './AgentTimeoutNotice.jsx'
-import AgentResponseBody from './AgentResponseBody.jsx'
 import AgentThinking from './AgentThinking.jsx'
 import AgentTimer from './AgentTimer.jsx'
 import InfluenceMap from './InfluenceMap.jsx'
-import { isAgentTimeoutResponse } from '../lib/debateConstants.js'
-
-const replyMd =
-  'max-w-none text-[17px] leading-[1.85] text-[var(--text-secondary)] [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:text-[var(--text-primary)]'
+import SectionHeading from './SectionHeading.jsx'
+import VoiceCard from './VoiceCard.jsx'
+import VoiceFailureNotice from './VoiceFailureNotice.jsx'
+import StructuredVoiceBody from './reasoning/StructuredVoiceBody.jsx'
+import { useVoiceActions } from '../context/VoiceActionsContext.jsx'
+import { useVoiceLabels } from '../hooks/useVoiceLabels.js'
+import { useForge } from '../store/useForgeStore.js'
+import { useForgeUiSettings } from '../context/ForgeSettingsContext.jsx'
+import { buildChallengesByClaim } from '../lib/claimNavigation.js'
+import { isUnavailableAgentResponse } from '../lib/debateConstants.js'
 
 /**
  * @param {{
@@ -53,7 +57,7 @@ function useTotalDebateMs({
 function TotalDebateTimer({ totalMs }) {
   if (totalMs == null) {
     return (
-      <span className="font-mono text-[9px] text-[var(--text-muted)]/60">—</span>
+      <span className="babel-meta-tech text-[var(--ink-faint)]">Unavailable</span>
     )
   }
   const sec = Math.round(totalMs / 1000)
@@ -63,7 +67,7 @@ function TotalDebateTimer({ totalMs }) {
     m > 0 ? `${m}m ${s.toString().padStart(2, '0')}s` : `${s}s`
   return (
     <span
-      className="font-mono text-[9px] text-[var(--text-muted)]"
+      className="babel-meta-tech text-[var(--ink-soft)]"
       title="Total time this model spent generating in this debate"
     >
       {label} total
@@ -73,63 +77,93 @@ function TotalDebateTimer({ totalMs }) {
 
 /**
  * @param {{
+ *   agentKey: 'a' | 'b' | 'c',
  *   agentSpec: { name: string, color: string },
  *   text: string,
  *   finalTimer: { startTime: number | null, endTime: number | null },
  *   totalMs: number | null,
  * }} props
  */
-function FinalColumn({ agentSpec, text, finalTimer, totalMs }) {
+function FinalColumn({ agentKey, agentSpec, text, finalTimer, totalMs }) {
+  const voiceActions = useVoiceActions()
+  const { state } = useForge()
+  const { roleTitle, modelName } = useVoiceLabels(agentKey, agentSpec)
+  const structure = state.structures?.round3?.[agentKey] ?? null
+  const criterion = state.decisionCriteria?.[0] ?? null
+  const challengesByClaim = buildChallengesByClaim({
+    agentKey,
+    structures: state.structures,
+    roles: state.roles,
+  })
+
   const hasText = typeof text === 'string' && text.length > 0
   const live =
     finalTimer.startTime != null && finalTimer.endTime == null
 
   if (hasText) {
-    if (isAgentTimeoutResponse(text)) {
-      return <AgentTimeoutNotice agentName={agentSpec.name} />
+    if (isUnavailableAgentResponse(text)) {
+      return (
+        <VoiceFailureNotice
+          agentName={`${roleTitle} (${modelName})`}
+          agentKey={agentKey}
+          message={text}
+          stageLabel="Final answer"
+          busy={Boolean(voiceActions?.voiceBusy)}
+          onRetry={
+            voiceActions
+              ? () => void voiceActions.retryVoice(agentKey, 'final_answers')
+              : null
+          }
+          onContinueWithout={
+            voiceActions
+              ? () => voiceActions.continueWithout(agentKey)
+              : null
+          }
+        />
+      )
     }
     return (
-      <div
-        role="region"
-        aria-label={`${agentSpec.name} final position`}
-        className="forge-reveal-card rounded-forge-card flex min-h-0 flex-col overflow-hidden border border-[var(--border)] bg-[var(--bg-surface)]"
-        style={{ borderTopWidth: 2, borderTopColor: agentSpec.color }}
-      >
-        <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-1 pt-4">
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <span
-              className="font-mono text-[10px] font-semibold tracking-wide"
-              style={{ color: agentSpec.color }}
-            >
-              {agentSpec.name}
-            </span>
-            <span className="font-sans text-[11px] italic text-[var(--text-muted)]">
-              final position
-            </span>
-          </div>
-          <div className="flex flex-col items-end gap-1">
+      <VoiceCard
+        title={roleTitle}
+        subtitle={modelName}
+        color={agentSpec.color}
+        stance="revision"
+        responseState="done"
+        extractionState={structure?.extraction ?? 'raw_response'}
+        responseDomId={`voice-r3-${agentKey}`}
+        regionLabel={`${roleTitle} (${modelName}) final position`}
+        foot={
+          <div className="flex w-full flex-wrap items-center justify-between gap-2">
             {finalTimer.startTime != null ? (
               <AgentTimer
                 startTime={finalTimer.startTime}
                 endTime={finalTimer.endTime}
               />
-            ) : null}
+            ) : (
+              <span />
+            )}
             <TotalDebateTimer totalMs={totalMs} />
           </div>
-        </div>
-        <div className="forge-response-scroll px-4 pb-4 pt-1">
-          <AgentResponseBody rawText={text} markdownClassName={replyMd} />
-        </div>
-      </div>
+        }
+      >
+        <StructuredVoiceBody
+          rawText={text}
+          structure={structure}
+          roleLabel={roleTitle}
+          challengesByClaim={challengesByClaim}
+          criterion={criterion}
+        />
+      </VoiceCard>
     )
   }
 
   if (live) {
     return (
       <AgentThinking
-        title={agentSpec.name}
+        title={roleTitle}
+        subtitle={modelName}
         color={agentSpec.color}
-        line="Stating final position…"
+        line="Preserving, narrowing, amending, or withdrawing…"
         startTime={finalTimer.startTime}
         endTime={finalTimer.endTime}
       />
@@ -137,16 +171,26 @@ function FinalColumn({ agentSpec, text, finalTimer, totalMs }) {
   }
 
   return (
-    <div className="rounded-forge-card flex min-h-[180px] flex-col items-center justify-center border border-dashed border-[var(--border)] bg-[var(--bg-surface)]/50 px-4 py-8">
-      <span
-        className="font-mono text-[10px] font-semibold tracking-wide"
-        style={{ color: agentSpec.color }}
+    <div
+      className="babel-voice voice flex min-h-[180px] flex-col border-dashed opacity-80"
+      data-state="pending"
+    >
+      <div
+        className="babel-voice-niche niche"
+        style={{
+          background: `color-mix(in srgb, ${agentSpec.color} 12%, var(--plaster-hi))`,
+        }}
       >
-        {agentSpec.name}
-      </span>
-      <p className="mt-2 text-center text-sm italic text-[var(--text-muted)]">
-        Waiting its turn
-      </p>
+        <span className="babel-voice-name" style={{ color: agentSpec.color }}>
+          {roleTitle}
+        </span>
+        <span className="babel-voice-stance">Waiting to speak</span>
+      </div>
+      <div className="babel-voice-body body flex flex-1 items-center justify-center">
+        <p className="text-center text-sm italic text-[var(--text-muted)]">
+          Waiting its turn
+        </p>
+      </div>
     </div>
   )
 }
@@ -171,6 +215,8 @@ function FinalColumn({ agentSpec, text, finalTimer, totalMs }) {
  *   divergenceReady?: boolean,
  *   influenceReport?: Record<string, unknown> | null,
  *   influenceLoading?: boolean,
+ *   influenceError?: { title?: string, detail?: string, userMessage?: string } | null,
+ *   onRetryInfluence?: () => void,
  * }} props
  */
 function FinalPositionCard({
@@ -184,7 +230,10 @@ function FinalPositionCard({
   rebuttalTimers,
   influenceReport = null,
   influenceLoading = false,
+  influenceError = null,
+  onRetryInfluence,
 }) {
+  const { settings } = useForgeUiSettings()
   const { agentA, agentB, agentC } = config
   const fa = finalPositions?.a ?? ''
   const fb = finalPositions?.b ?? ''
@@ -218,44 +267,43 @@ function FinalPositionCard({
     finalPositionTimers,
   })
 
-  const showTriangle =
+  const finalsReady = [fa, fb, fc].every(
+    (t) =>
+      typeof t === 'string' && t.length > 0 && !isUnavailableAgentResponse(t)
+  )
+
+  const showInfluenceSection =
+    settings.showResearchSurfaces &&
+    finalsReady &&
     scores != null &&
-    typeof scores.ab === 'number' &&
-    [fa, fb, fc].every(
-      (t) => typeof t === 'string' && t.length > 0 && !isAgentTimeoutResponse(t)
-    )
+    typeof scores.ab === 'number'
 
   return (
     <section className="flex flex-col gap-6">
-      <header className="flex flex-col gap-2 border-b border-dashed border-[var(--border)] pb-4">
-        <p className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
-          Round 3
-        </p>
-        <h2
-          className="text-2xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-[1.75rem]"
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
-          Final positions
-        </h2>
-        <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
-          Each model&apos;s closing argument after the full debate
-        </p>
-      </header>
+      <SectionHeading
+        className="border-b border-[var(--line)] pb-4"
+        eyebrow="Round 3"
+        title="Revision"
+        lede="Each role marks earlier claims as preserved, narrowed, amended, or withdrawn, then states a closing position."
+      />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="majlis">
         <FinalColumn
+          agentKey="a"
           agentSpec={agentA}
           text={fa}
           finalTimer={finalPositionTimers.a}
           totalMs={totalA}
         />
         <FinalColumn
+          agentKey="b"
           agentSpec={agentB}
           text={fb}
           finalTimer={finalPositionTimers.b}
           totalMs={totalB}
         />
         <FinalColumn
+          agentKey="c"
           agentSpec={agentC}
           text={fc}
           finalTimer={finalPositionTimers.c}
@@ -271,6 +319,8 @@ function FinalPositionCard({
             config={config}
             influenceReport={influenceReport}
             influenceLoading={influenceLoading}
+            influenceError={influenceError}
+            onRetryInfluence={onRetryInfluence}
             showPositionTracks
             divergenceReady={divergenceReady}
           />

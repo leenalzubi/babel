@@ -3,9 +3,17 @@ import {
   AGENT_TIMEOUT_MESSAGE,
   TOTAL_MODEL_CALLS,
 } from '../lib/debateConstants.js'
+import { DEFAULT_ROLE_ASSIGNMENT } from '../lib/babelRoles.js'
+import { DEFAULT_CRITERIA } from '../lib/decisionCriteria.js'
 import { loadForgeSettings } from '../lib/forgeSettings.js'
+import {
+  collectClaimIds,
+  parseRound1Structure,
+  parseRound2Structure,
+  parseRound3Structure,
+} from '../lib/parseStructuredResponse.js'
 
-/** @typedef {'idle' | 'running' | 'complete' | 'error' | 'partial'} ForgeStatus */
+/** @typedef {'idle' | 'running' | 'degraded' | 'blocked' | 'complete' | 'complete_with_gaps' | 'failed' | 'error' | 'partial'} ForgeStatus */
 
 /** @typedef {null | 'round1' | 'reviews' | 'rebuttals' | 'finalPositions' | 'synthesis' | 'audit' | 'validation'} DebateStageKey */
 
@@ -17,9 +25,35 @@ function emptyAgentTimers() {
   }
 }
 
+function emptyStructures() {
+  return {
+    round1: {
+      a: /** @type {import('../lib/parseStructuredResponse.js').StructuredVoice | null} */ (null),
+      b: null,
+      c: null,
+    },
+    round2: {
+      a: /** @type {import('../lib/parseStructuredResponse.js').StructuredVoice | null} */ (null),
+      b: null,
+      c: null,
+    },
+    round3: {
+      a: /** @type {import('../lib/parseStructuredResponse.js').StructuredVoice | null} */ (null),
+      b: null,
+      c: null,
+    },
+  }
+}
+
 function createInitialState() {
   return {
     prompt: '',
+    /** @type {string[]} */
+    decisionCriteria: [...DEFAULT_CRITERIA],
+    /** @type {{ a: import('../lib/babelRoles.js').BabelRoleId, b: import('../lib/babelRoles.js').BabelRoleId, c: import('../lib/babelRoles.js').BabelRoleId }} */
+    roles: { ...DEFAULT_ROLE_ASSIGNMENT },
+    /** Structured extraction layered over raw responses (never the source of truth). */
+    structures: emptyStructures(),
     /** @type {ForgeStatus} */
     status: 'idle',
     /** @type {{ roundNum: number, agentA: string, agentB: string, agentC: string }[]} */
@@ -28,26 +62,42 @@ function createInitialState() {
     reviews: [],
     /** @type {{ ab: number, ac: number, bc: number, average: number, totalClaims?: number, contestedClaims?: number, unanimousClaims?: number, hardDisagreements?: number }[]} */
     divergenceScores: [],
-    /** @type {{ output: string, attributions: { a: string, b: string, c: string }, rationale: string, concessions: string[], heldFirm: string[] } | null} */
+    /** @type {{ output: string, attributions: { a: string, b: string, c: string }, rationale: string, concessions: string[], heldFirm: string[], decisionArtifact?: import('../lib/parseDecisionArtifact.js').DecisionArtifact } | null} */
     synthesis: null,
-    /** @type {string | { type?: string, title?: string, detail?: string, suggestion?: string, stage?: string, round?: number } | null} */
+    /** Session-scoped conclusion stability reports (optional; never mutates synthesis). */
+    /** @type {import('../lib/stability/types.js').StabilityReport[]} */
+    stabilityReports: [],
+    /** Active stability report id while a check runs (session). */
+    /** @type {string | null} */
+    activeStabilityReportId: null,
+    /** Stable id for the current debate session (lineage / stability). */
+    /** @type {string | null} */
+    debateId: null,
+    /** Debate-level or blocking error (infrastructure / all-voices). Voice errors live in voiceErrors. */
+    /** @type {import('../lib/babelErrors.js').BabelError | string | null} */
     error: null,
+    /** Per-agent soft failures keyed a|b|c */
+    /** @type {{ a: import('../lib/babelErrors.js').BabelError | null, b: import('../lib/babelErrors.js').BabelError | null, c: import('../lib/babelErrors.js').BabelError | null }} */
+    voiceErrors: { a: null, b: null, c: null },
+    /** Optional stage failures (synthesis / audit / influence) */
+    /** @type {{ synthesis: import('../lib/babelErrors.js').BabelError | null, audit: import('../lib/babelErrors.js').BabelError | null, influence: import('../lib/babelErrors.js').BabelError | null }} */
+    stageErrors: { synthesis: null, audit: null, influence: null },
     config: {
       maxRounds: 2,
       agentA: {
         name: 'GPT-4o mini',
         model: 'openai/gpt-4o-mini',
-        color: '#2563EB',
+        color: '#1E4E5E',
       },
       agentB: {
         name: 'Phi-4 Reasoning',
         model: 'microsoft/phi-4-reasoning',
-        color: '#16A34A',
+        color: '#4C6647',
       },
       agentC: {
         name: 'Mistral Small',
         model: 'mistral-ai/mistral-small-2503',
-        color: '#DC2626',
+        color: '#97372B',
       },
     },
     agentTimers: emptyAgentTimers(),
@@ -78,6 +128,8 @@ function createInitialState() {
     audit: null,
     auditLoading: false,
     auditError: /** @type {string | null} */ (null),
+    /** Soft notice when Supabase history insert fails (does not affect debate status). */
+    historySaveError: /** @type {string | null} */ (null),
     /** Peer validation of synthesis (agents B & C). Null when no run or synthesis skipped. */
     validation: null,
     /** Cross-review peer scores; highest average earns synthesis. */
@@ -104,8 +156,31 @@ function forgeReducer(state, action) {
     case 'SET_PROMPT':
       return { ...state, prompt: action.payload ?? '' }
 
+    case 'SET_CRITERIA': {
+      const list = Array.isArray(action.payload)
+        ? action.payload.map((c) => String(c).trim()).filter(Boolean)
+        : []
+      return { ...state, decisionCriteria: list }
+    }
+
+    case 'SET_ROLES': {
+      const next = action.payload && typeof action.payload === 'object'
+        ? action.payload
+        : {}
+      return {
+        ...state,
+        roles: {
+          a: next.a ?? state.roles.a,
+          b: next.b ?? state.roles.b,
+          c: next.c ?? state.roles.c,
+        },
+      }
+    }
+
     case 'SET_STATUS': {
-      const next = action.payload
+      let next = action.payload
+      if (next === 'error') next = 'failed'
+      if (next === 'partial') next = 'complete_with_gaps'
       if (next === 'running') {
         return {
           ...state,
@@ -114,7 +189,13 @@ function forgeReducer(state, action) {
           reviews: [],
           divergenceScores: [],
           synthesis: null,
+          structures: emptyStructures(),
+          stabilityReports: [],
+          activeStabilityReportId: null,
+          debateId: null,
           error: null,
+          voiceErrors: { a: null, b: null, c: null },
+          stageErrors: { synthesis: null, audit: null, influence: null },
           agentTimers: emptyAgentTimers(),
           agentResponses: { a: null, b: null, c: null },
           reviewTimers: emptyAgentTimers(),
@@ -126,6 +207,7 @@ function forgeReducer(state, action) {
           audit: null,
           auditLoading: false,
           auditError: null,
+          historySaveError: null,
           validation: null,
           synthesisWinner: null,
           influenceReport: null,
@@ -221,6 +303,13 @@ function forgeReducer(state, action) {
           typeof action.payload === 'string' ? action.payload : null,
       }
 
+    case 'SET_HISTORY_SAVE_ERROR':
+      return {
+        ...state,
+        historySaveError:
+          typeof action.payload === 'string' ? action.payload : null,
+      }
+
     case 'SET_AGENT_THINKING': {
       const { agent, startTime } = action.payload
       const k = /** @type {'a' | 'b' | 'c'} */ (agent)
@@ -251,6 +340,8 @@ function forgeReducer(state, action) {
       if (idx >= 0) {
         rounds[idx] = { ...rounds[idx], [field]: response ?? '' }
       }
+      const structure = parseRound1Structure(response ?? '', k)
+      const structures = state.structures ?? emptyStructures()
       return {
         ...state,
         agentResponses: { ...state.agentResponses, [k]: response ?? '' },
@@ -259,6 +350,10 @@ function forgeReducer(state, action) {
           [k]: { ...state.agentTimers[k], endTime },
         },
         rounds,
+        structures: {
+          ...structures,
+          round1: { ...structures.round1, [k]: structure },
+        },
       }
     }
 
@@ -315,6 +410,9 @@ function forgeReducer(state, action) {
           cReviews: k === 'c' ? text : '',
         })
       }
+      const structures = state.structures ?? emptyStructures()
+      const claimIds = collectClaimIds(structures.round1)
+      const structure = parseRound2Structure(text, claimIds)
       return {
         ...state,
         reviews,
@@ -322,6 +420,10 @@ function forgeReducer(state, action) {
         reviewTimers: {
           ...state.reviewTimers,
           [k]: { ...state.reviewTimers[k], endTime },
+        },
+        structures: {
+          ...structures,
+          round2: { ...structures.round2, [k]: structure },
         },
       }
     }
@@ -395,6 +497,33 @@ function forgeReducer(state, action) {
       }
     }
 
+    case 'SET_DEBATE_ID':
+      return {
+        ...state,
+        debateId:
+          typeof action.payload === 'string' && action.payload
+            ? action.payload
+            : null,
+      }
+
+    case 'SET_STABILITY_REPORT': {
+      const report = action.payload
+      if (!report || typeof report !== 'object' || !report.reportId) {
+        return state
+      }
+      const rest = state.stabilityReports.filter(
+        (r) => r.reportId !== report.reportId
+      )
+      return {
+        ...state,
+        stabilityReports: [...rest, report],
+        activeStabilityReportId: report.reportId,
+      }
+    }
+
+    case 'CLEAR_ACTIVE_STABILITY':
+      return { ...state, activeStabilityReportId: null }
+
     case 'SET_SYNTHESIS':
       return {
         ...state,
@@ -412,6 +541,15 @@ function forgeReducer(state, action) {
           heldFirm: Array.isArray(action.payload.heldFirm)
             ? action.payload.heldFirm
             : [],
+          decisionArtifact:
+            action.payload.decisionArtifact &&
+            typeof action.payload.decisionArtifact === 'object'
+              ? action.payload.decisionArtifact
+              : null,
+          lineage:
+            action.payload.lineage && typeof action.payload.lineage === 'object'
+              ? action.payload.lineage
+              : null,
         },
       }
 
@@ -474,6 +612,14 @@ function forgeReducer(state, action) {
       const { agent, position, endTime } = action.payload
       const k = /** @type {'a' | 'b' | 'c'} */ (agent)
       const text = position ?? ''
+      const structures = state.structures ?? emptyStructures()
+      const parsed = parseRound3Structure(text)
+      const r1 = structures.round1?.[k]
+      const structure = {
+        ...parsed,
+        claims: r1?.claims?.length ? r1.claims : parsed.claims,
+        stance: r1?.stance ?? parsed.stance,
+      }
       return {
         ...state,
         finalPositions: { ...state.finalPositions, [k]: text },
@@ -481,11 +627,57 @@ function forgeReducer(state, action) {
           ...state.finalPositionTimers,
           [k]: { ...state.finalPositionTimers[k], endTime },
         },
+        structures: {
+          ...structures,
+          round3: { ...structures.round3, [k]: structure },
+        },
       }
     }
 
     case 'SET_ERROR':
       return { ...state, error: action.payload ?? null }
+
+    case 'SET_VOICE_ERROR': {
+      const agent = action.payload?.agent
+      if (agent !== 'a' && agent !== 'b' && agent !== 'c') return state
+      return {
+        ...state,
+        voiceErrors: {
+          ...(state.voiceErrors ?? { a: null, b: null, c: null }),
+          [agent]: action.payload?.error ?? null,
+        },
+      }
+    }
+
+    case 'CLEAR_VOICE_ERROR': {
+      const agent = action.payload?.agent
+      if (agent !== 'a' && agent !== 'b' && agent !== 'c') return state
+      return {
+        ...state,
+        voiceErrors: {
+          ...(state.voiceErrors ?? { a: null, b: null, c: null }),
+          [agent]: null,
+        },
+      }
+    }
+
+    case 'SET_STAGE_ERROR': {
+      const stage = action.payload?.stage
+      if (stage !== 'synthesis' && stage !== 'audit' && stage !== 'influence') {
+        return state
+      }
+      return {
+        ...state,
+        stageErrors: {
+          ...(state.stageErrors ?? {
+            synthesis: null,
+            audit: null,
+            influence: null,
+          }),
+          [stage]: action.payload?.error ?? null,
+        },
+      }
+    }
 
     case 'PATCH_CONFIG':
       return {

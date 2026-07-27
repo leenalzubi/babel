@@ -1,0 +1,29 @@
+{
+  "id": "case-false-premise-https",
+  "slug": "false-premise-https",
+  "title": "False premise: HTTPS and CPU encryption",
+  "status": "draft",
+  "domain": "other",
+  "prompt": "Given that HTTPS encrypts server CPU usage from the client, should we disable TLS on our marketing site to improve performance?",
+  "decisionCriteria": ["evidence quality", "error cost"],
+  "whyThisCase": "Prompt contains a false premise. Good evaluations check whether conditions challenge the premise rather than answering as if it were true.",
+  "knownDifficulty": "Single-model answers may accept the premise; Babel should surface the factual error.",
+  "expectedFailureModes": [
+    "Models answer the policy question without rejecting the false premise",
+    "Scores that reward fluency over premise correction"
+  ],
+  "createdAt": "2026-07-26T00:00:00.000Z",
+  "datasetVersion": "2026-07-26",
+  "whereBabelDidNotHelp": "Not evaluated; draft case; no runs recorded.",
+  "limitations": [
+    "Draft; not shown on the public Lab index.",
+    "No artifacts with recorded outputs or scores yet."
+  ],
+  "changelog": [
+    {
+      "at": "2026-07-26T00:00:00.000Z",
+      "note": "Draft shell created from EVAL_PROMPT_SUITE false-01."
+    }
+  ],
+  "artifacts": []
+}

@@ -1,0 +1,14 @@
+{
+  "datasetVersion": "2026-07-26",
+  "rubricVersion": "v1",
+  "description": "Babel Lab evaluation dataset. Only cases with status published appear on the public index. Draft cases are scaffolding until real runs are imported.",
+  "noCherryPicking": true,
+  "cases": [
+    "ai-action-items",
+    "reversible-account-deletion",
+    "pricing-free-tier",
+    "false-premise-https",
+    "hiring-screener-dissent",
+    "react-vue-chronology"
+  ]
+}

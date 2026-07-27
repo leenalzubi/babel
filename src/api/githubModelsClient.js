@@ -1,5 +1,5 @@
 /**
- * GitHub Models — OpenAI-compatible chat completions.
+ * GitHub Models: OpenAI-compatible chat completions.
  *
  * - Local dev: set VITE_GITHUB_TOKEN (GitHub PAT with Models access).
  * - Production (e.g. Vercel): prefer GITHUB_MODELS_PAT on the server; the client calls
@@ -7,6 +7,7 @@
  */
 
 import { API_ERROR, isLikelyNetworkError } from '../lib/apiErrors.js'
+import { compactChatMessages } from '../lib/clipInferenceText.js'
 import {
   GITHUB_MODELS_CHAT_URL,
   githubModelsFetchHeaders,
@@ -15,6 +16,9 @@ import {
 const PROXY_PATH = '/api/github-models'
 
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503])
+/** Max automatic retries after the first attempt (spec: two automatic retries). */
+const MAX_AUTO_RETRIES = 2
+const TOTAL_ATTEMPTS = 1 + MAX_AUTO_RETRIES
 
 /**
  * @typedef {{
@@ -51,6 +55,8 @@ export async function classifyError(response, agentName) {
     return {
       type: 'content_filter',
       agent: agentName,
+      scope: 'voice',
+      retryMode: 'after_edit',
       title: 'Content filter triggered',
       detail: `${agentName} was blocked by Azure's content filter. This usually happens with prompts containing sensitive, ambiguous, or politically charged language.`,
       suggestion:
@@ -60,9 +66,13 @@ export async function classifyError(response, agentName) {
 
   if (status === 429) {
     const retryAfter = response.headers.get('retry-after') || '60'
+    const retryAfterMs = Math.max(1, Number(retryAfter) || 60) * 1000
     return {
       type: 'rate_limit',
       agent: agentName,
+      scope: 'voice',
+      retryMode: 'delayed',
+      retryAfterMs,
       title: 'Rate limit reached',
       detail: `GitHub Models free tier rate limit hit on ${agentName}. Retry after ${retryAfter} seconds.`,
       suggestion: `Wait ${retryAfter} seconds and try again. If this keeps happening, space out your debates.`,
@@ -73,6 +83,8 @@ export async function classifyError(response, agentName) {
     return {
       type: 'token_limit',
       agent: agentName,
+      scope: 'voice',
+      retryMode: 'after_edit',
       title: 'Prompt too long',
       detail: `${agentName} received more text than it can process. This can happen in later rounds when the full debate context is passed.`,
       suggestion:
@@ -84,11 +96,15 @@ export async function classifyError(response, agentName) {
     return {
       type: 'auth',
       agent: agentName,
+      scope: 'infrastructure',
+      retryMode: 'after_configuration',
       title: 'Authentication failed',
-      detail:
-        'Your GitHub token was rejected. It may have expired or have insufficient permissions.',
-      suggestion:
-        'Generate a new fine-grained GitHub token with Models: Read-only permission and update your environment variables.',
+      detail: import.meta.env.PROD
+        ? 'The model service is not configured for this deployment.'
+        : 'Your GitHub token was rejected. It may have expired or have insufficient permissions.',
+      suggestion: import.meta.env.PROD
+        ? 'Retry connection or contact the site operator.'
+        : 'Generate a new fine-grained GitHub token with Models access and update your environment variables.',
     }
   }
 
@@ -96,6 +112,8 @@ export async function classifyError(response, agentName) {
     return {
       type: 'model_unavailable',
       agent: agentName,
+      scope: 'voice',
+      retryMode: 'not_retryable',
       title: 'Model unavailable',
       detail: `${agentName} is not available on your GitHub Models tier or the model ID has changed.`,
       suggestion:
@@ -107,6 +125,8 @@ export async function classifyError(response, agentName) {
     return {
       type: 'server_error',
       agent: agentName,
+      scope: 'voice',
+      retryMode: 'delayed',
       title: 'GitHub Models server error',
       detail: `GitHub Models returned a ${status} error for ${agentName}. This is usually temporary.`,
       suggestion:
@@ -117,9 +137,11 @@ export async function classifyError(response, agentName) {
   return {
     type: 'unknown',
     agent: agentName,
+    scope: 'voice',
+    retryMode: 'immediate',
     title: 'Unexpected error',
     detail: `${agentName} failed with status ${status}${message ? `: ${message}` : ''}`,
-    suggestion: 'Try again. If it keeps failing, try a different prompt.',
+    suggestion: 'Retry this voice, or continue with available responses.',
   }
 }
 
@@ -145,6 +167,30 @@ function resolveGithubChatRequest() {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * Backoff for rate limits / server errors: Retry-After when present, else 2s then 6s + jitter.
+ * @param {number} attemptIndex zero-based attempt that just failed
+ * @param {Response | null} [response]
+ */
+function retryWaitMs(attemptIndex, response = null) {
+  const jitter = () => 250 + Math.floor(Math.random() * 1250)
+  if (response && response.status === 429) {
+    const raw = response.headers.get('retry-after')
+    if (raw) {
+      const asNum = Number(raw)
+      if (Number.isFinite(asNum) && asNum >= 0) {
+        return Math.min(120_000, Math.max(500, asNum * 1000)) + jitter()
+      }
+      const asDate = Date.parse(raw)
+      if (Number.isFinite(asDate)) {
+        return Math.min(120_000, Math.max(500, asDate - Date.now())) + jitter()
+      }
+    }
+  }
+  const base = attemptIndex <= 0 ? 2000 : 6000
+  return base + jitter()
 }
 
 const DEFAULT_MODEL_CALL_TIMEOUT_MS = 120_000
@@ -178,11 +224,12 @@ async function callWithTimeout(
     if (name === 'AbortError') {
       throw {
         type: 'timeout',
+        scope: 'voice',
+        retryMode: 'immediate',
         agent: agentName,
         title: 'Model timed out',
-        detail: `${agentName} took longer than 2 minutes to respond.`,
-        suggestion:
-          'Try again. Phi-4 Reasoning sometimes takes longer on complex prompts.',
+        detail: `${agentName} did not answer in time.`,
+        suggestion: `Retry ${agentName}, or continue without it.`,
         ...errorContext,
       }
     }
@@ -207,9 +254,9 @@ export function isContentFilterError(err) {
 
 /**
  * @param {string} model
- * @param {Array<{ role: 'user' | 'assistant', content: string }>} messages
+ * @param {Array<{ role: string, content: string }>} messages
  * @param {string} systemPrompt
- * @param {{ maxTokens?: number, agentName?: string, errorContext?: { stage?: string, round?: number } } | undefined} [options]
+ * @param {{ maxTokens?: number, agentName?: string, errorContext?: { stage?: string, round?: number }, skipCompactRetry?: boolean } | undefined} [options]
  * @returns {Promise<string>}
  */
 export async function callGitHubModel(model, messages, systemPrompt, options) {
@@ -230,6 +277,26 @@ export async function callGitHubModel(model, messages, systemPrompt, options) {
 
   if (!Array.isArray(messages)) {
     throw new Error('callGitHubModel: messages must be an array.')
+  }
+
+  if (typeof navigator !== 'undefined' && navigator && navigator.onLine === false) {
+    const agentName =
+      options && typeof options.agentName === 'string' && options.agentName.trim()
+        ? options.agentName.trim()
+        : 'Model'
+    throw {
+      type: 'network',
+      scope: 'infrastructure',
+      retryMode: 'delayed',
+      agent: agentName,
+      title: 'You are offline',
+      detail:
+        'You are offline. The debate will resume when your connection returns. Completed responses are preserved.',
+      suggestion: 'Reconnect to the internet. Babel will resume automatically.',
+      ...(options?.errorContext && typeof options.errorContext === 'object'
+        ? options.errorContext
+        : {}),
+    }
   }
 
   const headers = githubModelsFetchHeaders({ 'Content-Type': 'application/json' })
@@ -266,113 +333,147 @@ export async function callGitHubModel(model, messages, systemPrompt, options) {
       ? options.errorContext
       : {}
 
-  return callWithTimeout(
-    async (signal) => {
-      let lastError = new Error('GitHub Models request failed')
+  try {
+    return await callWithTimeout(
+      async (signal) => {
+        let lastError = /** @type {unknown} */ (
+          new Error('GitHub Models request failed')
+        )
 
-      for (let attempt = 0; attempt < 3; attempt++) {
-        if (attempt > 0) {
-          await sleep(1500 * attempt)
-        }
-        if (signal.aborted) {
-          throw {
-            type: 'timeout',
-            agent: agentName,
-            title: 'Model timed out',
-            detail: `${agentName} took longer than 2 minutes to respond.`,
-            suggestion:
-              'Try again. Phi-4 Reasoning sometimes takes longer on complex prompts.',
-            ...errorContext,
-          }
-        }
-        if (attempt > 0) {
-          await sleep(1500 * attempt)
-        }
-        if (signal.aborted) {
-          throw {
-            type: 'timeout',
-            agent: agentName,
-            title: 'Model timed out',
-            detail: `${agentName} took longer than 2 minutes to respond.`,
-            suggestion:
-              'Try again. Phi-4 Reasoning sometimes takes longer on complex prompts.',
-            ...errorContext,
-          }
-        }
-
-        let response
-        try {
-          response = await fetch(url, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(payload),
-            signal,
-          })
-        } catch (err) {
-          const name =
-            err && typeof err === 'object' && 'name' in err ? err.name : ''
-          if (name === 'AbortError' || signal.aborted) {
+        for (let attempt = 0; attempt < TOTAL_ATTEMPTS; attempt++) {
+          if (signal.aborted) {
             throw {
               type: 'timeout',
+              scope: 'voice',
+              retryMode: 'immediate',
               agent: agentName,
               title: 'Model timed out',
-              detail: `${agentName} took longer than 2 minutes to respond.`,
-              suggestion:
-                'Try again. Phi-4 Reasoning sometimes takes longer on complex prompts.',
+              detail: `${agentName} did not answer in time.`,
+              suggestion: `Retry ${agentName}, or continue without it.`,
               ...errorContext,
             }
           }
-          if (isLikelyNetworkError(err)) {
-            lastError = new Error(API_ERROR.NETWORK)
-            if (attempt < 2) continue
-            throw lastError
-          }
-          throw err instanceof Error ? err : new Error(String(err))
-        }
 
-        if (
-          isProxyRequest &&
-          response.status === 404 &&
-          !(response.headers.get('content-type') ?? '').includes('application/json')
-        ) {
-          throw new Error(API_ERROR.GITHUB_PROXY_404)
-        }
-
-        if (!response.ok) {
-          if (RETRYABLE_STATUS.has(response.status) && attempt < 2) {
-            try {
-              await response.text()
-            } catch {
-              /* ignore */
+          let response
+          try {
+            response = await fetch(url, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify(payload),
+              signal,
+            })
+          } catch (err) {
+            const name =
+              err && typeof err === 'object' && 'name' in err ? err.name : ''
+            if (name === 'AbortError' || signal.aborted) {
+              throw {
+                type: 'timeout',
+                scope: 'voice',
+                retryMode: 'immediate',
+                agent: agentName,
+                title: 'Model timed out',
+                detail: `${agentName} did not answer in time.`,
+                suggestion: `Retry ${agentName}, or continue without it.`,
+                ...errorContext,
+              }
             }
-            continue
+            if (isLikelyNetworkError(err)) {
+              lastError = {
+                type: 'network',
+                scope: 'infrastructure',
+                retryMode: 'delayed',
+                agent: agentName,
+                title: 'Connection lost',
+                detail:
+                  'Babel could not reach the model service. Your completed responses are preserved.',
+                suggestion: 'Retry connection when you are back online.',
+                ...errorContext,
+              }
+              if (attempt < MAX_AUTO_RETRIES) {
+                await sleep(retryWaitMs(attempt, null))
+                continue
+              }
+              throw lastError
+            }
+            throw err instanceof Error ? err : new Error(String(err))
           }
-          const classified = await classifyError(response, agentName)
-          throw { ...classified, ...errorContext }
+
+          if (
+            isProxyRequest &&
+            response.status === 404 &&
+            !(response.headers.get('content-type') ?? '').includes(
+              'application/json'
+            )
+          ) {
+            throw {
+              type: 'proxy_configuration',
+              scope: 'infrastructure',
+              retryMode: 'after_configuration',
+              agent: agentName,
+              title: 'Model proxy unavailable',
+              detail:
+                'This deployment cannot reach its GitHub Models proxy. Completed responses are preserved.',
+              suggestion: 'Retry connection after the deployment is fixed.',
+              ...errorContext,
+            }
+          }
+
+          if (!response.ok) {
+            if (
+              RETRYABLE_STATUS.has(response.status) &&
+              attempt < MAX_AUTO_RETRIES
+            ) {
+              const wait = retryWaitMs(attempt, response)
+              try {
+                await response.text()
+              } catch {
+                /* ignore */
+              }
+              await sleep(wait)
+              continue
+            }
+            const classified = await classifyError(response, agentName)
+            throw { ...classified, ...errorContext }
+          }
+
+          let data
+          try {
+            data = await response.json()
+          } catch {
+            throw new Error(API_ERROR.NETWORK)
+          }
+
+          const content = data?.choices?.[0]?.message?.content
+          if (typeof content !== 'string') {
+            throw new Error(
+              'GitHub Models response missing choices[0].message.content string.'
+            )
+          }
+          return content
         }
 
-        let data
-        try {
-          data = await response.json()
-        } catch {
-          throw new Error(API_ERROR.NETWORK)
-        }
-
-        const content = data?.choices?.[0]?.message?.content
-        if (typeof content !== 'string') {
-          throw new Error(
-            'GitHub Models response missing choices[0].message.content string.'
-          )
-        }
-        return content
-      }
-
-      throw lastError
-    },
-    DEFAULT_MODEL_CALL_TIMEOUT_MS,
-    { agentName, errorContext }
-  )
+        throw lastError
+      },
+      DEFAULT_MODEL_CALL_TIMEOUT_MS,
+      { agentName, errorContext }
+    )
+  } catch (err) {
+    const isTokenLimit =
+      err &&
+      typeof err === 'object' &&
+      /** @type {{ type?: string }} */ (err).type === 'token_limit'
+    const skipCompact = Boolean(options?.skipCompactRetry)
+    if (isTokenLimit && !skipCompact) {
+      const compacted = compactChatMessages(messages)
+      return callGitHubModel(model, compacted, systemPrompt, {
+        ...options,
+        skipCompactRetry: true,
+      })
+    }
+    throw err
+  }
 }
+
 
 /**
  * Whether the browser has a direct VITE token (local / legacy client-only prod).
@@ -384,7 +485,7 @@ export function hasGithubModelsClientToken() {
 }
 
 /**
- * GET /api/github-models — production server token probe (Vercel).
+ * GET /api/github-models: production server token probe (Vercel).
  * @returns {Promise<boolean>}
  */
 export async function fetchGithubModelsProxyConfigured() {

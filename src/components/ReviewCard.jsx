@@ -1,65 +1,58 @@
 import { memo } from 'react'
-import { ArrowLeftRight } from 'lucide-react'
-import AgentTimeoutNotice from './AgentTimeoutNotice.jsx'
-import AgentResponseBody from './AgentResponseBody.jsx'
 import AgentThinking from './AgentThinking.jsx'
 import AgentTimer from './AgentTimer.jsx'
-
-import { isAgentTimeoutResponse } from '../lib/debateConstants.js'
-
-const mdClass =
-  'max-w-none text-[17px] leading-[1.85] text-[var(--text-secondary)] [&_a]:text-[var(--accent-forge)] [&_code]:rounded-[4px] [&_code]:bg-[var(--bg-raised)] [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[13px] [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_li]:my-0.5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-3 [&_p:last-child]:mb-0 [&_strong]:text-[var(--text-primary)] [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5'
+import SectionHeading from './SectionHeading.jsx'
+import VoiceCard from './VoiceCard.jsx'
+import VoiceFailureNotice from './VoiceFailureNotice.jsx'
+import PartialRoundBanner from './PartialRoundBanner.jsx'
+import StructuredVoiceBody from './reasoning/StructuredVoiceBody.jsx'
+import { useVoiceActions } from '../context/VoiceActionsContext.jsx'
+import { useVoiceLabels } from '../hooks/useVoiceLabels.js'
+import { useForge } from '../store/useForgeStore.js'
+import { isUnavailableAgentResponse } from '../lib/debateConstants.js'
 
 /**
  * @param {{
- *   border: string
- *   titleColor: string
- *   dot: string
- *   title: string
- *   body: string
- *   regionLabel: string
- *   startTime?: number | null
- *   endTime?: number | null
+ *   agentKey: 'a'|'b'|'c',
+ *   agentSpec: { name: string, color: string },
+ *   body: string,
+ *   startTime?: number | null,
+ *   endTime?: number | null,
  * }} props
  */
 function CrossReviewAgentCard({
-  border,
-  titleColor,
-  dot,
-  title,
+  agentKey,
+  agentSpec,
   body,
-  regionLabel,
   startTime,
   endTime,
 }) {
+  const { state } = useForge()
+  const { roleTitle, modelName } = useVoiceLabels(agentKey, agentSpec)
+  const structure = state.structures?.round2?.[agentKey] ?? null
+
   return (
-    <article
-      role="region"
-      aria-label={regionLabel}
-      className="forge-reveal-card rounded-forge-card overflow-hidden border border-[var(--border)] bg-[var(--bg-surface)]"
-      style={{ borderTopWidth: 2, borderTopColor: border }}
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-2 pt-4">
-        <div className="flex min-w-0 items-center gap-2">
-          <span
-            className={`h-1.5 w-1.5 shrink-0 rounded-full ${dot}`}
-            aria-hidden
-          />
-          <h4
-            className="font-mono text-[10px] font-semibold tracking-wide"
-            style={{ color: titleColor }}
-          >
-            {title}
-          </h4>
-        </div>
-        {startTime != null ? (
+    <VoiceCard
+      title={roleTitle}
+      subtitle={modelName}
+      color={agentSpec.color}
+      stance="cross-examination"
+        responseState="done"
+      extractionState={structure?.extraction ?? 'raw_response'}
+      responseDomId={`voice-r2-${agentKey}`}
+      regionLabel={`${roleTitle} (${modelName}) cross-examination`}
+      foot={
+        startTime != null ? (
           <AgentTimer startTime={startTime} endTime={endTime ?? null} />
-        ) : null}
-      </div>
-      <div className="forge-response-scroll border-t border-dashed border-[var(--border)] px-4 pb-4 pt-3">
-        <AgentResponseBody rawText={body} markdownClassName={mdClass} />
-      </div>
-    </article>
+        ) : null
+      }
+    >
+      <StructuredVoiceBody
+        rawText={body}
+        structure={structure}
+        roleLabel={roleTitle}
+      />
+    </VoiceCard>
   )
 }
 
@@ -68,56 +61,71 @@ function CrossReviewAgentCard({
  */
 function CrossReviewWaiting({ title, color }) {
   return (
-    <div className="rounded-forge-card flex min-h-[160px] flex-col items-center justify-center border border-dashed border-[var(--border)] bg-[var(--bg-surface)]/50 px-4 py-8">
-      <span
-        className="font-mono text-[10px] font-semibold tracking-wide"
-        style={{ color }}
+    <div
+      className="babel-voice voice flex min-h-[160px] flex-col border-dashed opacity-80"
+      data-state="pending"
+    >
+      <div
+        className="babel-voice-niche niche"
+        style={{
+          background: `color-mix(in srgb, ${color} 12%, var(--plaster-hi))`,
+        }}
       >
-        {title}
-      </span>
-      <p className="mt-2 text-center text-sm italic text-[var(--text-muted)]">
-        Waiting its turn
-      </p>
+        <span className="babel-voice-name" style={{ color }}>
+          {title}
+        </span>
+        <span className="babel-voice-stance">Waiting to speak</span>
+      </div>
+      <div className="babel-voice-body body flex flex-1 items-center justify-center">
+        <p className="text-center text-sm italic text-[var(--text-muted)]">
+          Waiting its turn
+        </p>
+      </div>
     </div>
   )
 }
 
 /**
  * @param {{
+ *   agentKey: 'a' | 'b' | 'c',
  *   agentSpec: { name: string, color: string },
- *   otherNames: string,
  *   body: string,
  *   timer: { startTime: number | null, endTime: number | null },
- *   borderVar: string,
- *   dotClass: string,
- *   regionLabel: string,
  * }} props
  */
-function ReviewAgentColumn({
-  agentSpec,
-  otherNames,
-  body,
-  timer,
-  borderVar,
-  dotClass,
-  regionLabel,
-}) {
+function ReviewAgentColumn({ agentKey, agentSpec, body, timer }) {
+  const voiceActions = useVoiceActions()
+  const { roleTitle, modelName } = useVoiceLabels(agentKey, agentSpec)
   const hasBody = typeof body === 'string' && body.length > 0
   const live = timer.startTime != null && timer.endTime == null
-  const titleDone = `${agentSpec.name} reviewing ${otherNames}`
   const color = agentSpec.color
 
   if (hasBody) {
-    if (isAgentTimeoutResponse(body)) {
-      return <AgentTimeoutNotice agentName={agentSpec.name} />
+    if (isUnavailableAgentResponse(body)) {
+      return (
+        <VoiceFailureNotice
+          agentName={`${roleTitle} (${modelName})`}
+          agentKey={agentKey}
+          message={body}
+          stageLabel="Cross-examination"
+          busy={Boolean(voiceActions?.voiceBusy)}
+          onRetry={
+            voiceActions
+              ? () => void voiceActions.retryVoice(agentKey, 'round_2')
+              : null
+          }
+          onContinueWithout={
+            voiceActions
+              ? () => voiceActions.continueWithout(agentKey)
+              : null
+          }
+        />
+      )
     }
     return (
       <CrossReviewAgentCard
-        border={borderVar}
-        titleColor={color}
-        dot={dotClass}
-        title={titleDone}
-        regionLabel={regionLabel}
+        agentKey={agentKey}
+        agentSpec={agentSpec}
         body={body}
         startTime={timer.startTime}
         endTime={timer.endTime}
@@ -128,21 +136,21 @@ function ReviewAgentColumn({
   if (live) {
     return (
       <AgentThinking
-        title={agentSpec.name}
+        title={roleTitle}
+        subtitle={modelName}
         color={color}
-        line="Reviewing the other agents' answers…"
+        line="Examining the other voices…"
         startTime={timer.startTime}
         endTime={timer.endTime}
       />
     )
   }
 
-  return <CrossReviewWaiting title={agentSpec.name} color={color} />
+  return <CrossReviewWaiting title={roleTitle} color={color} />
 }
 
 /**
  * @param {{
- *   roundNum: number
  *   aReviews: string
  *   bReviews: string
  *   cReviews: string
@@ -158,61 +166,48 @@ function ReviewAgentColumn({
  *   }
  * }} props
  */
-function ReviewCard({
-  aReviews,
-  bReviews,
-  cReviews,
-  config,
-  reviewTimers,
-}) {
+function ReviewCard({ aReviews, bReviews, cReviews, config, reviewTimers }) {
   const { agentA, agentB, agentC } = config
 
   return (
     <section className="flex flex-col gap-6">
-      <header className="flex flex-col gap-1 border-b border-dashed border-[var(--border)] pb-4">
-        <div className="flex items-center gap-2">
-          <ArrowLeftRight
-            className="h-4 w-4 shrink-0 text-[var(--accent-forge)]"
-            aria-hidden
-          />
-          <h3 className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
-            Round 2 — cross-review and rebuttal
-          </h3>
-        </div>
-        <p className="pl-6 text-xs leading-relaxed text-[var(--text-secondary)]">
-          Each model reviews the other two and defends its position in one pass
-        </p>
-      </header>
+      <SectionHeading
+        className="border-b border-[var(--line)] pb-4"
+        eyebrow="Round 2"
+        title="Cross-examination"
+        lede="Each role critiques the strongest claims from the others. Linked counterpoints attach when mapping validates."
+      />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
+      <div className="majlis">
         <ReviewAgentColumn
+          agentKey="a"
           agentSpec={agentA}
-          otherNames={`${agentB.name} + ${agentC.name}`}
           body={aReviews}
           timer={reviewTimers.a}
-          borderVar="var(--agent-a)"
-          dotClass="bg-[var(--agent-a)]"
-          regionLabel={`${agentA.name} cross-review`}
         />
         <ReviewAgentColumn
+          agentKey="b"
           agentSpec={agentB}
-          otherNames={`${agentA.name} + ${agentC.name}`}
           body={bReviews}
           timer={reviewTimers.b}
-          borderVar="var(--agent-b)"
-          dotClass="bg-[var(--agent-b)]"
-          regionLabel={`${agentB.name} cross-review`}
         />
         <ReviewAgentColumn
+          agentKey="c"
           agentSpec={agentC}
-          otherNames={`${agentA.name} + ${agentB.name}`}
           body={cReviews}
           timer={reviewTimers.c}
-          borderVar="var(--agent-c)"
-          dotClass="bg-[var(--agent-c)]"
-          regionLabel={`${agentC.name} cross-review`}
         />
       </div>
+
+      <PartialRoundBanner
+        roundLabel="Round 2"
+        texts={[aReviews, bReviews, cReviews]}
+        failedNames={[
+          isUnavailableAgentResponse(aReviews) ? agentA.name : null,
+          isUnavailableAgentResponse(bReviews) ? agentB.name : null,
+          isUnavailableAgentResponse(cReviews) ? agentC.name : null,
+        ].filter(Boolean)}
+      />
     </section>
   )
 }

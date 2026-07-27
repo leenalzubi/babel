@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
   AlertTriangle,
   Clock,
@@ -7,6 +8,7 @@ import {
   Lightbulb,
   ServerCrash,
   ShieldAlert,
+  WifiOff,
 } from 'lucide-react'
 
 /**
@@ -18,30 +20,67 @@ import {
  *     suggestion?: string,
  *     stage?: string,
  *     round?: number,
+ *     id?: string,
+ *     userMessage?: string,
+ *     retryAfterMs?: number,
+ *     occurredAt?: string,
  *   } | null,
+ *   status?: string,
  *   onDismiss: () => void,
  *   onRetry?: () => void,
  *   onEditPrompt?: () => void,
+ *   onCopyTranscript?: () => void,
  * }} props
  */
 export default function ErrorBanner({
   error,
+  status,
   onDismiss,
   onRetry,
   onEditPrompt,
+  onCopyTranscript,
 }) {
+  const isRich =
+    error != null &&
+    error !== '' &&
+    typeof error === 'object' &&
+    (typeof error.title === 'string' || typeof error.detail === 'string')
+
+  const type =
+    isRich && typeof error.type === 'string' ? error.type : 'unknown'
+  const retryAfterMs =
+    isRich && typeof error.retryAfterMs === 'number' ? error.retryAfterMs : null
+  const occurredAt =
+    isRich && typeof error.occurredAt === 'string' ? error.occurredAt : null
+
+  const deadline =
+    error != null &&
+    error !== '' &&
+    type === 'rate_limit' &&
+    retryAfterMs != null
+      ? (occurredAt ? Date.parse(occurredAt) : Date.now()) + retryAfterMs
+      : null
+
+  const [secondsLeft, setSecondsLeft] = useState(0)
+
+  useEffect(() => {
+    if (deadline == null) {
+      setSecondsLeft(0)
+      return
+    }
+    const tick = () => {
+      setSecondsLeft(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)))
+    }
+    tick()
+    const id = window.setInterval(tick, 250)
+    return () => window.clearInterval(id)
+  }, [deadline])
+
   if (error == null || error === '') return null
 
-  const isRich =
-    typeof error === 'object' &&
-    error !== null &&
-    typeof error.title === 'string' &&
-    typeof error.detail === 'string'
-
-  const type = isRich && typeof error.type === 'string' ? error.type : 'unknown'
-  const title = isRich ? error.title : 'Something went wrong'
+  const title = isRich && error.title ? error.title : 'Something went wrong'
   const detail = isRich
-    ? error.detail
+    ? error.detail || error.userMessage || ''
     : typeof error === 'string'
       ? error
       : String(error ?? '')
@@ -55,6 +94,9 @@ export default function ErrorBanner({
       ? error.round
       : null
 
+  const errorId =
+    isRich && typeof error.id === 'string' && error.id ? error.id : null
+
   const theme = {
     content_filter: {
       border: 'border-amber-700/35',
@@ -64,7 +106,7 @@ export default function ErrorBanner({
     },
     rate_limit: {
       border: 'border-blue-600/35',
-      bg: 'bg-[color-mix(in_srgb,#2563eb_12%,var(--bg-surface))]',
+      bg: 'bg-[color-mix(in_srgb,#1E4E5E_12%,var(--bg-surface))]',
       icon: Clock,
       iconClass: 'text-blue-700',
     },
@@ -98,6 +140,18 @@ export default function ErrorBanner({
       icon: Cpu,
       iconClass: 'text-red-700',
     },
+    network: {
+      border: 'border-blue-600/35',
+      bg: 'bg-[color-mix(in_srgb,#1E4E5E_12%,var(--bg-surface))]',
+      icon: WifiOff,
+      iconClass: 'text-blue-700',
+    },
+    proxy_configuration: {
+      border: 'border-red-600/45',
+      bg: 'bg-[color-mix(in_srgb,var(--diverge)_10%,var(--bg-surface))]',
+      icon: ServerCrash,
+      iconClass: 'text-red-700',
+    },
     unknown: {
       border: 'border-red-600/45',
       bg: 'bg-[color-mix(in_srgb,var(--diverge)_10%,var(--bg-surface))]',
@@ -108,6 +162,25 @@ export default function ErrorBanner({
 
   const t = theme[type] ?? theme.unknown
   const Icon = t.icon
+
+  const waitingOnRateLimit = type === 'rate_limit' && secondsLeft > 0
+
+  const primaryRetryLabel =
+    type === 'auth' || type === 'network' || type === 'proxy_configuration'
+      ? 'Retry connection'
+      : type === 'content_filter'
+        ? null
+        : type === 'rate_limit'
+          ? waitingOnRateLimit
+            ? `Retry in ${secondsLeft}s`
+            : 'Retry now'
+          : status === 'blocked'
+            ? 'Retry stage'
+            : 'Retry debate'
+
+  const showEditPrompt =
+    typeof onEditPrompt === 'function' &&
+    (type === 'content_filter' || type === 'token_limit' || type === 'unknown')
 
   return (
     <div
@@ -129,12 +202,26 @@ export default function ErrorBanner({
                 Failed in Round {round}
               </span>
             ) : null}
+            {errorId ? (
+              <span className="rounded-[4px] border border-[var(--border)] bg-[var(--bg-base)] px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10px] font-medium text-[var(--text-muted)]">
+                {errorId}
+              </span>
+            ) : null}
           </div>
           <p
             className="text-sm font-normal leading-relaxed text-[var(--text-secondary)]"
             style={{ fontFamily: 'var(--font-body)' }}
           >
             {detail}
+          </p>
+          {waitingOnRateLimit ? (
+            <p className="font-[family-name:var(--font-mono)] text-xs text-[var(--text-muted)]">
+              GitHub Models is limiting requests. This debate will resume in{' '}
+              {secondsLeft} second{secondsLeft === 1 ? '' : 's'}.
+            </p>
+          ) : null}
+          <p className="text-xs leading-relaxed text-[var(--text-muted)]">
+            Completed responses are preserved.
           </p>
           <p className="flex gap-2 text-sm italic leading-relaxed text-[var(--text-muted)]">
             <Lightbulb
@@ -151,28 +238,38 @@ export default function ErrorBanner({
         </div>
       </div>
       <div className="mt-4 flex flex-wrap gap-2 border-t border-[var(--border)]/60 pt-3">
-        {typeof onRetry === 'function' ? (
+        {typeof onRetry === 'function' && primaryRetryLabel ? (
           <button
             type="button"
             onClick={onRetry}
-            className="rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 font-[family-name:var(--font-mono)] text-[11px] font-semibold text-[var(--text-primary)] transition hover:border-[var(--text-muted)]"
+            disabled={waitingOnRateLimit}
+            className="babel-btn babel-btn-primary disabled:opacity-50"
           >
-            Try again
+            {primaryRetryLabel}
           </button>
         ) : null}
-        {typeof onEditPrompt === 'function' ? (
+        {showEditPrompt ? (
           <button
             type="button"
             onClick={onEditPrompt}
-            className="rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 font-[family-name:var(--font-mono)] text-[11px] font-semibold text-[var(--text-primary)] transition hover:border-[var(--text-muted)]"
+            className="babel-btn babel-btn-ghost"
           >
             Edit prompt
+          </button>
+        ) : null}
+        {typeof onCopyTranscript === 'function' ? (
+          <button
+            type="button"
+            onClick={onCopyTranscript}
+            className="babel-btn babel-btn-ghost"
+          >
+            Copy partial transcript
           </button>
         ) : null}
         <button
           type="button"
           onClick={onDismiss}
-          className="rounded-[6px] border border-[var(--border)] bg-transparent px-3 py-2 font-[family-name:var(--font-mono)] text-[11px] font-medium text-[var(--text-muted)] transition hover:bg-[var(--bg-raised)] hover:text-[var(--text-primary)]"
+          className="babel-btn babel-btn-quiet"
         >
           Dismiss
         </button>

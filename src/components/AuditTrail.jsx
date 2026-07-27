@@ -27,7 +27,7 @@ function slotLabel(slot, config) {
   if (s === 'gpt' || s.includes('gpt-4')) return config.agentA.name
   if (s === 'phi' || s.includes('phi')) return config.agentB.name
   if (s === 'mistral' || s.includes('mistral')) return config.agentC.name
-  return str(slot) || '—'
+  return str(slot) || '-'
 }
 
 /**
@@ -51,14 +51,14 @@ function PositionCell({ value }) {
   const v = str(value).toLowerCase()
   if (v === 'agree') {
     return (
-      <span className="text-[#16A34A]" aria-label="Agree">
+      <span className="text-[#4C6647]" aria-label="Agree">
         ✓
       </span>
     )
   }
   if (v === 'disagree') {
     return (
-      <span className="text-[#DC2626]" aria-label="Disagree">
+      <span className="text-[#97372B]" aria-label="Disagree">
         ✗
       </span>
     )
@@ -72,7 +72,7 @@ function PositionCell({ value }) {
   }
   return (
     <span className="text-[var(--text-muted)]" aria-label="Silent">
-      ·
+      -
     </span>
   )
 }
@@ -89,9 +89,9 @@ function JourneyRoundCell({ round, value, prior }) {
         <span
           className={`font-mono text-[10px] leading-none ${
             tone === 'green'
-              ? 'text-[#16A34A]'
+              ? 'text-[#4C6647]'
               : tone === 'red'
-                ? 'text-[#DC2626]'
+                ? 'text-[#97372B]'
                 : 'text-[var(--text-muted)]'
           }`}
           aria-hidden
@@ -169,9 +169,9 @@ function PositionJourneyBlock({ audit, claimId, config }) {
             <span
               className={`font-mono ${
                 t12 === 'green'
-                  ? 'text-[#16A34A]'
+                  ? 'text-[#4C6647]'
                   : t12 === 'red'
-                    ? 'text-[#DC2626]'
+                    ? 'text-[#97372B]'
                     : 'text-[var(--text-muted)]'
               }`}
             >
@@ -182,9 +182,9 @@ function PositionJourneyBlock({ audit, claimId, config }) {
             <span
               className={`font-mono ${
                 t23 === 'green'
-                  ? 'text-[#16A34A]'
+                  ? 'text-[#4C6647]'
                   : t23 === 'red'
-                    ? 'text-[#DC2626]'
+                    ? 'text-[#97372B]'
                     : 'text-[var(--text-muted)]'
               }`}
             >
@@ -204,7 +204,7 @@ function PositionJourneyBlock({ audit, claimId, config }) {
               </span>
               {n2 || n3 ? (
                 <p className="mt-1 pl-1 italic text-[12px] text-[var(--text-muted)]">
-                  {[n2, n3].filter(Boolean).join(' · ')}
+                  {[n2, n3].filter(Boolean).join('; ')}
                 </p>
               ) : null}
             </div>
@@ -225,7 +225,7 @@ function VerdictPill({ verdict, minorityIncluded }) {
       v === 'minority' || !v ? 'Minority' : v.charAt(0).toUpperCase() + v.slice(1)
     return (
       <span
-        className={`${base} bg-[#DC2626]/12 text-[#B91C1C]`}
+        className={`${base} bg-[#97372B]/12 text-[#7A2C23]`}
       >
         <Flag className="h-3 w-3" strokeWidth={2} aria-hidden />
         {label}
@@ -235,7 +235,7 @@ function VerdictPill({ verdict, minorityIncluded }) {
   if (v === 'unanimous') {
     return (
       <span
-        className={`${base} bg-[#16A34A]/12 text-[#15803D]`}
+        className={`${base} bg-[#4C6647]/12 text-[#3D5439]`}
       >
         Unanimous
       </span>
@@ -244,7 +244,7 @@ function VerdictPill({ verdict, minorityIncluded }) {
   if (v === 'majority') {
     return (
       <span
-        className={`${base} bg-[#2563EB]/10 text-[#1D4ED8]`}
+        className={`${base} bg-[#1E4E5E]/10 text-[#163B47]`}
       >
         Majority
       </span>
@@ -261,7 +261,7 @@ function VerdictPill({ verdict, minorityIncluded }) {
   }
   return (
     <span className={`${base} bg-[var(--bg-raised)] text-[var(--text-muted)]`}>
-      {verdict || '—'}
+      {verdict || '-'}
     </span>
   )
 }
@@ -300,15 +300,15 @@ function FramingBadge({ framing }) {
   const f = str(framing).toLowerCase()
   const danger = f === 'modified' || f === 'dropped'
   const label =
-    !f || f === '—'
-      ? '—'
+    !f || f === '-'
+      ? '-'
       : f.charAt(0).toUpperCase() + f.slice(1)
   return (
     <span
       className={`rounded-[4px] px-1.5 py-0.5 font-mono text-[9px] tracking-wide ${
         danger
           ? f === 'dropped'
-            ? 'bg-[#DC2626]/12 text-[#B91C1C]'
+            ? 'bg-[#97372B]/12 text-[#7A2C23]'
             : 'bg-[#D97706]/12 text-[#B45309]'
           : 'bg-[var(--bg-raised)] text-[var(--text-secondary)]'
       }`}
@@ -360,7 +360,7 @@ function TracePanel({ trace, config, audit, claimId }) {
 
   return (
     <div
-      className="border-l-[3px] border-l-[#8B1A1A] bg-[#FDFAF4] px-6 py-5 text-[14px] leading-relaxed text-[#1C1814]"
+      className="border-l-[3px] border-l-[#1E4E5E] bg-[#F8F3E8] px-6 py-5 text-[14px] leading-relaxed text-[#24201B]"
       style={{ fontFamily: 'var(--font-body), Georgia, serif' }}
     >
       {audit && claimId ? (
@@ -393,7 +393,7 @@ function TracePanel({ trace, config, audit, claimId }) {
             <p>
               Challenged by{' '}
               <span className="font-mono text-[12px] text-[var(--text-primary)]">
-                {byList.length ? byList.join(', ') : '—'}
+                {byList.length ? byList.join(', ') : '-'}
               </span>
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -421,7 +421,7 @@ function TracePanel({ trace, config, audit, claimId }) {
             <p>
               Defended by{' '}
               <span className="font-mono text-[12px] text-[var(--text-primary)]">
-                {str(defense.by) || '—'}
+                {str(defense.by) || '-'}
               </span>
             </p>
             {defense.quote ? (
@@ -462,8 +462,8 @@ function TracePanel({ trace, config, audit, claimId }) {
           </div>
         ) : null}
         {trace.flag ? (
-          <div className="mt-4 rounded-[4px] border border-dashed border-[#DC2626]/40 bg-[#DC2626]/8 px-3 py-2">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-wide text-[#B91C1C]">
+          <div className="mt-4 rounded-[4px] border border-dashed border-[#97372B]/40 bg-[#97372B]/8 px-3 py-2">
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-wide text-[#7A2C23]">
               ⚑ Notable
             </p>
             {trace.flagReason ? (
@@ -497,10 +497,10 @@ function synthesisLineAgentPill(line, config) {
   if (/\b(agent[_\s]?a|gpt-4o)\b/i.test(line) || l.includes('gpt')) {
     return { name: config.agentA.name, color: config.agentA.color }
   }
-  return { name: '—', color: 'var(--text-muted)' }
+  return { name: '-', color: 'var(--text-muted)' }
 }
 
-export default function AuditTrail() {
+export default function AuditTrail({ onRetryAudit, auditRetrying = false }) {
   const { state } = useForge()
   const {
     audit,
@@ -511,6 +511,8 @@ export default function AuditTrail() {
     validation,
     synthesisWinner,
   } = state
+  const stageAuditError = state.stageErrors?.audit ?? null
+  const showAuditUnavailable = Boolean(auditError || stageAuditError)
   const concessions = Array.isArray(synthesis?.concessions)
     ? synthesis.concessions
     : []
@@ -703,7 +705,7 @@ export default function AuditTrail() {
                         }`}
                         title={!isDiag && note ? note : undefined}
                       >
-                        {isDiag ? '—' : v != null ? String(v) : '—'}
+                        {isDiag ? '-' : v != null ? String(v) : '-'}
                       </td>
                     )
                   })}
@@ -721,7 +723,7 @@ export default function AuditTrail() {
                         winCol ? 'bg-[#FEF3C7]/80 text-[#B45309]' : ''
                       }`}
                     >
-                      {a != null ? `${a}` : '—'}
+                      {a != null ? `${a}` : '-'}
                       {winCol ? ' ← winner' : ''}
                     </td>
                   )
@@ -733,8 +735,8 @@ export default function AuditTrail() {
       ) : null}
 
       {concessions.length > 0 ? (
-        <div className="mb-10 rounded-[6px] border border-dashed border-[#16A34A]/35 bg-[#16A34A]/6 px-4 py-5 md:px-6">
-          <h3 className="mb-4 font-mono text-[10px] font-semibold tracking-[0.12em] text-[#15803D]">
+        <div className="mb-10 rounded-[6px] border border-dashed border-[#4C6647]/35 bg-[#4C6647]/6 px-4 py-5 md:px-6">
+          <h3 className="mb-4 font-mono text-[10px] font-semibold tracking-[0.12em] text-[#3D5439]">
             Concessions made
           </h3>
           <ul className="flex flex-col gap-3">
@@ -811,18 +813,31 @@ export default function AuditTrail() {
         </div>
       ) : null}
 
-      {auditError ? (
-        <p className="mb-4 text-center font-mono text-xs text-[var(--text-muted)]">
-          Audit could not be completed: {auditError}
-        </p>
+      {showAuditUnavailable && !auditLoading ? (
+        <div
+          className="mb-4 rounded-[6px] border border-dashed border-[var(--border)] bg-[var(--bg-surface)] px-4 py-3 text-center"
+          role="status"
+        >
+          <p className="font-mono text-xs text-[var(--text-muted)]">
+            Evaluation unavailable. The debate and synthesis remain above.
+          </p>
+          {typeof onRetryAudit === 'function' ? (
+            <button
+              type="button"
+              className="babel-btn babel-btn-ghost mt-3"
+              disabled={auditRetrying}
+              onClick={onRetryAudit}
+            >
+              {auditRetrying ? 'Retrying audit…' : 'Retry audit'}
+            </button>
+          ) : null}
+        </div>
       ) : null}
 
       {audit ? (
         <>
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <h2 className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
-              Audit trail
-            </h2>
+            <span className="babel-eyebrow">Audit trail</span>
             <div className="flex flex-wrap gap-2">
               <span className="rounded-[4px] border border-dashed border-[#D4C9B0] bg-transparent px-2 py-1 font-mono text-[10px] text-[var(--text-secondary)]">
                 {journeyStats.nClaims} claims
@@ -833,7 +848,7 @@ export default function AuditTrail() {
               <span
                 className={`rounded-[4px] border border-dashed px-2 py-1 font-mono text-[10px] ${
                   journeyStats.flipped > 0
-                    ? 'border-[#DC2626]/40 bg-[#DC2626]/10 text-[#B91C1C]'
+                    ? 'border-[#97372B]/40 bg-[#97372B]/10 text-[#7A2C23]'
                     : 'border-[var(--border)] text-[var(--text-muted)]'
                 }`}
               >
@@ -848,9 +863,9 @@ export default function AuditTrail() {
             </p>
           ) : (
             <>
-              <p className="mb-2 font-mono text-[11px] text-[var(--text-secondary)]">
-                {journeyStats.nClaims} claims · {journeyStats.unchanged}{' '}
-                unchanged · {journeyStats.shifted} shifted ·{' '}
+              <p className="mb-2 babel-meta">
+                {journeyStats.nClaims} claims; {journeyStats.unchanged}{' '}
+                unchanged; {journeyStats.shifted} shifted;{' '}
                 {journeyStats.flipped} flipped
               </p>
               <div className="overflow-x-auto rounded-[6px] border border-dashed border-[#D4C9B0] bg-[var(--bg-surface)]/60">
@@ -938,7 +953,7 @@ export default function AuditTrail() {
                             aria-expanded={expandable ? open : undefined}
                           >
                             <td
-                              className="px-3 py-3 align-top text-[14px] leading-snug text-[#1C1814]"
+                              className="px-3 py-3 align-top text-[14px] leading-snug text-[#24201B]"
                               style={{
                                 fontFamily: 'var(--font-body), Georgia, serif',
                               }}
@@ -1053,7 +1068,7 @@ export default function AuditTrail() {
 
               {!hasExpandableRow && rows.length > 0 ? (
                 <p className="mt-6 text-center font-[family-name:var(--font-body)] text-sm italic text-[var(--text-muted)]">
-                  All claims reached consensus — no contested positions detected.
+                  All claims reached consensus: no contested positions detected.
                 </p>
               ) : null}
             </>
@@ -1079,7 +1094,7 @@ export default function AuditTrail() {
           className={`mt-10 rounded-[6px] border border-dashed px-4 py-5 md:px-6 ${
             validation.status === 'flagged'
               ? 'border-l-[3px] border-l-[#D97706] bg-[#FFFBEB]/90'
-              : 'border-l-[3px] border-l-[#16A34A] bg-[#F0FDF4]/90'
+              : 'border-l-[3px] border-l-[#4C6647] bg-[#E8EDE6]/90'
           } border-[var(--border)]`}
         >
           <h3 className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
@@ -1111,13 +1126,13 @@ export default function AuditTrail() {
                     {v.score}/10
                   </span>
                 </div>
-                <p className="mt-2 font-[family-name:var(--font-mono)] text-[11px] text-[var(--text-muted)]">
+                <p className="mt-2 babel-meta">
                   fair_to_me:{' '}
-                  <span className="text-[var(--text-primary)]">
+                  <span className="text-[var(--ink)]">
                     {v.fair_to_me ? 'yes' : 'no'}
-                  </span>{' '}
-                  · fair_to_others:{' '}
-                  <span className="text-[var(--text-primary)]">
+                  </span>
+                  ; fair_to_others:{' '}
+                  <span className="text-[var(--ink)]">
                     {v.fair_to_others ? 'yes' : 'no'}
                   </span>
                 </p>

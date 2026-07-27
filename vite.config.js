@@ -14,4 +14,8 @@ export default defineConfig({
     // Client-side routes (/findings, /about): SPA-style fallback to index.html in dev.
     historyApiFallback: true,
   },
+  test: {
+    environment: 'node',
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
+  },
 })

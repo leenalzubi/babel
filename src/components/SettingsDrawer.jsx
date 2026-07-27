@@ -19,13 +19,13 @@ function envKeySet(key) {
 function StatusPill({ label, ok }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-[4px] border px-2.5 py-1 font-mono text-[10px] font-medium ${
+      className={`inline-flex items-center gap-1.5 rounded-[var(--radius)] border px-2.5 py-1.5 babel-meta font-medium ${
         ok
           ? 'border-[var(--agree)]/50 bg-[var(--agree)]/15 text-[var(--agree)]'
-          : 'border-[var(--border)] bg-[var(--bg-base)] text-[var(--text-muted)]'
+          : 'border-[var(--border)] bg-[var(--bg-base)] text-[var(--ink-soft)]'
       }`}
     >
-      {label}: {ok ? 'Set ✓' : 'Not set ✗'}
+      {label}: {ok ? 'Set' : 'Not set'}
     </span>
   )
 }
@@ -105,7 +105,7 @@ export default function SettingsDrawer({ open, onClose }) {
 
         <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 py-5">
           <section>
-            <label className="mb-2 block font-mono text-[11px] font-medium tracking-[0.12em] text-[var(--text-muted)]">
+            <label className="mb-2 block babel-eyebrow">
               Max debate rounds
             </label>
             <div className="flex items-center gap-4">
@@ -127,8 +127,8 @@ export default function SettingsDrawer({ open, onClose }) {
                 {draft.maxRounds}
               </span>
             </div>
-            <p className="mt-1 font-mono text-[10px] text-[var(--text-muted)]">
-              1–3 rounds (stored locally)
+            <p className="mt-1 babel-meta text-[var(--text-muted)]">
+              1-3 rounds (stored locally)
             </p>
           </section>
 
@@ -153,25 +153,25 @@ export default function SettingsDrawer({ open, onClose }) {
                   }}
                   className="h-4 w-4 shrink-0 rounded border-[var(--border)] accent-[var(--accent-forge)]"
                 />
-                <span className="font-mono text-[11px] font-medium text-[var(--text-primary)]">
+                <span className="babel-meta font-medium text-[var(--text-primary)]">
                   Synthesis
                 </span>
               </span>
-              <span className="pl-7 font-mono text-[10px] leading-snug text-[var(--text-muted)]">
+              <span className="pl-7 babel-meta leading-snug text-[var(--text-muted)]">
                 Generate a unified answer after final positions
               </span>
             </label>
           </section>
 
           <section>
-            <span className="mb-2 block font-mono text-[11px] font-medium tracking-[0.12em] text-[var(--text-muted)]">
+            <span className="mb-2 block babel-eyebrow">
               Synthesis mode
             </span>
             <div className="flex flex-col gap-2">
               <button
                 type="button"
                 onClick={() => setDraft((d) => ({ ...d, synthesisMode: 'always' }))}
-                className={`rounded-lg border px-3 py-2 text-left font-mono text-[11px] transition ${
+                className={`rounded-lg border px-3 py-2 text-left babel-meta transition ${
                   draft.synthesisMode === 'always'
                     ? 'border-[var(--accent-forge)] bg-[var(--accent-forge)]/15 text-[var(--text-primary)]'
                     : 'border-[var(--border)] bg-[var(--bg-base)] text-[var(--text-secondary)] hover:border-[var(--text-muted)]'
@@ -184,7 +184,7 @@ export default function SettingsDrawer({ open, onClose }) {
                 onClick={() =>
                   setDraft((d) => ({ ...d, synthesisMode: 'divergence' }))
                 }
-                className={`rounded-lg border px-3 py-2 text-left font-mono text-[11px] transition ${
+                className={`rounded-lg border px-3 py-2 text-left babel-meta transition ${
                   draft.synthesisMode === 'divergence'
                     ? 'border-[var(--accent-forge)] bg-[var(--accent-forge)]/15 text-[var(--text-primary)]'
                     : 'border-[var(--border)] bg-[var(--bg-base)] text-[var(--text-secondary)] hover:border-[var(--text-muted)]'
@@ -193,7 +193,7 @@ export default function SettingsDrawer({ open, onClose }) {
                 Only synthesize if claim disagreement &gt; 40%
               </button>
             </div>
-            <p className="mt-2 font-mono text-[10px] leading-relaxed text-[var(--text-muted)]">
+            <p className="mt-2 babel-meta leading-relaxed text-[var(--text-muted)]">
               Claim disagreement is computed after the debate audit. Until a pre-synthesis
               gate exists, both modes run synthesis whenever synthesis is enabled.
             </p>
@@ -209,18 +209,40 @@ export default function SettingsDrawer({ open, onClose }) {
                 }
                 className="h-4 w-4 rounded border-[var(--border)] accent-[var(--accent-forge)]"
               />
-              <span className="font-mono text-[11px] text-[var(--text-primary)]">
+              <span className="babel-meta text-[var(--text-primary)]">
                 Show rationale (“Why this answer”)
               </span>
             </label>
           </section>
 
           <section>
-            <span className="mb-2 block font-mono text-[11px] font-medium tracking-[0.12em] text-[var(--text-muted)]">
+            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--bg-base)] px-3 py-2.5">
+              <input
+                type="checkbox"
+                checked={Boolean(draft.showResearchSurfaces)}
+                onChange={(e) =>
+                  setDraft((d) => ({
+                    ...d,
+                    showResearchSurfaces: e.target.checked,
+                  }))
+                }
+                className="h-4 w-4 rounded border-[var(--border)] accent-[var(--accent-forge)]"
+              />
+              <span className="babel-meta text-[var(--text-primary)]">
+                Show research surfaces (influence, divergence, audit trail)
+              </span>
+            </label>
+            <p className="mt-2 babel-meta leading-relaxed text-[var(--text-muted)]">
+              Off by default. The flagship path ends at the decision memo.
+            </p>
+          </section>
+
+          <section>
+            <span className="mb-2 block babel-eyebrow">
               API key status
             </span>
-            <p className="mb-2 font-mono text-[10px] leading-snug text-[var(--text-muted)]">
-              Keys are read from your Vite env at build time — values are never
+            <p className="mb-2 babel-meta leading-snug text-[var(--text-muted)]">
+              Keys are read from your Vite env at build time. Values are never
               shown.
             </p>
             <div className="flex flex-col gap-2">
@@ -230,8 +252,8 @@ export default function SettingsDrawer({ open, onClose }) {
           </section>
 
           <section className="mt-auto border-t border-[var(--border)] pt-4">
-            <h3 className="font-mono text-[11px] font-semibold text-[var(--text-primary)]">
-              Babel v1.0 — multi-model debate engine
+            <h3 className="babel-meta font-semibold text-[var(--text-primary)]">
+              Babel v1.0, multi-model debate engine
             </h3>
           </section>
         </div>
@@ -240,7 +262,7 @@ export default function SettingsDrawer({ open, onClose }) {
           <button
             type="button"
             onClick={closeAndPersist}
-            className="w-full rounded-lg bg-[var(--accent-forge)] py-2.5 font-mono text-xs font-semibold text-white hover:brightness-110"
+            className="babel-btn babel-btn-primary w-full"
           >
             Done
           </button>

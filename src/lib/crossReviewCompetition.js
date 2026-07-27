@@ -77,18 +77,18 @@ export function buildCrossReviewEvalUserMessage(
   const parts = []
   if (evaluatorKey === 'gpt') {
     parts.push(
-      `=== ${label('phi')} (model key: phi) — cross-review ===\n${bRev}`,
-      `=== ${label('mistral')} (model key: mistral) — cross-review ===\n${cRev}`
+      `=== ${label('phi')} (model key: phi): cross-review ===\n${bRev}`,
+      `=== ${label('mistral')} (model key: mistral): cross-review ===\n${cRev}`
     )
   } else if (evaluatorKey === 'phi') {
     parts.push(
-      `=== ${label('gpt')} (model key: gpt) — cross-review ===\n${aRev}`,
-      `=== ${label('mistral')} (model key: mistral) — cross-review ===\n${cRev}`
+      `=== ${label('gpt')} (model key: gpt): cross-review ===\n${aRev}`,
+      `=== ${label('mistral')} (model key: mistral): cross-review ===\n${cRev}`
     )
   } else {
     parts.push(
-      `=== ${label('gpt')} (model key: gpt) — cross-review ===\n${aRev}`,
-      `=== ${label('phi')} (model key: phi) — cross-review ===\n${bRev}`
+      `=== ${label('gpt')} (model key: gpt): cross-review ===\n${aRev}`,
+      `=== ${label('phi')} (model key: phi): cross-review ===\n${bRev}`
     )
   }
   return parts.join('\n\n')

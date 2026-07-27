@@ -1,4 +1,4 @@
-/** @type {string} Key for sessionStorage — welcome dismissed for this browser tab session. */
+/** @type {string} Key for sessionStorage: welcome dismissed for this browser tab session. */
 export const WELCOME_STORAGE_KEY = 'babel_welcomed'
 
 const STORAGE_KEY = WELCOME_STORAGE_KEY
@@ -19,24 +19,26 @@ export default function WelcomeModal({ onClose }) {
   return (
     <div
       className="fixed inset-0 z-[80] flex items-center justify-center px-4"
-      style={{ backgroundColor: 'rgba(28, 24, 20, 0.75)' }}
+      style={{ backgroundColor: 'rgba(36, 32, 27, 0.72)' }}
       role="presentation"
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="welcome-modal-title"
-        className="relative w-full max-w-[420px] rounded-[8px] shadow-lg"
+        className="relative w-full max-w-[420px] rounded-[6px]"
         style={{
-          backgroundColor: '#FDFAF4',
+          backgroundColor: 'var(--plaster-hi)',
           padding: '48px',
+          boxShadow: 'var(--shadow-lift)',
+          border: '1px solid var(--line)',
         }}
       >
         <button
           type="button"
           onClick={handleStart}
           aria-label="Close welcome dialog"
-          className="absolute cursor-pointer border-none bg-transparent p-0 text-[20px] leading-none text-[#6B5E4E] transition-colors hover:text-[#1C1814] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8B1A1A]/40 focus-visible:ring-offset-2"
+          className="absolute cursor-pointer border-none bg-transparent p-0 text-[20px] leading-none text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue)]/40 focus-visible:ring-offset-2"
           style={{
             top: 16,
             right: 16,
@@ -46,15 +48,20 @@ export default function WelcomeModal({ onClose }) {
           ×
         </button>
         <div className="flex flex-col items-center">
+          <span className="babel-eyebrow mb-4 justify-center">Welcome</span>
           <h1
             id="welcome-modal-title"
-            className="mb-4 text-center text-[36px] font-normal leading-none tracking-[0.08em] text-[#1C1814]"
-            style={{ fontFamily: 'var(--font-display)' }}
+            className="mb-4 text-center text-[36px] font-normal leading-none tracking-[-0.01em] text-[var(--ink)]"
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 340,
+              fontOpticalSizing: 'auto',
+            }}
           >
             Babel
           </h1>
           <div
-            className="mb-10 max-w-[320px] space-y-4 text-justify text-[17px] leading-[1.7] text-[#6B5E4E]"
+            className="mb-10 max-w-[320px] space-y-4 text-justify babel-prose"
             style={{ fontFamily: 'var(--font-body)' }}
           >
             <p>
@@ -71,11 +78,8 @@ export default function WelcomeModal({ onClose }) {
           <button
             type="button"
             onClick={handleStart}
-            className="cursor-pointer border-none px-10 py-3 text-[14px] font-medium text-white transition hover:brightness-110"
+            className="babel-btn babel-btn-primary"
             style={{
-              backgroundColor: '#8B1A1A',
-              borderRadius: 6,
-              fontFamily: 'var(--font-mono)',
               padding: '12px 40px',
             }}
           >

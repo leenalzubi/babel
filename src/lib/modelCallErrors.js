@@ -1,4 +1,8 @@
 import { TIMEOUT_ERROR_MESSAGE } from './debateConstants.js'
+import {
+  enrichBabelError,
+  toBabelError,
+} from './babelErrors.js'
 
 /**
  * @param {unknown} e
@@ -14,38 +18,41 @@ export function isModelCallTimeoutError(e) {
 }
 
 /**
- * Rich error object for SET_ERROR / ErrorBanner, or normalized unknown shape.
+ * Rich error object for SET_ERROR / ErrorBanner / voice cards.
  * @param {unknown} err
- * @returns {{
- *   type: string,
+ * @param {{
+ *   scope?: import('./babelErrors.js').ErrorScope,
+ *   stage?: import('./babelErrors.js').DebateStage | string,
+ *   agentId?: string,
  *   agent?: string,
- *   title: string,
- *   detail: string,
- *   suggestion: string,
- *   stage?: string,
  *   round?: number,
- * }}
+ *   attempt?: number,
+ * }} [ctx]
+ * @returns {import('./babelErrors.js').BabelError}
  */
-export function normalizeDebateFailure(err) {
-  if (
-    err &&
-    typeof err === 'object' &&
-    typeof /** @type {{ type?: unknown }} */ (err).type === 'string' &&
-    typeof /** @type {{ title?: unknown }} */ (err).title === 'string' &&
-    typeof /** @type {{ detail?: unknown }} */ (err).detail === 'string' &&
-    typeof /** @type {{ suggestion?: unknown }} */ (err).suggestion === 'string'
-  ) {
-    return /** @type {{ type: string, agent?: string, title: string, detail: string, suggestion: string, stage?: string, round?: number }} */ (
-      err
-    )
-  }
-  const detail =
-    err instanceof Error ? err.message : `Request failed: ${String(err)}`
-  return {
-    type: 'unknown',
-    agent: 'Debate',
-    title: 'Unexpected error',
-    detail,
-    suggestion: 'Try again or edit your prompt.',
-  }
+export function normalizeDebateFailure(err, ctx) {
+  return toBabelError(err, ctx)
+}
+
+/**
+ * Attach Babel taxonomy fields onto a classified API error before throw.
+ * @param {object} classified
+ * @param {{ stage?: string, round?: number, scope?: import('./babelErrors.js').ErrorScope, agentId?: string }} [ctx]
+ */
+export function withBabelMeta(classified, ctx = {}) {
+  return enrichBabelError({
+    ...classified,
+    type: /** @type {import('./babelErrors.js').ErrorType} */ (
+      classified.type || 'unknown'
+    ),
+    scope: ctx.scope,
+    stage: /** @type {any} */ (ctx.stage || classified.stage),
+    round:
+      typeof ctx.round === 'number'
+        ? ctx.round
+        : typeof classified.round === 'number'
+          ? classified.round
+          : undefined,
+    agentId: ctx.agentId,
+  })
 }

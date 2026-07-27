@@ -5,6 +5,11 @@ export const FORGE_SETTINGS_DEFAULTS = {
   /** @type {'always' | 'divergence'} */
   synthesisMode: 'always',
   showRationale: true,
+  /**
+   * Influence map, divergence chips, and post-hoc audit trail.
+   * Off by default: Phase C / evaluation surfaces, not the flagship path.
+   */
+  showResearchSurfaces: false,
 }
 
 /**
@@ -12,6 +17,7 @@ export const FORGE_SETTINGS_DEFAULTS = {
  *   maxRounds: number,
  *   synthesisMode: 'always' | 'divergence',
  *   showRationale: boolean,
+ *   showResearchSurfaces: boolean,
  * }}
  */
 export function loadForgeSettings() {
@@ -24,7 +30,11 @@ export function loadForgeSettings() {
       maxRounds: clampRounds(parsed.maxRounds),
       synthesisMode:
         parsed.synthesisMode === 'divergence' ? 'divergence' : 'always',
-      showRationale: Boolean(parsed.showRationale),
+      showRationale:
+        parsed.showRationale === undefined
+          ? true
+          : Boolean(parsed.showRationale),
+      showResearchSurfaces: Boolean(parsed.showResearchSurfaces),
     }
   } catch {
     return { ...FORGE_SETTINGS_DEFAULTS }
@@ -43,6 +53,7 @@ function clampRounds(n) {
  *   maxRounds: number,
  *   synthesisMode: 'always' | 'divergence',
  *   showRationale: boolean,
+ *   showResearchSurfaces: boolean,
  * }} settings
  */
 export function saveForgeSettings(settings) {
@@ -51,6 +62,7 @@ export function saveForgeSettings(settings) {
     synthesisMode:
       settings.synthesisMode === 'divergence' ? 'divergence' : 'always',
     showRationale: Boolean(settings.showRationale),
+    showResearchSurfaces: Boolean(settings.showResearchSurfaces),
   }
   localStorage.setItem(FORGE_SETTINGS_KEY, JSON.stringify(payload))
 }

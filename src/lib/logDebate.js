@@ -1,17 +1,19 @@
 import { computeAuditPositionMetrics } from './auditJourney.js'
 import { analyseDebate } from './analyseDebate.js'
+import { computeEvalMetrics } from './evalMetrics.js'
 import { supabase } from './supabaseClient.js'
 
 /**
  * Best-effort analytics row for Supabase `debates` table. Never throws.
  *
  * @param {Record<string, unknown>} state Debate snapshot (prompt, rounds, divergenceScores, synthesis, config).
+ * @returns {Promise<{ ok: true } | { ok: false, error?: string } | void>}
  */
 export async function logDebate(state) {
   console.log('logDebate called with:', Object.keys(state ?? {}))
   try {
     if (!supabase) {
-      return
+      return { ok: false, error: 'History is not configured for this deployment.' }
     }
 
     const prompt = typeof state.prompt === 'string' ? state.prompt : ''
@@ -86,7 +88,7 @@ export async function logDebate(state) {
       console.warn(
         '[logDebate] Skipping Supabase insert: missing round 1 agent response(s)'
       )
-      return
+      return { ok: false, error: 'Missing round 1 responses for history.' }
     }
 
     const agentA = cfg.agentA && typeof cfg.agentA === 'object' ? cfg.agentA : {}
@@ -97,6 +99,8 @@ export async function logDebate(state) {
     const model_c = typeof agentC.model === 'string' ? agentC.model : null
 
     const analysis = analyseDebate(state)
+    const eval_metrics = computeEvalMetrics(state)
+    console.info('[babel:eval]', eval_metrics)
     const audit = state.audit && typeof state.audit === 'object' ? state.audit : null
     const apm = computeAuditPositionMetrics(audit)
     const sw =
@@ -215,8 +219,12 @@ export async function logDebate(state) {
     if (error) {
       console.error('Supabase insert error:', error)
       console.warn('[logDebate] Supabase insert failed:', error.message)
+      return { ok: false, error: error.message }
     }
+    return { ok: true }
   } catch (err) {
-    console.warn('[logDebate]', err instanceof Error ? err.message : err)
+    const msg = err instanceof Error ? err.message : String(err)
+    console.warn('[logDebate]', msg)
+    return { ok: false, error: msg }
   }
 }

@@ -36,7 +36,14 @@ Every debate is logged to a shared open dataset visible in the Findings tab. Onl
 git clone https://github.com/leenalzubi/the-forge.git
 cd the-forge
 npm install
+npm test
 ```
+
+Inspectable synthesis lineage: [docs/SYNTHESIS_LINEAGE.md](docs/SYNTHESIS_LINEAGE.md).
+
+Babel Lab (public evaluation): [docs/BABEL_LAB.md](docs/BABEL_LAB.md): routes `/lab`, `/lab/methodology`, `/lab/:caseSlug`.
+
+Conclusion stability check: [docs/CONCLUSION_STABILITY.md](docs/CONCLUSION_STABILITY.md).
 
 Create a `.env.local` file:
 ```
@@ -52,5 +59,5 @@ npm run dev
 
 ## Contact
 
-Leen Al-Zu'bi — https://www.linkedin.com/in/leenalzubi/
+Leen Al-Zu'bi: https://www.linkedin.com/in/leenalzubi/
 Feedback, research partnerships, and collaboration welcome.

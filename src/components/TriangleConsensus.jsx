@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-/** Equilateral-ish layout in viewBox 0 0 280 240 — scaled from legacy 200×180 with isotropic fit. */
+/** Equilateral-ish layout in viewBox 0 0 280 240: scaled from legacy 200×180 with isotropic fit. */
 const VA = { x: 140, y: 27 }
 const VB = { x: 33, y: 213 }
 const VC = { x: 247, y: 213 }
@@ -30,21 +30,21 @@ function edgeLabelPos(mid, extra = 26) {
   }
 }
 
-/** @param {number} s score 0–1 */
+/** @param {number} s score 0-1 */
 function pct(s) {
   const n = Number(s)
   if (Number.isNaN(n)) return 0
   return Math.min(100, Math.max(0, Math.round(n * 100)))
 }
 
-/** G↔P (A–B): blue · G↔M (A–C): red · P↔M (B–C): green — hue matches “source” vertex of each pair. */
+/** G↔P (A-B): blue; G↔M (A-C): red; P↔M (B-C): green: hue matches “source” vertex of each pair. */
 const EDGE_STROKE = {
-  ab: '#2563EB',
-  ac: '#DC2626',
-  bc: '#16A34A',
+  ab: '#1E4E5E',
+  ac: '#97372B',
+  bc: '#4C6647',
 }
 
-/** @param {number} s 0–1 */
+/** @param {number} s 0-1 */
 function edgeWidthForScore(s) {
   const p = pct(s)
   if (p <= 30) return 3.5
@@ -82,7 +82,7 @@ export function ConsensusMeterBar({ scores, initials = { a: 'A', b: 'B', c: 'C' 
             {avgP}%
           </span>
           <span className="font-[family-name:var(--font-mono)] text-[10px] leading-tight text-[var(--text-muted)]">
-            {unanimous} unanimous · {contested} contested
+            {unanimous} unanimous, {contested} contested
           </span>
         </div>
       </div>
@@ -95,19 +95,19 @@ export function ConsensusMeterBar({ scores, initials = { a: 'A', b: 'B', c: 'C' 
       <div className="flex justify-between gap-2 font-mono text-[9px] text-[var(--text-muted)]">
         <span className="text-center">
           <span className="text-[var(--text-secondary)]">
-            {initials.a}–{initials.b}
+            {initials.a}-{initials.b}
           </span>{' '}
           {pct(ab)}%
         </span>
         <span className="text-center">
           <span className="text-[var(--text-secondary)]">
-            {initials.a}–{initials.c}
+            {initials.a}-{initials.c}
           </span>{' '}
           {pct(ac)}%
         </span>
         <span className="text-center">
           <span className="text-[var(--text-secondary)]">
-            {initials.b}–{initials.c}
+            {initials.b}-{initials.c}
           </span>{' '}
           {pct(bc)}%
         </span>
@@ -249,15 +249,15 @@ export default function TriangleConsensus({
         </text>
       </svg>
       <p className="mb-0 mt-2 text-center font-[family-name:var(--font-mono)] text-[10px] text-[var(--text-muted)]">
-        {unanimousClaims} unanimous · {contestedClaims} contested
+        {unanimousClaims} unanimous, {contestedClaims} contested
       </p>
       <p
-        className="mb-0 mt-2 max-w-[280px] text-center font-[family-name:var(--font-mono)] text-[10px] leading-snug text-[var(--text-muted)]"
+        className="mb-0 mt-2 flex max-w-[280px] flex-wrap justify-center gap-x-3 gap-y-1 text-center font-[family-name:var(--font-mono)] text-[10px] leading-snug text-[var(--text-muted)]"
         aria-label="Vertex initials: G GPT-4o mini, P Phi-4, M Mistral Small"
       >
-        <span className="whitespace-nowrap">• G = GPT-4o mini</span>{' '}
-        <span className="whitespace-nowrap">• P = Phi-4</span>{' '}
-        <span className="whitespace-nowrap">• M = Mistral Small</span>
+        <span className="whitespace-nowrap">G = GPT-4o mini</span>
+        <span className="whitespace-nowrap">P = Phi-4</span>
+        <span className="whitespace-nowrap">M = Mistral Small</span>
       </p>
     </figure>
   )

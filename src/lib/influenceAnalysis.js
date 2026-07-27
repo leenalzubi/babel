@@ -121,7 +121,7 @@ function buildSelfReportUserMessage(ctx) {
       'The other models you debated with:',
       ctx.otherNames,
       '',
-      'Their Round 2 cross-review texts (full debate round — consider what is directed at your earlier position in context):',
+      'Their Round 2 cross-review texts (full debate round: consider what is directed at your earlier position in context):',
       ctx.crossReviewsAtYou,
     ].join('\n'),
     56_000

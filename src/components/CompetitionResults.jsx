@@ -2,6 +2,7 @@ import {
   avgSubscoresForTarget,
   normModelKey,
 } from '../lib/crossReviewCompetition.js'
+import SectionHeading from './SectionHeading.jsx'
 
 /**
  * @param {'gpt' | 'phi' | 'mistral'} target
@@ -31,7 +32,7 @@ function combinedEvaluatorNote(target, evaluations) {
         : null
     if (typeof note === 'string' && note.trim()) parts.push(note.trim())
   }
-  return parts.join(' · ')
+  return parts.join('; ')
 }
 
 /**
@@ -81,23 +82,16 @@ export default function CompetitionResults({ synthesisWinner, config }) {
 
   return (
     <section
-      className="mx-auto w-full max-w-4xl rounded-[6px] border border-dashed border-[#D4C9B0] bg-[var(--bg-surface)]/90 px-4 py-6 md:px-8"
+      className="mx-auto w-full max-w-4xl rounded-[6px] border border-[var(--line)] bg-[var(--plaster)] px-4 py-6 shadow-forge-card md:px-8"
       aria-label="Cross-review competition results"
     >
-      <h2
-        className="font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]"
-      >
-        Cross-review scores
-      </h2>
-      <p
-        className="mt-2 max-w-2xl text-sm italic leading-relaxed text-[var(--text-muted)]"
-        style={{ fontFamily: 'var(--font-body), Georgia, serif' }}
-      >
-        Each model scored the other two on specificity and accuracy. The highest
-        scorer synthesizes.
-      </p>
+      <SectionHeading
+        eyebrow="Peer judgment"
+        title="Cross-review scores"
+        lede="Each model scored the other two on specificity and accuracy. The highest scorer synthesizes."
+      />
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+      <div className="mt-2 grid gap-4 sm:grid-cols-3">
         {slots.map((s) => {
           const isWinner = s.key === w
           const subs = avgSubscoresForTarget(
@@ -111,16 +105,16 @@ export default function CompetitionResults({ synthesisWinner, config }) {
           const scoreDisp =
             typeof s.score === 'number' && Number.isFinite(s.score)
               ? s.score.toFixed(1)
-              : '—'
+              : '-'
           const specStr =
-            subs.specificity != null ? subs.specificity.toFixed(1) : '—'
+            subs.specificity != null ? subs.specificity.toFixed(1) : '-'
           const accStr =
-            subs.accuracy != null ? subs.accuracy.toFixed(1) : '—'
+            subs.accuracy != null ? subs.accuracy.toFixed(1) : '-'
 
           return (
             <div
               key={s.key}
-              className={`relative rounded-[6px] border bg-[#FDFAF4] px-4 py-5 ${
+              className={`relative rounded-[6px] border bg-[#F8F3E8] px-4 py-5 ${
                 isWinner
                   ? 'border-2 border-[#D4A017] shadow-sm'
                   : 'border border-[var(--border)]'
@@ -146,11 +140,15 @@ export default function CompetitionResults({ synthesisWinner, config }) {
               <p className="mt-3 font-[family-name:var(--font-mono)] text-3xl font-semibold tabular-nums text-[var(--text-primary)]">
                 {scoreDisp}
               </p>
-              <p className="mt-1 font-[family-name:var(--font-mono)] text-[11px] text-[var(--text-secondary)]">
-                specificity {specStr} · accuracy {accStr}
+              <p className="mt-1 babel-meta-tech text-[var(--text-secondary)]">
+                specificity {specStr}
+                <span className="mx-2 text-[var(--ink-faint)]" aria-hidden>
+                  |
+                </span>
+                accuracy {accStr}
               </p>
               {note ? (
-                <p className="mt-3 text-[12px] italic leading-snug text-[var(--text-muted)]">
+                <p className="mt-3 babel-meta italic leading-snug text-[var(--text-muted)]">
                   {note}
                 </p>
               ) : null}

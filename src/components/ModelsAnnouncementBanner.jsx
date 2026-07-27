@@ -8,17 +8,15 @@ export default function ModelsAnnouncementBanner() {
     <aside
       role="note"
       aria-label="Model lineup and GitHub Models limitations"
-      className="mb-6 rounded-forge-card border border-dashed border-[var(--border)] bg-[color-mix(in_srgb,var(--highlight)_18%,var(--bg-surface))] px-4 py-3.5 sm:px-5"
+      className="mb-4 rounded-forge-card border border-dashed border-[var(--line-firm)] bg-[var(--blue-wash)]/55 px-4 py-3.5 sm:px-5"
     >
       <div className="flex gap-3">
         <Sparkles
-          className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent-forge)]"
+          className="mt-0.5 h-4 w-4 shrink-0 text-[var(--blue)]"
           aria-hidden
         />
         <div className="min-w-0 space-y-2">
-          <p className="font-[family-name:var(--font-mono)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-primary)]">
-            New models under review
-          </p>
+          <p className="babel-eyebrow">New models under review</p>
           <p
             className="text-[13px] leading-relaxed text-[var(--text-secondary)]"
             style={{ fontFamily: 'var(--font-body)' }}
@@ -31,7 +29,7 @@ export default function ModelsAnnouncementBanner() {
             free tier: it&apos;s a generous way to run multi-model calls without
             billing you, but the hosted catalog and rate limits are smaller than
             a full commercial API. That keeps the project accessible and also
-            means we can only pick from the models GitHub exposes on that tier—
+            means we can only pick from the models GitHub exposes on that tier,
             so lineup diversity is naturally capped until we wire in more
             options.
           </p>

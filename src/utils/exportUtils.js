@@ -29,7 +29,7 @@ export function exportToMarkdown(state) {
   })
 
   const lines = []
-  lines.push('# Babel — Debate Export', '')
+  lines.push('# Babel: Debate Export', '')
   lines.push(`**Prompt:** ${prompt.trim() || '_(empty)_'}`, '')
   lines.push(`**Date:** ${dateStr}`, '')
 
@@ -42,12 +42,12 @@ export function exportToMarkdown(state) {
   }
 
   if (reviews.length > 0) {
-    lines.push('## Round 2 — Cross-review and rebuttal', '')
+    lines.push('## Round 2: Cross-review and rebuttal', '')
     for (const rev of [...reviews].sort((a, b) => a.roundNum - b.roundNum)) {
-      lines.push(`### Round ${rev.roundNum} — ${aName}`, '', (rev.aReviews ?? '').trim(), '')
-      lines.push(`### Round ${rev.roundNum} — ${bName}`, '', (rev.bReviews ?? '').trim(), '')
+      lines.push(`### Round ${rev.roundNum}: ${aName}`, '', (rev.aReviews ?? '').trim(), '')
+      lines.push(`### Round ${rev.roundNum}: ${bName}`, '', (rev.bReviews ?? '').trim(), '')
       lines.push(
-        `### Round ${rev.roundNum} — ${cName}`,
+        `### Round ${rev.roundNum}: ${cName}`,
         '',
         (rev.cReviews ?? '').trim(),
         ''
@@ -65,7 +65,7 @@ export function exportToMarkdown(state) {
 
   const fin = state.finalPositions && typeof state.finalPositions === 'object' ? state.finalPositions : {}
   if (fin && (fin.a || fin.b || fin.c)) {
-    lines.push('## Round 3 — Final Positions', '')
+    lines.push('## Round 3: Final Positions', '')
     lines.push(`### ${aName}`, '', String(fin.a ?? '').trim(), '')
     lines.push(`### ${bName}`, '', String(fin.b ?? '').trim(), '')
     lines.push(`### ${cName}`, '', String(fin.c ?? '').trim(), '')

@@ -13,6 +13,7 @@ import CompetitionResults from './components/CompetitionResults.jsx'
 import ErrorBanner from './components/ErrorBanner.jsx'
 import FindingsPanel from './components/FindingsPanel.jsx'
 import ResearchPanel from './components/ResearchPanel.jsx'
+import LabPanel from './components/lab/LabPanel.jsx'
 import ForgeEmptyState from './components/ForgeEmptyState.jsx'
 import ModelsAnnouncementBanner from './components/ModelsAnnouncementBanner.jsx'
 import PromptInput from './components/PromptInput.jsx'
@@ -22,8 +23,18 @@ import RoundCard from './components/RoundCard.jsx'
 import SettingsDrawer from './components/SettingsDrawer.jsx'
 import WelcomeModal from './components/WelcomeModal.jsx'
 import WorkflowTimeline from './components/WorkflowTimeline.jsx'
+import MashrabiyaScreen from './components/MashrabiyaScreen.jsx'
+import ProjectCreditFooter from './components/ProjectCreditFooter.jsx'
+import DebateTopBar from './components/DebateTopBar.jsx'
+import MobileActionBar from './components/MobileActionBar.jsx'
+import DecisionMemo from './components/DecisionMemo.jsx'
+import StabilityCheckPanel from './components/StabilityCheckPanel.jsx'
+import VoiceAnnouncer from './components/VoiceAnnouncer.jsx'
+import { roleLabel } from './lib/babelRoles.js'
 import { useDebateEngine } from './hooks/useDebateEngine.js'
 import { useForge } from './store/useForgeStore.js'
+import { useForgeUiSettings } from './context/ForgeSettingsContext.jsx'
+import { VoiceActionsProvider } from './context/VoiceActionsContext.jsx'
 
 const SynthesisPanel = lazy(() => import('./components/SynthesisPanel.jsx'))
 
@@ -68,34 +79,99 @@ function normalizePathname(pathname) {
 }
 
 /** Browser path including optional deploy prefix (for history API). */
-function hrefForMainTab(tab) {
-  const inner = pathnameForMainTab(tab)
+function hrefForAppRoute(route) {
+  const inner = pathnameForAppRoute(route)
   const p = pathPrefix()
   if (!p) return inner
   if (inner === '/') return `${p}/`
   return `${p}${inner}`
 }
 
-/** @param {string} pathname */
-function mainTabFromPathname(pathname) {
+/**
+ * @param {string} pathname
+ * @returns {{
+ *   tab: 'babel' | 'findings' | 'about' | 'lab',
+ *   labView?: 'index' | 'methodology' | 'case',
+ *   caseSlug?: string | null,
+ * }}
+ */
+function parseAppRoute(pathname) {
   const path = normalizePathname(pathname)
-  if (path === '/findings') return 'findings'
-  if (path === '/about') return 'about'
-  return 'babel'
+  if (path === '/findings') return { tab: 'findings' }
+  if (path === '/about') return { tab: 'about' }
+  if (path === '/lab' || path.startsWith('/lab/')) {
+    const rest = path === '/lab' ? '' : path.slice('/lab'.length)
+    if (!rest || rest === '/') {
+      return { tab: 'lab', labView: 'index', caseSlug: null }
+    }
+    if (rest === '/methodology') {
+      return { tab: 'lab', labView: 'methodology', caseSlug: null }
+    }
+    const slug = rest.replace(/^\//, '').split('/').filter(Boolean)[0] ?? null
+    return { tab: 'lab', labView: 'case', caseSlug: slug }
+  }
+  return { tab: 'babel' }
 }
 
-/** @param {'babel' | 'findings' | 'about'} tab */
-function pathnameForMainTab(tab) {
-  if (tab === 'findings') return '/findings'
-  if (tab === 'about') return '/about'
+/** @deprecated Prefer parseAppRoute. Kept for simple tab mapping. */
+function mainTabFromPathname(pathname) {
+  return parseAppRoute(pathname).tab
+}
+
+/**
+ * @param {{
+ *   tab: 'babel' | 'findings' | 'about' | 'lab',
+ *   labView?: 'index' | 'methodology' | 'case',
+ *   caseSlug?: string | null,
+ * }} route
+ */
+function pathnameForAppRoute(route) {
+  if (route.tab === 'findings') return '/findings'
+  if (route.tab === 'about') return '/about'
+  if (route.tab === 'lab') {
+    if (route.labView === 'methodology') return '/lab/methodology'
+    if (route.labView === 'case' && route.caseSlug) {
+      return `/lab/${route.caseSlug}`
+    }
+    return '/lab'
+  }
   return '/'
 }
 
-const DOC_TITLE_DEFAULT = 'Babel — Multi-Model Debate Engine'
-const DOC_TITLE_RUNNING = '⟳ Babel — Debate running...'
-const DOC_TITLE_COMPLETE = '✓ Babel — Debate complete'
-const DOC_TITLE_ERROR = '✗ Babel — Something went wrong'
-const DOC_TITLE_PARTIAL = '◐ Babel — Debate ended early'
+const DOC_TITLE_DEFAULT = 'Babel: Multi-Model Debate Engine'
+const DOC_TITLE_RUNNING = '⟳ Babel: Debate running...'
+const DOC_TITLE_COMPLETE = '✓ Babel: Debate complete'
+const DOC_TITLE_ERROR = '✗ Babel: Something went wrong'
+const DOC_TITLE_PARTIAL = '◐ Babel: Debate complete with gaps'
+const DOC_TITLE_BLOCKED = '⏸ Babel: Debate paused'
+const DOC_TITLE_DEGRADED = '⟳ Babel: Debate continuing…'
+
+/** @param {string} status */
+function isDebateInProgress(status) {
+  return status === 'running' || status === 'degraded'
+}
+
+/** @param {string} status */
+function isDebateSettled(status) {
+  return (
+    status === 'complete' ||
+    status === 'complete_with_gaps' ||
+    status === 'partial' ||
+    status === 'failed' ||
+    status === 'error' ||
+    status === 'blocked'
+  )
+}
+
+/** Show global ErrorBanner only for debate-level / infrastructure blocks. */
+function shouldShowGlobalError(status, error) {
+  if (error == null || error === '') return false
+  return (
+    status === 'blocked' ||
+    status === 'failed' ||
+    status === 'error'
+  )
+}
 
 /** @param {React.RefObject<HTMLElement | null>} ref */
 function scrollSectionIntoView(ref) {
@@ -104,16 +180,17 @@ function scrollSectionIntoView(ref) {
   }, 300)
 }
 
-function HeaderAgentPill({ name, color }) {
+function HeaderAgentPill({ role, model, color }) {
   return (
-    <div className="inline-flex max-w-[160px] items-center gap-2 truncate sm:max-w-none">
+    <div className="inline-flex max-w-[200px] items-center gap-2 truncate sm:max-w-none">
       <span
         className="h-1.5 w-1.5 shrink-0 rounded-full"
         style={{ backgroundColor: color }}
         aria-hidden
       />
-      <span className="truncate font-mono text-[10px] font-medium text-[var(--text-primary)]">
-        {name}
+      <span className="min-w-0 truncate">
+        <span className="role-name block truncate">{role}</span>
+        <span className="model-name block truncate">{model}</span>
       </span>
     </div>
   )
@@ -121,14 +198,38 @@ function HeaderAgentPill({ name, color }) {
 
 export default function App() {
   const { state, dispatch } = useForge()
-  const { runDebate, resetAndRetry, resetForEditPrompt } = useDebateEngine()
+  const { settings } = useForgeUiSettings()
+  const {
+    runDebate,
+    resetAndRetry,
+    resetForEditPrompt,
+    retrySynthesis,
+    finishWithoutSynthesis,
+    retryAudit,
+    retryInfluence,
+    retryVoice,
+    continueWithout,
+    copyPartialTranscript,
+    resumeAfterReconnect,
+    stageRetrying,
+  } = useDebateEngine()
   const [promptDraft, setPromptDraft] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [mainTab, setMainTab] = useState(
-    /** @type {'babel' | 'findings' | 'about'} */ () =>
+    /** @type {'babel' | 'findings' | 'about' | 'lab'} */ () =>
       typeof window !== 'undefined'
         ? mainTabFromPathname(window.location.pathname)
         : 'babel'
+  )
+  const [labRoute, setLabRoute] = useState(
+    /** @type {{ view: 'index' | 'methodology' | 'case', caseSlug?: string | null }} */ () => {
+      if (typeof window === 'undefined') return { view: 'index', caseSlug: null }
+      const r = parseAppRoute(window.location.pathname)
+      return {
+        view: r.labView ?? 'index',
+        caseSlug: r.caseSlug ?? null,
+      }
+    }
   )
   const [workflowSidebarCollapsed, setWorkflowSidebarCollapsed] = useState(
     () => readWorkflowSidebarCollapsed()
@@ -137,40 +238,105 @@ export default function App() {
     !sessionStorage.getItem('babel_welcomed')
   )
 
-  const running = state.status === 'running'
+  const voiceActionsValue = useMemo(
+    () => ({
+      retryVoice,
+      continueWithout,
+      voiceBusy: stageRetrying === 'voice',
+    }),
+    [retryVoice, continueWithout, stageRetrying]
+  )
+
+  const running = isDebateInProgress(state.status)
+
+  const activeRound = useMemo(() => {
+    if (state.synthesis) return 'synthesis'
+    if (state.finalPositions?.a || state.finalPositionTimers?.a?.startTime)
+      return 'r3'
+    if (state.reviews?.length || state.reviewTimers?.a?.startTime) return 'r2'
+    if (state.rounds?.length || state.agentTimers?.a?.startTime) return 'r1'
+    return null
+  }, [
+    state.synthesis,
+    state.finalPositions,
+    state.finalPositionTimers,
+    state.reviews,
+    state.reviewTimers,
+    state.rounds,
+    state.agentTimers,
+  ])
 
   const navigateMainTab = useCallback(
-    /** @param {'babel' | 'findings' | 'about'} tab */ (tab) => {
-      setMainTab((prev) => {
-        if (prev === tab) return prev
-        window.history.pushState({ tab }, '', hrefForMainTab(tab))
-        return tab
-      })
+    /** @param {'babel' | 'findings' | 'about' | 'lab'} tab */ (tab) => {
+      const route =
+        tab === 'lab'
+          ? { tab: 'lab', labView: /** @type {const} */ ('index'), caseSlug: null }
+          : { tab }
+      setMainTab(tab)
+      if (tab === 'lab') {
+        setLabRoute({ view: 'index', caseSlug: null })
+      }
+      window.history.pushState(route, '', hrefForAppRoute(route))
     },
     []
   )
 
+  const navigateLab = useCallback((next) => {
+    const route = {
+      tab: /** @type {const} */ ('lab'),
+      labView: next.view,
+      caseSlug: next.caseSlug ?? null,
+    }
+    setMainTab('lab')
+    setLabRoute({
+      view: next.view,
+      caseSlug: next.caseSlug ?? null,
+    })
+    window.history.pushState(route, '', hrefForAppRoute(route))
+  }, [])
+
   useEffect(() => {
     const path = window.location.pathname
-    const tab = mainTabFromPathname(path)
-    if (window.history.state?.tab !== tab) {
-      window.history.replaceState({ tab }, '', hrefForMainTab(tab))
+    const parsed = parseAppRoute(path)
+    if (window.history.state?.tab !== parsed.tab) {
+      window.history.replaceState(parsed, '', hrefForAppRoute(parsed))
     }
   }, [])
 
   useEffect(() => {
     const onPopState = (/** @type {PopStateEvent} */ event) => {
-      const raw =
+      const parsed =
         event.state &&
         typeof event.state === 'object' &&
         'tab' in event.state
-          ? event.state.tab
+          ? /** @type {{ tab: string, labView?: string, caseSlug?: string | null }} */ (
+              event.state
+            )
           : null
-      const tab =
-        raw === 'babel' || raw === 'findings' || raw === 'about'
-          ? raw
-          : mainTabFromPathname(window.location.pathname)
-      setMainTab(tab)
+      const route =
+        parsed &&
+        (parsed.tab === 'babel' ||
+          parsed.tab === 'findings' ||
+          parsed.tab === 'about' ||
+          parsed.tab === 'lab')
+          ? {
+              tab: /** @type {'babel' | 'findings' | 'about' | 'lab'} */ (
+                parsed.tab
+              ),
+              labView:
+                parsed.labView === 'methodology' || parsed.labView === 'case'
+                  ? parsed.labView
+                  : 'index',
+              caseSlug: parsed.caseSlug ?? null,
+            }
+          : parseAppRoute(window.location.pathname)
+      setMainTab(route.tab)
+      if (route.tab === 'lab') {
+        setLabRoute({
+          view: route.labView ?? 'index',
+          caseSlug: route.caseSlug ?? null,
+        })
+      }
     }
     window.addEventListener('popstate', onPopState)
     return () => window.removeEventListener('popstate', onPopState)
@@ -179,12 +345,14 @@ export default function App() {
   const showWorkflowSidebar =
     mainTab === 'babel' &&
     (state.status !== 'idle' ||
+      state.status === 'complete_with_gaps' ||
       state.status === 'partial' ||
       state.rounds.length > 0 ||
       state.rebuttals?.a != null ||
       state.finalPositions?.a != null ||
       state.synthesis != null ||
-      state.synthesisWinner != null)
+      state.synthesisWinner != null ||
+      state.stageErrors?.synthesis != null)
 
   useEffect(() => {
     try {
@@ -198,13 +366,19 @@ export default function App() {
   }, [workflowSidebarCollapsed])
 
   useEffect(() => {
-    if (state.status === 'running') {
-      document.title = DOC_TITLE_RUNNING
+    if (isDebateInProgress(state.status)) {
+      document.title =
+        state.status === 'degraded' ? DOC_TITLE_DEGRADED : DOC_TITLE_RUNNING
     } else if (state.status === 'complete') {
       document.title = DOC_TITLE_COMPLETE
-    } else if (state.status === 'error') {
+    } else if (state.status === 'failed' || state.status === 'error') {
       document.title = DOC_TITLE_ERROR
-    } else if (state.status === 'partial') {
+    } else if (state.status === 'blocked') {
+      document.title = DOC_TITLE_BLOCKED
+    } else if (
+      state.status === 'complete_with_gaps' ||
+      state.status === 'partial'
+    ) {
       document.title = DOC_TITLE_PARTIAL
     } else {
       document.title = DOC_TITLE_DEFAULT
@@ -212,7 +386,7 @@ export default function App() {
   }, [state.status])
 
   useEffect(() => {
-    if (state.status !== 'error' || state.error == null) return
+    if (!shouldShowGlobalError(state.status, state.error)) return
     requestAnimationFrame(() => {
       errorBannerRef.current?.scrollIntoView({
         behavior: 'smooth',
@@ -224,8 +398,9 @@ export default function App() {
   useEffect(() => {
     const onVisibility = () => {
       if (document.visibilityState !== 'visible') return
-      if (state.status === 'running') {
-        document.title = DOC_TITLE_RUNNING
+      if (isDebateInProgress(state.status)) {
+        document.title =
+          state.status === 'degraded' ? DOC_TITLE_DEGRADED : DOC_TITLE_RUNNING
       } else {
         document.title = DOC_TITLE_DEFAULT
       }
@@ -248,6 +423,25 @@ export default function App() {
     state.finalPositions?.a == null &&
     state.synthesis == null
 
+  useEffect(() => {
+    if (state.status !== 'blocked') return
+    const err = state.error
+    if (
+      !err ||
+      typeof err !== 'object' ||
+      err.type !== 'rate_limit' ||
+      typeof err.retryAfterMs !== 'number'
+    ) {
+      return
+    }
+    const started = err.occurredAt ? Date.parse(err.occurredAt) : Date.now()
+    const ms = Math.max(0, started + err.retryAfterMs - Date.now())
+    const id = window.setTimeout(() => {
+      resetAndRetry()
+    }, ms + 100)
+    return () => window.clearTimeout(id)
+  }, [state.status, state.error, resetAndRetry])
+
   const handleRun = useCallback(() => {
     const p = promptDraft.trim()
     if (p.length < 20) return
@@ -269,6 +463,10 @@ export default function App() {
   const round3Ref = useRef(/** @type {HTMLDivElement | null} */ (null))
   const finalPositionsRef = useRef(/** @type {HTMLDivElement | null} */ (null))
   const synthesisRef = useRef(/** @type {HTMLDivElement | null} */ (null))
+  const memoRef = useRef(/** @type {HTMLDivElement | null} */ (null))
+  const [topBarVisible, setTopBarVisible] = useState(false)
+  const [actionBarHidden, setActionBarHidden] = useState(false)
+  const lastScrollY = useRef(0)
   const auditRef = useRef(/** @type {HTMLDivElement | null} */ (null))
 
   const bindRound3AndFinalsRef = useCallback(
@@ -283,6 +481,79 @@ export default function App() {
     promptInputRef.current?.focusPrompt()
   }, [])
 
+  const jumpToSection = useCallback((target) => {
+    const map = {
+      r1: round1Ref,
+      r2: round2Ref,
+      r3: finalPositionsRef,
+      synthesis: synthesisRef,
+      memo: memoRef,
+    }
+    const el = map[target]?.current
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
+
+  const mobileAction = useMemo(() => {
+    if (running) {
+      return { label: 'Convening…', action: handleRun, disabled: true }
+    }
+    if (showEmptyState || !state.prompt) {
+      return {
+        label: 'Convene',
+        action: handleRun,
+        disabled: promptDraft.trim().length < 20,
+      }
+    }
+    if (state.stageErrors?.synthesis) {
+      return {
+        label: 'Retry synthesis',
+        action: () => void retrySynthesis(),
+        disabled: stageRetrying === 'synthesis',
+      }
+    }
+    if (state.synthesis) {
+      return {
+        label: 'Open memo',
+        action: () => jumpToSection('memo'),
+        disabled: false,
+      }
+    }
+    return {
+      label: 'Jump to latest',
+      action: () =>
+        jumpToSection(
+          activeRound === 'r3' ? 'r3' : activeRound === 'r2' ? 'r2' : 'r1'
+        ),
+      disabled: false,
+    }
+  }, [
+    running,
+    showEmptyState,
+    state.prompt,
+    state.stageErrors,
+    state.synthesis,
+    promptDraft,
+    handleRun,
+    retrySynthesis,
+    stageRetrying,
+    jumpToSection,
+    activeRound,
+  ])
+
+  useEffect(() => {
+    const main = document.querySelector('.main-content')
+    if (!main) return
+    const onScroll = () => {
+      const y = main.scrollTop
+      setTopBarVisible(y > 220 && Boolean(state.prompt || promptDraft))
+      if (y > lastScrollY.current + 8) setActionBarHidden(true)
+      else if (y < lastScrollY.current - 8) setActionBarHidden(false)
+      lastScrollY.current = y
+    }
+    main.addEventListener('scroll', onScroll, { passive: true })
+    return () => main.removeEventListener('scroll', onScroll)
+  }, [state.prompt, promptDraft])
+
   const prevStatusRef = useRef(state.status)
   const lastCompletedStagePrevRef = useRef(
     /** @type {typeof state.lastCompletedStage} */ (null)
@@ -295,7 +566,11 @@ export default function App() {
   useEffect(() => {
     const prev = prevStatusRef.current
     prevStatusRef.current = state.status
-    if (prev !== 'running' && state.status === 'running') {
+    if (
+      prev !== 'running' &&
+      prev !== 'degraded' &&
+      (state.status === 'running' || state.status === 'degraded')
+    ) {
       lastCompletedStagePrevRef.current = null
       r2ScrollDoneRef.current = false
       r3ScrollDoneRef.current = false
@@ -306,7 +581,7 @@ export default function App() {
 
   /** After round 1, cross-review thinking begins → scroll to round 2. */
   useEffect(() => {
-    if (state.status !== 'running' || r2ScrollDoneRef.current) return
+    if (!isDebateInProgress(state.status) || r2ScrollDoneRef.current) return
     if (state.reviewTimers?.a?.startTime == null) return
     r2ScrollDoneRef.current = true
     scrollSectionIntoView(round2Ref)
@@ -329,9 +604,9 @@ export default function App() {
     }
   }, [state.lastCompletedStage])
 
-  /** Round 3 final thinking started — scroll finals section if needed. */
+  /** Round 3 final thinking started: scroll finals section if needed. */
   useEffect(() => {
-    if (state.status !== 'running' || r3ScrollDoneRef.current) return
+    if (!isDebateInProgress(state.status) || r3ScrollDoneRef.current) return
     if (state.finalPositionTimers?.a?.startTime == null) return
     r3ScrollDoneRef.current = true
     scrollSectionIntoView(finalPositionsRef)
@@ -366,7 +641,7 @@ export default function App() {
   const mainMdPr =
     showWorkflowSidebar && !workflowSidebarCollapsed
       ? 'md:pr-[272px]'
-      : 'md:pr-10'
+      : ''
   const roundScrollMt = showWorkflowSidebar
     ? 'scroll-mt-[calc(5.25rem+env(safe-area-inset-top,0px))]'
     : 'scroll-mt-[calc(4rem+env(safe-area-inset-top,0px))]'
@@ -374,24 +649,37 @@ export default function App() {
   return (
     <div className="app-shell relative flex min-h-dvh w-full flex-row bg-[var(--bg-base)] text-[var(--text-primary)]">
       <main
-        className={`main-content relative z-[2] flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-4 pb-16 sm:px-6 md:min-h-0 md:pb-20 md:pl-10 md:pt-0 ${mainMobilePt} ${mainMdPr}`}
+        className={`main-content relative z-[2] flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto pb-0 md:min-h-0 md:pb-0 md:pt-0 ${mainMobilePt} ${mainMdPr}`}
       >
+        <div className="stage flex min-h-0 flex-1 flex-col">
         <header
-          className={`sticky z-20 -mx-4 mb-8 border-b border-[var(--border)] bg-[var(--bg-base)] px-4 sm:-mx-6 sm:px-6 md:top-0 md:-mx-10 md:mb-10 md:px-10 ${headerPaddingY} ${headerStickyTopMobile}`}
+          className={`sticky z-20 mb-8 border-b border-[var(--border)] bg-[var(--bg-base)] md:top-0 md:mb-10 ${headerPaddingY} ${headerStickyTopMobile}`}
         >
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <span className="font-display text-2xl font-normal tracking-[0.12em] text-[var(--text-primary)]">
+            <span className="font-display text-[clamp(1.35rem,2.5vw,1.75rem)] font-[440] tracking-[0.04em] text-[var(--ink)]">
               BABEL
             </span>
             <div className="order-3 flex w-full flex-wrap items-center justify-center gap-2 md:order-none md:flex-1 md:justify-end md:pr-4">
-              <HeaderAgentPill name={cfg.agentA.name} color={cfg.agentA.color} />
-              <HeaderAgentPill name={cfg.agentB.name} color={cfg.agentB.color} />
-              <HeaderAgentPill name={cfg.agentC.name} color={cfg.agentC.color} />
+              <HeaderAgentPill
+                role={roleLabel(state.roles?.a)}
+                model={cfg.agentA.name}
+                color={cfg.agentA.color}
+              />
+              <HeaderAgentPill
+                role={roleLabel(state.roles?.b)}
+                model={cfg.agentB.name}
+                color={cfg.agentB.color}
+              />
+              <HeaderAgentPill
+                role={roleLabel(state.roles?.c)}
+                model={cfg.agentC.name}
+                color={cfg.agentC.color}
+              />
             </div>
             <button
               type="button"
               onClick={() => setSettingsOpen(true)}
-              className="order-2 rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] p-2.5 text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] md:order-none"
+              className="order-2 inline-flex min-h-12 min-w-12 items-center justify-center rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] p-2.5 text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] md:order-none"
               aria-label="Open settings"
             >
               <Settings className="h-4 w-4" aria-hidden />
@@ -400,7 +688,7 @@ export default function App() {
         </header>
 
         <nav
-          className="-mx-4 mb-8 flex justify-center border-b border-[var(--border)] bg-[var(--bg-base)] px-4 pb-4 sm:-mx-6 sm:px-6 md:-mx-10 md:justify-start md:px-10"
+          className="app-main-nav flex justify-center border-b border-[var(--border)] bg-[var(--bg-base)] md:justify-start"
           aria-label="Main views"
         >
           <div className="inline-flex max-w-full flex-wrap justify-center gap-0.5 rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] p-0.5">
@@ -408,11 +696,7 @@ export default function App() {
               type="button"
               onClick={() => navigateMainTab('babel')}
               aria-pressed={mainTab === 'babel'}
-              className={`rounded-[4px] px-3 py-2 font-mono text-xs font-semibold transition sm:px-4 ${
-                mainTab === 'babel'
-                  ? 'bg-[var(--accent-forge)] text-white'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
+              className={`app-tab ${mainTab === 'babel' ? 'is-active' : ''}`}
             >
               Babel
             </button>
@@ -420,23 +704,23 @@ export default function App() {
               type="button"
               onClick={() => navigateMainTab('findings')}
               aria-pressed={mainTab === 'findings'}
-              className={`rounded-[4px] px-3 py-2 font-mono text-xs font-semibold transition sm:px-4 ${
-                mainTab === 'findings'
-                  ? 'bg-[var(--accent-forge)] text-white'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
+              className={`app-tab ${mainTab === 'findings' ? 'is-active' : ''}`}
             >
               Findings
             </button>
             <button
               type="button"
+              onClick={() => navigateMainTab('lab')}
+              aria-pressed={mainTab === 'lab'}
+              className={`app-tab ${mainTab === 'lab' ? 'is-active' : ''}`}
+            >
+              Lab
+            </button>
+            <button
+              type="button"
               onClick={() => navigateMainTab('about')}
               aria-pressed={mainTab === 'about'}
-              className={`rounded-[4px] px-3 py-2 font-mono text-xs font-semibold transition sm:px-4 ${
-                mainTab === 'about'
-                  ? 'bg-[var(--accent-forge)] text-white'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
+              className={`app-tab ${mainTab === 'about' ? 'is-active' : ''}`}
             >
               About
             </button>
@@ -447,8 +731,12 @@ export default function App() {
           <FindingsPanel />
         ) : mainTab === 'about' ? (
           <ResearchPanel />
+        ) : mainTab === 'lab' ? (
+          <LabPanel route={labRoute} onNavigate={navigateLab} />
         ) : (
-          <>
+          <div className="workspace-page">
+          <VoiceActionsProvider value={voiceActionsValue}>
+            <VoiceAnnouncer />
             <ModelsAnnouncementBanner />
             <div className="mb-10 shrink-0">
               <PromptInput
@@ -461,18 +749,94 @@ export default function App() {
               />
             </div>
 
+            <DebateTopBar
+              prompt={state.prompt || promptDraft}
+              visible={topBarVisible && !showEmptyState}
+              activeRound={activeRound}
+              onJump={jumpToSection}
+            />
+
             <div ref={errorBannerRef} className="scroll-mt-4">
-              <ErrorBanner
-                error={state.error}
-                onDismiss={() => dispatch({ type: 'SET_ERROR', payload: null })}
-                onRetry={resetAndRetry}
-                onEditPrompt={() => {
-                  resetForEditPrompt()
-                  requestAnimationFrame(() =>
-                    promptInputRef.current?.focusPrompt()
-                  )
-                }}
-              />
+              {shouldShowGlobalError(state.status, state.error) ? (
+                <ErrorBanner
+                  error={state.error}
+                  status={state.status}
+                  onDismiss={() =>
+                    dispatch({ type: 'SET_ERROR', payload: null })
+                  }
+                  onRetry={
+                    state.error &&
+                    typeof state.error === 'object' &&
+                    state.error.type === 'network'
+                      ? () => void resumeAfterReconnect()
+                      : resetAndRetry
+                  }
+                  onEditPrompt={() => {
+                    resetForEditPrompt()
+                    requestAnimationFrame(() =>
+                      promptInputRef.current?.focusPrompt()
+                    )
+                  }}
+                  onCopyTranscript={() => void copyPartialTranscript()}
+                />
+              ) : null}
+              {state.status === 'complete_with_gaps' &&
+              !shouldShowGlobalError(state.status, state.error) ? (
+                <div
+                  className="mb-6 rounded-forge-card border border-[var(--border)] bg-[color-mix(in_srgb,var(--blue)_8%,var(--bg-surface))] px-4 py-3 babel-meta text-[var(--text-secondary)]"
+                  role="status"
+                >
+                  <p className="font-medium text-[var(--text-primary)]">
+                    Debate complete with limited evaluation.
+                  </p>
+                  <p className="mt-1 leading-relaxed">
+                    Some voices or optional stages were unavailable, but the
+                    usable model responses remain above.
+                  </p>
+                  <button
+                    type="button"
+                    className="babel-btn babel-btn-ghost mt-3"
+                    onClick={() => void copyPartialTranscript()}
+                  >
+                    Copy partial transcript
+                  </button>
+                </div>
+              ) : null}
+              {state.historySaveError ? (
+                <div
+                  className="mb-6 rounded-forge-card border border-dashed border-[var(--border)] bg-[var(--bg-surface)] px-4 py-3 babel-meta text-[var(--text-secondary)]"
+                  role="status"
+                >
+                  <p className="font-medium text-[var(--text-primary)]">
+                    The debate completed, but it could not be added to your
+                    history.
+                  </p>
+                  <p className="mt-1 babel-meta text-[var(--text-muted)]">
+                    This does not mean the debate failed.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="babel-btn babel-btn-ghost"
+                      onClick={() => void copyPartialTranscript()}
+                    >
+                      Download transcript
+                    </button>
+                    <button
+                      type="button"
+                      className="babel-btn babel-btn-quiet"
+                      onClick={() =>
+                        dispatch({
+                          type: 'SET_HISTORY_SAVE_ERROR',
+                          payload: null,
+                        })
+                      }
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <div className="mt-2 flex flex-col gap-12 md:gap-14">
@@ -481,6 +845,10 @@ export default function App() {
                   onPickExample={setPromptDraft}
                   onAfterExamplePick={focusPromptAfterExample}
                 />
+              ) : null}
+
+              {!showEmptyState && sortedRounds.length > 0 ? (
+                <MashrabiyaScreen tight />
               ) : null}
 
               {sortedRounds.map((round, roundIdx) => {
@@ -501,6 +869,7 @@ export default function App() {
                     id={`forge-round-${round.roundNum}`}
                     className={`flex ${roundScrollMt} flex-col gap-12 md:scroll-mt-8`}
                   >
+                    {roundIdx > 0 ? <MashrabiyaScreen tight /> : null}
                     <div
                       ref={
                         round.roundNum === 1 ? round1Ref : undefined
@@ -516,39 +885,53 @@ export default function App() {
                       />
                     </div>
                     {review ? (
-                      <div ref={round2Ref}>
-                        <ReviewCard
-                          key={`review-${review.roundNum}`}
-                          roundNum={review.roundNum}
-                          aReviews={review.aReviews}
-                          bReviews={review.bReviews}
-                          cReviews={review.cReviews}
-                          config={cfg}
-                          reviewTimers={state.reviewTimers}
-                        />
-                      </div>
+                      <>
+                        <MashrabiyaScreen tight />
+                        <div ref={round2Ref}>
+                          <ReviewCard
+                            key={`review-${review.roundNum}`}
+                            roundNum={review.roundNum}
+                            aReviews={review.aReviews}
+                            bReviews={review.bReviews}
+                            cReviews={review.cReviews}
+                            config={cfg}
+                            reviewTimers={state.reviewTimers}
+                          />
+                        </div>
+                      </>
                     ) : null}
                     {state.synthesisWinner ? (
-                      <CompetitionResults
-                        synthesisWinner={state.synthesisWinner}
-                        config={cfg}
-                      />
+                      <>
+                        <MashrabiyaScreen tight />
+                        <CompetitionResults
+                          synthesisWinner={state.synthesisWinner}
+                          config={cfg}
+                        />
+                      </>
                     ) : null}
                     {crossReviewComplete ? (
-                      <div ref={bindRound3AndFinalsRef}>
-                        <FinalPositionCard
-                          config={cfg}
-                          scores={scores}
-                          divergenceReady={divergenceReady}
-                          finalPositions={state.finalPositions}
-                          finalPositionTimers={state.finalPositionTimers}
-                          agentTimers={state.agentTimers}
-                          reviewTimers={state.reviewTimers}
-                          rebuttalTimers={state.rebuttalTimers}
-                          influenceReport={state.influenceReport}
-                          influenceLoading={state.influenceLoading}
-                        />
-                      </div>
+                      <>
+                        <MashrabiyaScreen tight />
+                        <div ref={bindRound3AndFinalsRef}>
+                          <FinalPositionCard
+                            config={cfg}
+                            scores={scores}
+                            divergenceReady={divergenceReady}
+                            finalPositions={state.finalPositions}
+                            finalPositionTimers={state.finalPositionTimers}
+                            agentTimers={state.agentTimers}
+                            reviewTimers={state.reviewTimers}
+                            rebuttalTimers={state.rebuttalTimers}
+                            influenceReport={state.influenceReport}
+                            influenceLoading={
+                              state.influenceLoading ||
+                              stageRetrying === 'influence'
+                            }
+                            influenceError={state.stageErrors?.influence ?? null}
+                            onRetryInfluence={() => void retryInfluence()}
+                          />
+                        </div>
+                      </>
                     ) : null}
                   </div>
                 )
@@ -556,6 +939,7 @@ export default function App() {
 
               {state.synthesis != null ? (
                 <>
+                  <MashrabiyaScreen />
                   <div
                     ref={synthesisRef}
                     id="forge-synthesis"
@@ -564,7 +948,7 @@ export default function App() {
                     <Suspense
                       fallback={
                         <div
-                          className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] px-6 py-12 text-center font-mono text-xs text-[var(--text-muted)]"
+                          className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] px-6 py-12 text-center babel-meta text-[var(--text-muted)]"
                           role="status"
                           aria-live="polite"
                         >
@@ -575,33 +959,125 @@ export default function App() {
                       <SynthesisPanel synthesis={state.synthesis} />
                     </Suspense>
                   </div>
+                  {state.synthesis ? (
+                    <StabilityCheckPanel />
+                  ) : null}
+                  {state.synthesis?.decisionArtifact || state.synthesis?.output ? (
+                    <div
+                      ref={memoRef}
+                      className={`mt-8 ${roundScrollMt}`}
+                      id="babel-decision-memo"
+                    >
+                      <DecisionMemo
+                        prompt={state.prompt}
+                        criteria={state.decisionCriteria ?? []}
+                        artifact={
+                          state.synthesis.decisionArtifact ?? {
+                            framed: state.synthesis.output,
+                            agreement: '',
+                            disagreement: '',
+                            strongestSupport: '',
+                            weakestAssumptions: '',
+                            minorityReport: '',
+                            whatWouldChange: '',
+                            recommendedNextStep: state.synthesis.rationale ?? '',
+                            findings: [
+                              {
+                                id: 'framed',
+                                text: state.synthesis.output,
+                                claimIds: [],
+                                kind: 'frame',
+                              },
+                            ],
+                          }
+                        }
+                        roles={state.roles}
+                      />
+                    </div>
+                  ) : null}
+                </>
+              ) : state.stageErrors?.synthesis != null &&
+                isDebateSettled(state.status) ? (
+                <>
+                  <MashrabiyaScreen />
                   <div
-                    className="my-8 w-full border-t border-dashed border-[#D4C9B0]"
-                    role="presentation"
-                  />
+                    ref={synthesisRef}
+                    id="forge-synthesis"
+                    className={`${roundScrollMt} md:scroll-mt-8`}
+                  >
+                    <div
+                      className="rounded-forge-card border border-amber-700/35 bg-[color-mix(in_srgb,var(--highlight)_18%,var(--bg-surface))] px-5 py-5"
+                      role="status"
+                    >
+                      <h2 className="babel-display babel-display-card m-0 text-[var(--text-primary)]">
+                        The synthesis could not be completed.
+                      </h2>
+                      <p className="mt-2 babel-meta leading-relaxed text-[var(--text-secondary)]">
+                        {state.stageErrors.synthesis.userMessage ||
+                          state.stageErrors.synthesis.detail ||
+                          'All model responses remain available above.'}
+                      </p>
+                      <p className="mt-3 babel-meta text-[var(--text-muted)]">
+                        Individual voice responses are preserved.
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="babel-btn babel-btn-primary"
+                          disabled={stageRetrying === 'synthesis'}
+                          onClick={() => void retrySynthesis()}
+                        >
+                          {stageRetrying === 'synthesis'
+                            ? 'Retrying synthesis…'
+                            : 'Retry synthesis'}
+                        </button>
+                        <button
+                          type="button"
+                          className="babel-btn babel-btn-ghost"
+                          disabled={stageRetrying === 'synthesis'}
+                          onClick={finishWithoutSynthesis}
+                        >
+                          Finish without synthesis
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </>
               ) : null}
-              {state.status === 'complete' ||
-              state.status === 'partial' ||
-              state.status === 'error' ? (
+              {settings.showResearchSurfaces &&
+              isDebateSettled(state.status) &&
+              state.status !== 'blocked' ? (
                 <>
+                  <MashrabiyaScreen tight />
                   {state.synthesis != null &&
                   state.divergenceScores.length > 0 ? (
-                    <p className="mx-auto mb-6 max-w-xl px-6 text-center font-[family-name:var(--font-mono)] text-[11px] italic leading-relaxed text-[var(--text-muted)] md:px-10">
-                      Note: claim disagreement scores reflect how agents aligned on each
-                      audited claim (agree / disagree / partial / silent), not embedding
-                      similarity. Pairwise averages can look high even when final claims
-                      largely agree, if phrasing or partial stances differ across the audit.
+                    <p className="mx-auto mb-6 max-w-xl px-6 text-center babel-meta italic leading-relaxed text-[var(--text-muted)] md:px-10">
+                      Note: claim disagreement scores reflect how agents aligned
+                      on each audited claim (agree / disagree / partial /
+                      silent), not embedding similarity.
                     </p>
                   ) : null}
                   <div ref={auditRef} className={roundScrollMt}>
-                    <AuditTrail />
+                    <AuditTrail
+                      onRetryAudit={retryAudit}
+                      auditRetrying={stageRetrying === 'audit'}
+                    />
                   </div>
                 </>
               ) : null}
             </div>
-          </>
+          </VoiceActionsProvider>
+          </div>
         )}
+
+        <ProjectCreditFooter />
+        <MobileActionBar
+          label={mobileAction.label}
+          onAction={mobileAction.action}
+          disabled={mobileAction.disabled}
+          hidden={mainTab !== 'babel' || actionBarHidden}
+        />
+        </div>
       </main>
 
       {showWorkflowSidebar ? (
