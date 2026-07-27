@@ -6,7 +6,7 @@
 
 Babel helps people stress-test consequential decisions with multiple AI models. Instead of placing several long answers side by side, it gives each voice a distinct role, separates independent reasoning from critique, makes revisions visible, and turns the result into a structured decision artifact.
 
-The product thesis is simple:
+The product thesis is very simple:
 
 > More model output does not automatically produce a better decision. Structured disagreement can reveal hidden assumptions, preserve useful dissent, and make a recommendation easier to inspect.
 
