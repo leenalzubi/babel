@@ -1,5 +1,4 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
-import { Flame } from 'lucide-react'
 import {
   fetchGithubModelsProxyConfigured,
   hasGithubModelsClientToken,
@@ -19,7 +18,6 @@ import { DecisionCriterion } from './reasoning/Primitives.jsx'
  *   value: string,
  *   onChange: (v: string) => void,
  *   onRun: () => void,
- *   onReset: () => void,
  *   disabled?: boolean,
  *   placeholder?: string,
  * }} props
@@ -30,7 +28,6 @@ function PromptInputInner(
     value,
     onChange,
     onRun,
-    onReset,
     disabled = false,
     placeholder = 'Should an AI meeting assistant send action items automatically without human approval?',
   },
@@ -101,8 +98,15 @@ function PromptInputInner(
   const trimmedLen = value.trim().length
   const tooShort = trimmedLen > 0 && trimmedLen < MIN_PROMPT_CHARS
   const tooLong = value.length > MAX_PROMPT_CHARS
-  const canRun = !disabled && trimmedLen >= MIN_PROMPT_CHARS && !tooLong
+  const canRun = !disabled && trimmedLen >= MIN_PROMPT_CHARS && !tooLong && hasToken
   const estTokens = Math.max(1, Math.round(value.length / 4))
+  const fieldError = statusMessage
+    ? statusMessage
+    : tooShort
+      ? `Add a bit more detail (${MIN_PROMPT_CHARS - trimmedLen} more characters) so the models have enough to debate.`
+      : tooLong
+        ? `Shorten the prompt. Over ${MAX_PROMPT_CHARS.toLocaleString()} characters will be truncated before the debate starts.`
+        : null
 
   const toggleCriterion = (label) => {
     const next = criteria.includes(label)
@@ -112,17 +116,20 @@ function PromptInputInner(
   }
 
   return (
-    <section className="convene-field babel-card flex flex-col gap-8 shadow-forge-card sm:gap-10 sm:p-8">
+    <section className="convene-field babel-card flex flex-col gap-6 shadow-forge-card sm:gap-8 sm:p-7">
       <div className="babel-intro">
-        <h1 className="babel-eyebrow m-0">Frame the decision</h1>
+        <h1 className="babel-display babel-display-section m-0">
+          Start a debate
+        </h1>
         <p className="babel-lede reading-column m-0">
-          Stress-test a consequential decision across three cognitive roles.
-          Criteria are your instructions. Babel never silently adds them.
+          Stress-test a decision across three different agent cognitive roles.
+          You can select criteria below the text box; they are your instructions.
         </p>
-        <div className={`babel-field ${disabled ? 'opacity-50' : ''}`}>
-          <label htmlFor="babel-decision" className="babel-eyebrow">
-            Decision or proposal
-          </label>
+        <div
+          className={`babel-field ${disabled ? 'opacity-50' : ''}${
+            fieldError ? ' is-invalid' : ''
+          }`}
+        >
           <textarea
             id="babel-decision"
             ref={textareaRef}
@@ -139,6 +146,8 @@ function PromptInputInner(
             placeholder={placeholder}
             className="min-h-[140px]"
             aria-label="Decision to stress-test"
+            aria-invalid={fieldError ? true : undefined}
+            aria-describedby={fieldError ? 'babel-decision-error' : undefined}
             maxLength={MAX_PROMPT_CHARS + 2_000}
           />
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2 babel-meta">
@@ -154,76 +163,39 @@ function PromptInputInner(
               <span className="mx-2 text-[var(--ink-faint)]" aria-hidden>
                 |
               </span>
-              ⌘/Ctrl+Enter
+              ⌘/Ctrl+Enter to start
             </span>
           </div>
-          {tooShort ? (
-            <p className="mt-1 babel-meta text-[var(--ink-soft)]" role="status">
-              Add a bit more detail ({MIN_PROMPT_CHARS - trimmedLen} more
-              characters) so the models have enough to debate.
-            </p>
-          ) : null}
-          {tooLong ? (
-            <p className="mt-1 babel-meta text-[var(--ink-soft)]" role="status">
-              Shorten the prompt. Over {MAX_PROMPT_CHARS.toLocaleString()}{' '}
-              characters will be truncated before the debate starts.
+          {fieldError ? (
+            <p
+              id="babel-decision-error"
+              className="babel-field-error"
+              role="alert"
+            >
+              {fieldError}
             </p>
           ) : null}
         </div>
 
-        <div className="convene-prompt-stack">
-          <div>
-            <p className="babel-eyebrow mb-4">Decision criteria</p>
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Decision criteria">
-              {SUGGESTED_CRITERIA.map((label) => (
-                <DecisionCriterion
-                  key={label}
-                  label={label}
-                  selected={criteria.includes(label)}
-                  disabled={disabled}
-                  onToggle={() => toggleCriterion(label)}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="convene-actions convene-actions--inline">
-            <div className="action-group convene-actions__buttons">
-              <button
-                type="button"
-                onClick={onRun}
-                disabled={!canRun}
-                title="Run Babel's full debate pipeline via GitHub Models"
-                aria-label="Convene debate (⌘ or Ctrl + Enter from prompt)"
-                className="babel-btn babel-btn-primary btn w-full sm:w-auto disabled:opacity-50"
-              >
-                <Flame className="h-4 w-4 shrink-0" aria-hidden />
-                {disabled ? 'Convening…' : 'Convene'}
-              </button>
-              <button
-                type="button"
-                onClick={onReset}
+        <div>
+          <p className="babel-eyebrow mb-4">Decision criteria</p>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Decision criteria">
+            {SUGGESTED_CRITERIA.map((label) => (
+              <DecisionCriterion
+                key={label}
+                label={label}
+                selected={criteria.includes(label)}
                 disabled={disabled}
-                aria-label="Reset debate and clear prompt"
-                className="babel-btn babel-btn-quiet w-full sm:w-auto"
-              >
-                Reset
-              </button>
-            </div>
-            {statusMessage ? (
-              <p className="convene-models-status babel-meta" role="status">
-                {statusMessage}
-              </p>
-            ) : (
-              <span className="sr-only">GitHub Models ready</span>
-            )}
+                onToggle={() => toggleCriterion(label)}
+              />
+            ))}
           </div>
         </div>
       </div>
 
       <div>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <p className="babel-eyebrow m-0">Roles</p>
+          <h2 className="babel-display babel-display-card m-0">AI agent roles</h2>
           <label className="flex items-center gap-2 babel-meta">
             Rotation
             <select

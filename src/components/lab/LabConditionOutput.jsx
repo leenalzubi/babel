@@ -143,7 +143,9 @@ function OutputBody({ artifact, condition }) {
         )
       })}
       <div>
-        <h3 className="babel-eyebrow m-0">Structured synthesis</h3>
+        <h3 className="babel-display babel-display-card m-0">
+          Structured synthesis
+        </h3>
         {synthesis?.trim() ? (
           <div className="reading-column mt-3 whitespace-pre-wrap babel-prose text-[var(--ink)]">
             {synthesis}

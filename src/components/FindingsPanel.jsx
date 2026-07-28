@@ -6,6 +6,27 @@ import { supabase } from '../lib/supabaseClient.js'
 const PAGE_SIZE = 20
 
 /**
+ * Build page numbers with ellipses for numbered pagination.
+ * @param {number} current
+ * @param {number} total
+ * @returns {(number | 'ellipsis')[]}
+ */
+function pageItems(current, total) {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1)
+  }
+  /** @type {(number | 'ellipsis')[]} */
+  const items = [1]
+  const start = Math.max(2, current - 1)
+  const end = Math.min(total - 1, current + 1)
+  if (start > 2) items.push('ellipsis')
+  for (let p = start; p <= end; p += 1) items.push(p)
+  if (end < total - 1) items.push('ellipsis')
+  items.push(total)
+  return items
+}
+
+/**
  * Turn opaque network failures into actionable copy.
  * @param {unknown} err
  */
@@ -607,7 +628,6 @@ export default function FindingsPanel() {
   return (
     <div className="data-page flex flex-col gap-8 sm:gap-10">
       <PageHeader
-        eyebrow="Findings"
         title="An open record of disagreement"
         lede="Aggregate metrics from debates logged here: divergence, influence, and how models move under challenge."
       />
@@ -643,13 +663,7 @@ export default function FindingsPanel() {
         </div>
       ) : null}
 
-      <div
-        className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${
-          stats.mostFlexible.name != null || stats.mostCombative.name != null
-            ? 'xl:grid-cols-4'
-            : 'xl:grid-cols-2'
-        }`}
-      >
+      <div className="metric-card-row">
         <StatCard title="Total debates" value={stats.total} />
         <StatCard
           title="Avg. claim disagreement"
@@ -688,14 +702,16 @@ export default function FindingsPanel() {
 
       {supabaseConfigured ? (
         <section className="flex flex-col gap-4">
-          <span className="babel-eyebrow">Agent dynamics</span>
+          <h2 className="babel-display babel-display-section m-0">
+            Agent dynamics
+          </h2>
           {agentDynamics.n < 5 ? (
             <p className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-surface)] px-4 py-6 text-center babel-meta text-[var(--text-secondary)]">
               Run 5 debates to unlock agent personality patterns.
             </p>
           ) : (
             <>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
+              <div className="metric-card-row">
                 <StatCard
                   title="Most combative round"
                   value={
@@ -772,7 +788,7 @@ export default function FindingsPanel() {
                 />
               </div>
               <div className="rounded-forge-card border border-[var(--border)] bg-[var(--bg-metric)] p-4">
-                <h3 className="mb-4 babel-eyebrow">
+                <h3 className="babel-display babel-display-card mb-4">
                   Personality patterns
                 </h3>
                 <div className="space-y-4">
@@ -1066,33 +1082,35 @@ export default function FindingsPanel() {
 
           <div className="flex flex-wrap items-center justify-between gap-3 babel-meta">
             <span>
-              Page {safePage} of {totalPages}
-              <span className="mx-2 text-[var(--ink-faint)]" aria-hidden>
-                |
-              </span>
               {filteredSorted.length} debate
               {filteredSorted.length !== 1 ? 's' : ''}
             </span>
-            <div className="action-group">
-              <button
-                type="button"
-                disabled={safePage <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="babel-btn babel-btn-ghost"
-              >
-                Previous
-              </button>
-              <button
-                type="button"
-                disabled={safePage >= totalPages}
-                onClick={() =>
-                  setPage((p) => Math.min(totalPages, p + 1))
-                }
-                className="babel-btn babel-btn-ghost"
-              >
-                Next
-              </button>
-            </div>
+            <nav className="findings-pagination" aria-label="Findings pages">
+              {pageItems(safePage, totalPages).map((item, i) =>
+                item === 'ellipsis' ? (
+                  <span
+                    key={`e-${i}`}
+                    className="findings-pagination-ellipsis"
+                    aria-hidden
+                  >
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    type="button"
+                    className={`findings-pagination-page${
+                      item === safePage ? ' is-current' : ''
+                    }`}
+                    aria-label={`Page ${item}`}
+                    aria-current={item === safePage ? 'page' : undefined}
+                    onClick={() => setPage(item)}
+                  >
+                    {item}
+                  </button>
+                )
+              )}
+            </nav>
           </div>
         </>
       ) : null}

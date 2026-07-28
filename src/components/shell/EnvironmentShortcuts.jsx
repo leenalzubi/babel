@@ -1,5 +1,4 @@
 import {
-  Beaker,
   BookOpen,
   Code2,
   Scale,
@@ -9,7 +8,8 @@ import {
 import TrashTrigger from '../easterEggs/TrashTrigger.jsx'
 
 /**
- * Desktop-only environmental shortcuts flanking the app window.
+ * Desktop-only environmental shortcuts flanking the wide top bar.
+ * Vertical columns stay mid-screen; horizontal position tracks the chrome bar edges.
  * @param {{
  *   activeTab: 'babel' | 'findings' | 'lab' | 'about' | 'method',
  *   onNavigate: (tab: 'babel' | 'findings' | 'lab' | 'about' | 'method') => void,
@@ -30,7 +30,6 @@ export default function EnvironmentShortcuts({
   const left = [
     { id: 'babel', label: 'Debate', Icon: Swords },
     { id: 'findings', label: 'Findings', Icon: Search },
-    { id: 'lab', label: 'Lab', Icon: Beaker },
   ]
   const right = [
     { id: 'method', label: 'Method', Icon: Scale },
@@ -54,7 +53,9 @@ export default function EnvironmentShortcuts({
                 activeTab === id ? ' is-active' : ''
               }`}
               aria-current={activeTab === id ? 'page' : undefined}
-              onClick={() => onNavigate(/** @type {'babel' | 'findings' | 'lab'} */ (id))}
+              onClick={() =>
+                onNavigate(/** @type {'babel' | 'findings'} */ (id))
+              }
             >
               <span className="babel-env-shortcut-icon" aria-hidden>
                 <Icon strokeWidth={1.75} />
@@ -88,9 +89,7 @@ export default function EnvironmentShortcuts({
                 }`}
                 aria-current={activeTab === item.id ? 'page' : undefined}
                 onClick={() =>
-                  onNavigate(
-                    /** @type {'method' | 'about'} */ (item.id)
-                  )
+                  onNavigate(/** @type {'method' | 'about'} */ (item.id))
                 }
               >
                 <span className="babel-env-shortcut-icon" aria-hidden>

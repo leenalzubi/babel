@@ -81,15 +81,17 @@ export default function BabelShell({
           debateComplete={debateComplete}
         />
         <div className="babel-shell-foreground">
-          <GlobalNav
-            activeTab={activeTab}
-            onNavigate={onNavigate}
-            onOpenSettings={onOpenSettings}
-            onStartDebate={onStartDebate}
-            settingsControl={settingsControl}
-            lineageMode={lineageMode}
-            onToggleLineageMode={onToggleLineageMode}
-          />
+          <header className="babel-chrome">
+            <GlobalNav
+              activeTab={activeTab}
+              onNavigate={onNavigate}
+              onOpenSettings={onOpenSettings}
+              onStartDebate={onStartDebate}
+              settingsControl={settingsControl}
+              lineageMode={lineageMode}
+              onToggleLineageMode={onToggleLineageMode}
+            />
+          </header>
           <EnvironmentShortcuts
             activeTab={activeTab}
             onNavigate={onNavigate}

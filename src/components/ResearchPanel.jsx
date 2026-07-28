@@ -1,10 +1,8 @@
-import { BUILDER_NOTE_STORAGE_KEY } from './BuilderNote.jsx'
 import Eyebrow from './Eyebrow.jsx'
 import PageHeader from './layout/PageHeader.jsx'
 import ReadingColumn from './layout/ReadingColumn.jsx'
 import { useEasterEggDiscovery } from '../hooks/useEasterEggDiscovery.js'
-import { useTrash } from './easterEggs/TrashContext.jsx'
-import React, { useRef } from 'react'
+import React from 'react'
 
 /** About tab content: editorial layout, light and spacious. */
 
@@ -156,46 +154,20 @@ function DirectionCard({ title, children }) {
  */
 export default function ResearchPanel({ onOpenArchive }) {
   const { archiveUnlocked } = useEasterEggDiscovery()
-  const { openTrash } = useTrash()
-  const trashRef = useRef(/** @type {HTMLButtonElement | null} */ (null))
 
   return (
     <article className="reading-page" aria-label="About Babel">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={() => {
-            try {
-              window.localStorage.removeItem(BUILDER_NOTE_STORAGE_KEY)
-            } catch {
-              /* ignore */
-            }
-            window.location.reload()
-          }}
-          className="babel-btn babel-btn-quiet px-2"
-        >
-          Show builder&apos;s note again
-        </button>
-        <div className="flex flex-wrap items-center gap-3">
+      {archiveUnlocked && onOpenArchive ? (
+        <div className="mb-6 flex flex-wrap items-center justify-end gap-3">
           <button
-            ref={trashRef}
             type="button"
-            className="babel-trash-inline-trigger easter-archive-link"
-            onClick={() => openTrash(trashRef.current)}
+            className="easter-archive-link"
+            onClick={onOpenArchive}
           >
-            Trash
+            Archive
           </button>
-          {archiveUnlocked && onOpenArchive ? (
-            <button
-              type="button"
-              className="easter-archive-link"
-              onClick={onOpenArchive}
-            >
-              Archive
-            </button>
-          ) : null}
         </div>
-      </div>
+      ) : null}
 
       <PageHeader
         eyebrow="About Babel"

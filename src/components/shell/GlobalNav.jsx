@@ -4,7 +4,7 @@ import { markEasterEggDiscovered } from '../../lib/easterEggs/discoveryStore.js'
 /**
  * Compact global navigation over the environment.
  * @param {{
- *   activeTab: 'babel' | 'findings' | 'lab' | 'about' | 'method',
+ *   activeTab: 'babel' | 'findings' | 'method' | 'about',
  *   onNavigate: (tab: 'babel' | 'findings' | 'lab' | 'about' | 'method') => void,
  *   onOpenSettings: () => void,
  *   onStartDebate: () => void,
@@ -22,11 +22,10 @@ export default function GlobalNav({
   lineageMode = false,
   onToggleLineageMode,
 }) {
-  /** @type {{ id: 'babel' | 'findings' | 'lab' | 'method' | 'about', label: string }[]} */
+  /** @type {{ id: 'babel' | 'findings' | 'method' | 'about', label: string }[]} */
   const links = [
     { id: 'babel', label: 'Debate' },
     { id: 'findings', label: 'Findings' },
-    { id: 'lab', label: 'Lab' },
     { id: 'method', label: 'Method' },
     { id: 'about', label: 'About' },
   ]

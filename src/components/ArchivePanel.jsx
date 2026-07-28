@@ -18,10 +18,10 @@ export default function ArchivePanel() {
         <div className="babel-prose space-y-8">
           {ARCHIVE_CONTENT.sections.map((section) => (
             <section key={section.heading}>
-              <h2 className="mb-3 font-[family-name:var(--font-display)] text-[1.35rem] font-semibold text-[var(--ink)]">
+              <h2 className="babel-display babel-display-section mb-3">
                 {section.heading}
               </h2>
-              <p className="text-[var(--ink-soft)]">{section.body}</p>
+              <p className="babel-prose mb-0">{section.body}</p>
             </section>
           ))}
         </div>

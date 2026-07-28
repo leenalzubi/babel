@@ -105,14 +105,11 @@ function parseAppRoute(pathname) {
   if (path === '/archive') return { tab: 'archive' }
   if (path === '/lab' || path.startsWith('/lab/')) {
     const rest = path === '/lab' ? '' : path.slice('/lab'.length)
-    if (!rest || rest === '/') {
-      return { tab: 'lab', labView: 'index', caseSlug: null }
-    }
+    // Lab index/cases are not public yet; only methodology stays reachable via Method.
     if (rest === '/methodology') {
       return { tab: 'lab', labView: 'methodology', caseSlug: null }
     }
-    const slug = rest.replace(/^\//, '').split('/').filter(Boolean)[0] ?? null
-    return { tab: 'lab', labView: 'case', caseSlug: slug }
+    return { tab: 'babel' }
   }
   return { tab: 'babel' }
 }
@@ -272,30 +269,30 @@ export default function App() {
 
   const navigateMainTab = useCallback(
     /** @param {'babel' | 'findings' | 'about' | 'lab' | 'archive'} tab */ (tab) => {
-      const route =
-        tab === 'lab'
-          ? { tab: 'lab', labView: /** @type {const} */ ('index'), caseSlug: null }
-          : { tab }
-      setMainTab(tab)
-      if (tab === 'lab') {
-        setLabRoute({ view: 'index', caseSlug: null })
-      }
+      // Lab index is not public yet.
+      const nextTab = tab === 'lab' ? 'babel' : tab
+      const route = { tab: nextTab }
+      setMainTab(nextTab)
       window.history.pushState(route, '', hrefForAppRoute(route))
     },
     []
   )
 
   const navigateLab = useCallback((next) => {
+    // Only methodology remains reachable (Method tab). Index/cases stay hidden.
+    if (next.view !== 'methodology') {
+      const route = { tab: /** @type {const} */ ('babel') }
+      setMainTab('babel')
+      window.history.pushState(route, '', hrefForAppRoute(route))
+      return
+    }
     const route = {
       tab: /** @type {const} */ ('lab'),
-      labView: next.view,
-      caseSlug: next.caseSlug ?? null,
+      labView: /** @type {const} */ ('methodology'),
+      caseSlug: null,
     }
     setMainTab('lab')
-    setLabRoute({
-      view: next.view,
-      caseSlug: next.caseSlug ?? null,
-    })
+    setLabRoute({ view: 'methodology', caseSlug: null })
     window.history.pushState(route, '', hrefForAppRoute(route))
   }, [])
 
@@ -303,6 +300,10 @@ export default function App() {
     /** @param {'babel' | 'findings' | 'lab' | 'about' | 'method'} tab */ (tab) => {
       if (tab === 'method') {
         navigateLab({ view: 'methodology', caseSlug: null })
+        return
+      }
+      if (tab === 'lab') {
+        navigateMainTab('babel')
         return
       }
       navigateMainTab(tab)
@@ -313,8 +314,12 @@ export default function App() {
   useEffect(() => {
     const path = window.location.pathname
     const parsed = parseAppRoute(path)
-    if (window.history.state?.tab !== parsed.tab) {
-      window.history.replaceState(parsed, '', hrefForAppRoute(parsed))
+    const href = hrefForAppRoute(parsed)
+    if (
+      window.history.state?.tab !== parsed.tab ||
+      window.location.pathname !== href
+    ) {
+      window.history.replaceState(parsed, '', href)
     }
   }, [])
 
@@ -328,7 +333,7 @@ export default function App() {
               event.state
             )
           : null
-      const route =
+      let route =
         parsed &&
         (parsed.tab === 'babel' ||
           parsed.tab === 'findings' ||
@@ -346,11 +351,17 @@ export default function App() {
               caseSlug: parsed.caseSlug ?? null,
             }
           : parseAppRoute(window.location.pathname)
+
+      // Lab index/cases are hidden; only methodology remains.
+      if (route.tab === 'lab' && route.labView !== 'methodology') {
+        route = { tab: 'babel' }
+      }
+
       setMainTab(route.tab)
       if (route.tab === 'lab') {
         setLabRoute({
-          view: route.labView ?? 'index',
-          caseSlug: route.caseSlug ?? null,
+          view: 'methodology',
+          caseSlug: null,
         })
       }
     }
@@ -464,11 +475,6 @@ export default function App() {
     runDebate(p, cfg)
   }, [promptDraft, cfg, runDebate])
 
-  const handleReset = useCallback(() => {
-    dispatch({ type: 'RESET' })
-    setPromptDraft('')
-  }, [dispatch])
-
   const promptInputRef = useRef(
     /** @type {{ focusPrompt: () => void } | null} */ (null)
   )
@@ -512,11 +518,11 @@ export default function App() {
 
   const mobileAction = useMemo(() => {
     if (running) {
-      return { label: 'Convening…', action: handleRun, disabled: true }
+      return { label: 'Starting…', action: handleRun, disabled: true }
     }
     if (showEmptyState || !state.prompt) {
       return {
-        label: 'Convene',
+        label: 'Start debate',
         action: handleRun,
         disabled: promptDraft.trim().length < 20,
       }
@@ -679,15 +685,13 @@ export default function App() {
   const shellWindowTitle =
     shellNavTab === 'method'
       ? 'How Babel Works'
-      : mainTab === 'findings'
-        ? 'Babel - Findings'
+      : mainTab === 'findings' || mainTab === 'lab'
+        ? ''
         : mainTab === 'about'
           ? 'About Babel'
           : mainTab === 'archive'
             ? 'The Babel Archive'
-            : mainTab === 'lab'
-              ? 'Babel Lab'
-              : ''
+            : ''
 
   const debateComplete =
     state.status === 'complete' || state.status === 'complete_with_gaps'
@@ -751,7 +755,7 @@ export default function App() {
     ) : null
 
   return (
-    <div className="relative min-h-dvh w-full text-[var(--text-primary)]">
+    <div className="relative h-dvh w-full overflow-hidden text-[var(--text-primary)]">
       <BabelShell
         activeTab={shellNavTab}
         windowTitle={shellWindowTitle}
@@ -784,7 +788,7 @@ export default function App() {
           <ResearchPanel onOpenArchive={() => navigateMainTab('archive')} />
         ) : mainTab === 'archive' ? (
           <ArchivePanel />
-        ) : mainTab === 'lab' ? (
+        ) : mainTab === 'lab' && labRoute.view === 'methodology' ? (
           <LabPanel
             route={labRoute}
             onNavigate={navigateLab}
@@ -801,7 +805,6 @@ export default function App() {
                 value={promptDraft}
                 onChange={setPromptDraft}
                 onRun={handleRun}
-                onReset={handleReset}
                 disabled={running}
               />
             </div>

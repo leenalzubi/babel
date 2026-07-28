@@ -13,15 +13,16 @@ describe('visual system primitives', () => {
     const css = readFileSync(join(root, 'src/index.css'), 'utf8')
     const theme = readFileSync(join(root, 'src/styles/theme.css'), 'utf8')
     expect(theme).toMatch(/--stage:\s*1180px/)
-    expect(theme).toMatch(/--shell-inset:\s*240px/)
+    expect(theme).toMatch(/--chrome:\s*2400px/)
+    expect(theme).toMatch(/--shell-inset:\s*160px/)
     expect(theme).toMatch(/--reading:\s*44rem/)
-    expect(theme).toMatch(/--text-body:\s*1\.125rem/)
-    expect(theme).toMatch(/--text-lede:\s*1\.25rem/)
-    expect(theme).toMatch(/--text-meta:\s*0\.9375rem/)
-    expect(theme).toMatch(/--text-label:\s*0\.875rem/)
-    expect(theme).toMatch(/--text-eyebrow:\s*0\.8125rem/)
-    expect(theme).toMatch(/--text-mono:\s*0\.8125rem/)
-    expect(theme).toMatch(/--text-control:\s*1rem/)
+    expect(theme).toMatch(/--text-body:\s*1rem/)
+    expect(theme).toMatch(/--text-lede:\s*1\.0625rem/)
+    expect(theme).toMatch(/--text-meta:\s*0\.8125rem/)
+    expect(theme).toMatch(/--text-label:\s*0\.75rem/)
+    expect(theme).toMatch(/--text-eyebrow:\s*0\.6875rem/)
+    expect(theme).toMatch(/--text-mono:\s*0\.75rem/)
+    expect(theme).toMatch(/--text-control:\s*0\.875rem/)
     expect(theme).toMatch(/--s-9:\s*80px/)
     expect(theme).toMatch(/--radius-window:\s*20px/)
     expect(theme).toMatch(/--shadow-window:/)
@@ -31,13 +32,17 @@ describe('visual system primitives', () => {
     expect(theme).toMatch(/--gap-eyebrow:\s*var\(--s-2\)/)
     expect(theme).toMatch(/--gap-lede:\s*var\(--s-3\)/)
     expect(css).toMatch(/\.babel-eyebrow \+ \.babel-lede/)
-    expect(theme).toMatch(/--font-display:\s*Arial, Helvetica, sans-serif/)
-    expect(theme).toMatch(/--font-body:\s*Arial, Helvetica, sans-serif/)
-    expect(theme).toMatch(/--font-mono:\s*Arial, Helvetica, sans-serif/)
-    expect(css).toMatch(/@theme[\s\S]*--font-mono:\s*Arial, Helvetica, sans-serif/)
+    expect(theme).toMatch(/--font-display:\s*'Inter', system-ui, sans-serif/)
+    expect(theme).toMatch(/--font-body:\s*'Inter', system-ui, sans-serif/)
+    expect(theme).toMatch(/--font-mono:\s*'Inter', system-ui, sans-serif/)
+    expect(css).toMatch(/@theme[\s\S]*--font-sans:\s*var\(--font-body\)/)
+    expect(css).toMatch(/\.babel-display\s*\{[\s\S]*font-family:\s*var\(--font-display\)/)
+    expect(css).toMatch(
+      /\.babel-global-wordmark\s*\{[\s\S]*font-family:\s*var\(--font-display\)/
+    )
     expect(css).toMatch(/\.babel-display-page/)
     expect(css).toMatch(
-      /\.babel-display-page\s*\{[\s\S]*font-size:\s*clamp\(2\.5rem/
+      /\.babel-display-page\s*\{[\s\S]*font-size:\s*clamp\(1\.5rem/
     )
     expect(css).toMatch(/\.babel-btn\s*\{[\s\S]*min-height:\s*48px/)
     expect(css).toMatch(/\.app-tab\s*\{[\s\S]*min-height:\s*48px/)
@@ -49,11 +54,18 @@ describe('visual system primitives', () => {
 
   it('keeps the shell calm: opaque surfaces, quiet shortcuts, visible wordmark', () => {
     const css = readFileSync(join(root, 'src/index.css'), 'utf8')
+    const theme = readFileSync(join(root, 'src/styles/theme.css'), 'utf8')
     expect(css).toMatch(
-      /\.babel-global-wordmark\s*\{[\s\S]*font-size:\s*2rem/
+      /\.babel-global-wordmark\s*\{[\s\S]*font-size:\s*1\.25rem/
     )
-    expect(css).toMatch(/\.babel-env-shortcut\s*\{[\s\S]*width:\s*74px/)
+    expect(css).toMatch(/\.babel-env-shortcut\s*\{[\s\S]*width:\s*var\(--env-rail\)/)
     expect(css).toMatch(/calc\(100vw - var\(--shell-inset/)
+    expect(css).toMatch(/\.babel-chrome\s*\{/)
+    expect(theme).toMatch(/--env-rail:\s*74px/)
+    expect(theme).toMatch(/--chrome:\s*2400px/)
+    expect(css).toMatch(
+      /\.babel-env-shortcuts-col--left\s*\{[\s\S]*var\(--chrome-width\)/
+    )
     expect(css).not.toMatch(/backdrop-filter:\s*blur/)
     expect(css).toMatch(/\.babel-environment-veil[\s\S]*0\.14/)
     expect(css).toMatch(/\.builder-note\s*\{[\s\S]*width:\s*min\(380px/)
@@ -127,6 +139,10 @@ describe('visual system primitives', () => {
     expect(css).toMatch(/\.babel-shell/)
     expect(css).toMatch(/\.babel-environment/)
     expect(css).toMatch(/\.babel-app-window/)
+    expect(css).toMatch(
+      /\.babel-app-window-body\s*\{[\s\S]*overflow-y:\s*auto/
+    )
+    expect(css).toMatch(/\.babel-shell\s*\{[\s\S]*overflow:\s*hidden/)
     expect(css).toMatch(/\.babel-global-nav/)
   })
 

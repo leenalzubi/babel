@@ -30,8 +30,6 @@ export default function LabIndex({ catalog, onOpenCase, onOpenMethodology }) {
   return (
     <div className="hybrid-page">
       <PageHeader
-        className="mb-0 page-intro"
-        eyebrow="Public evaluation"
         title="Babel Lab"
         titleId="lab-title"
         lede="A public record of where structured model debate helps, where it does not, and what it costs."

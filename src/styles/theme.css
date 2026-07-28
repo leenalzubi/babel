@@ -58,19 +58,23 @@
 
   /* layout */
   --stage: 1180px;
+  /* Wide top bar; grows with the viewport, rails sit flush outside its ends */
+  --chrome: 2400px;
   --reading: 44rem;
   --measure: var(--reading);
   --maxw: var(--stage);
-  --shell-inset: 240px;
+  --shell-inset: 160px;
+  --env-rail: 74px;
+  --env-rail-gap: 0px;
 
   /* Type scale */
-  --text-body: 1.125rem; /* 18px */
-  --text-lede: 1.25rem; /* 20px */
-  --text-meta: 0.9375rem; /* 15px — secondary UI floor */
-  --text-label: 0.875rem; /* 14px form labels */
-  --text-eyebrow: 0.8125rem; /* 13px */
-  --text-mono: 0.8125rem; /* 13px technical */
-  --text-control: 1rem; /* 16px buttons / nav */
+  --text-body: 1rem; /* 16px */
+  --text-lede: 1.0625rem; /* 17px */
+  --text-meta: 0.8125rem; /* 13px — secondary UI floor */
+  --text-label: 0.75rem; /* 12px form labels */
+  --text-eyebrow: 0.6875rem; /* 11px */
+  --text-mono: 0.75rem; /* 12px technical */
+  --text-control: 0.875rem; /* 14px buttons / nav */
   --lh-body: 1.6;
   --lh-lede: 1.55;
   --lh-meta: 1.4;
@@ -82,9 +86,9 @@
   --shadow-window: 0 24px 64px rgba(28, 27, 20, 0.18);
 
   /* Typography roles */
-  --font-display: Arial, Helvetica, sans-serif;
-  --font-body: Arial, Helvetica, sans-serif;
-  --font-mono: Arial, Helvetica, sans-serif;
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'Inter', system-ui, sans-serif;
 
   /* ── Legacy app aliases ── */
   --bg-base: var(--limewash);

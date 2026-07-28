@@ -1,9 +1,9 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: Arial, Helvetica, sans-serif;
-  --font-serif: Arial, Helvetica, sans-serif;
-  --font-mono: Arial, Helvetica, sans-serif;
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-body);
+  --font-mono: var(--font-body);
 }
 
 html,
@@ -16,29 +16,36 @@ pre,
 code,
 kbd,
 samp {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
+}
+
+html,
+body,
+#root {
+  height: 100%;
 }
 
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: 100%;
+  overflow: hidden;
   background-color: #d4c4a8;
   color: var(--text-primary);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: var(--text-body);
   line-height: var(--lh-body);
   -webkit-font-smoothing: antialiased;
 }
 
 .font-display {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-display);
   font-weight: 700;
 }
 
 .font-mono,
 .font-sans,
 .font-serif {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
 }
 
 .shadow-forge-card {
@@ -51,7 +58,7 @@ body {
 
 /* ── Design-system type roles ── */
 .babel-eyebrow {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: var(--text-eyebrow);
   font-weight: 600;
   letter-spacing: 0;
@@ -63,7 +70,7 @@ body {
 }
 
 .babel-display {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-display);
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: 0;
@@ -72,33 +79,33 @@ body {
 }
 
 .babel-display-page {
-  font-size: clamp(2.5rem, 4vw + 1.25rem, 3.75rem);
-  line-height: 1.1;
+  font-size: clamp(1.5rem, 2vw + 0.75rem, 1.875rem);
+  line-height: 1.2;
 }
 
 .babel-display-xl {
-  font-size: clamp(2.5rem, 4vw + 1.25rem, 3.75rem);
-  line-height: 1.1;
+  font-size: clamp(1.5rem, 2vw + 0.75rem, 1.875rem);
+  line-height: 1.2;
 }
 
 .babel-display-section {
-  font-size: clamp(1.875rem, 2.5vw + 1rem, 2.5rem);
-  line-height: 1.15;
+  font-size: clamp(1.25rem, 1.4vw + 0.75rem, 1.5rem);
+  line-height: 1.25;
 }
 
 .babel-display-l {
-  font-size: clamp(1.875rem, 2.5vw + 1rem, 2.5rem);
-  line-height: 1.15;
+  font-size: clamp(1.25rem, 1.4vw + 0.75rem, 1.5rem);
+  line-height: 1.25;
 }
 
 .babel-display-card {
-  font-size: clamp(1.5rem, 1.5vw + 1rem, 2rem);
-  line-height: 1.2;
+  font-size: clamp(1.0625rem, 0.8vw + 0.75rem, 1.25rem);
+  line-height: 1.3;
 }
 
 .babel-display-heading {
-  font-size: clamp(1.5rem, 1.5vw + 1rem, 2rem);
-  line-height: 1.2;
+  font-size: clamp(1.0625rem, 0.8vw + 0.75rem, 1.25rem);
+  line-height: 1.3;
 }
 
 .babel-lede {
@@ -153,21 +160,21 @@ body {
 }
 
 .babel-meta {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: var(--text-meta);
   line-height: 1.5;
   color: var(--ink-soft);
 }
 
 .babel-meta-tech {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: var(--text-mono);
   line-height: var(--lh-meta);
   color: var(--ink-soft);
 }
 
 .babel-caption {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: var(--text-label);
   line-height: 1.5;
   color: var(--ink-soft);
@@ -184,7 +191,7 @@ body {
 }
 
 .babel-voice-name {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: var(--text-mono);
   font-weight: 500;
   letter-spacing: 0.01em;
@@ -196,8 +203,8 @@ body {
 }
 
 .babel-section-heading .babel-display {
-  font-size: clamp(1.75rem, 2.2vw + 1rem, 2.25rem);
-  line-height: 1.15;
+  font-size: clamp(1.1875rem, 1.2vw + 0.75rem, 1.375rem);
+  line-height: 1.25;
 }
 
 /* Page header: eyebrow → title → lede → actions → metadata.
@@ -301,8 +308,79 @@ body {
   min-width: 0;
 }
 
-.reading-page .page-body,
-.hybrid-page .page-intro {
+/* Content routes: calmer type than the debate workspace */
+.data-page .page-header .babel-lede,
+.reading-page .page-header .babel-lede,
+.hybrid-page .page-header .babel-lede {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.data-page .page-header .babel-lede {
+  max-width: none;
+  white-space: nowrap;
+}
+
+.data-page .babel-prose,
+.reading-page .babel-prose,
+.hybrid-page .babel-prose {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.data-page .babel-meta,
+.reading-page .babel-meta,
+.hybrid-page .babel-meta,
+.data-page .babel-caution,
+.reading-page .babel-caution,
+.hybrid-page .babel-caution {
+  font-size: 0.875rem;
+}
+
+.data-page .metric-label {
+  font-size: 0.8125rem;
+}
+
+.data-page .metric-value {
+  font-size: clamp(1.125rem, 1.5vw, 1.375rem);
+}
+
+.data-page .page-header,
+.reading-page .page-header,
+.hybrid-page .page-header {
+  margin-bottom: var(--s-5);
+}
+
+.data-page .page-header {
+  text-align: center;
+  margin-inline: auto;
+}
+
+.data-page .page-header .babel-lede {
+  margin-inline: auto;
+}
+
+.data-page .consent-banner,
+.data-page .consent-banner p {
+  text-align: center;
+  margin-inline: auto;
+}
+
+.data-page .metric-card-row {
+  justify-content: center;
+}
+
+.data-page .metric-card {
+  text-align: center;
+  align-items: center;
+}
+
+.data-page > .babel-display,
+.data-page section > .babel-display {
+  text-align: center;
+}
+
+.reading-page .page-body {
   max-width: var(--reading);
 }
 
@@ -330,7 +408,7 @@ body {
 }
 
 .app-tab {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: var(--text-control);
   font-weight: 600;
   min-height: 48px;
@@ -420,7 +498,7 @@ body {
 }
 
 .babel-table thead th {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: var(--text-label);
   font-weight: 600;
   letter-spacing: 0;
@@ -452,7 +530,7 @@ body {
 
 /* ── Buttons ── */
 .babel-btn {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--text-control);
   line-height: 1.25;
@@ -547,6 +625,26 @@ body {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--blue) 35%, transparent);
 }
 
+.babel-field.is-invalid {
+  border-color: color-mix(in srgb, var(--madder) 55%, var(--line-firm));
+}
+
+.babel-field.is-invalid:focus-within {
+  border-color: var(--madder);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--madder) 28%, transparent);
+}
+
+.babel-field-error {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--madder) 35%, transparent);
+  background: color-mix(in srgb, var(--madder) 8%, var(--plaster));
+  color: var(--madder);
+  font-size: var(--text-meta);
+  line-height: var(--lh-meta);
+}
+
 .babel-field textarea,
 .babel-field input {
   width: 100%;
@@ -616,7 +714,7 @@ body {
 }
 
 .babel-voice-stance {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: var(--text-label);
   text-transform: none;
   letter-spacing: 0;
@@ -851,14 +949,17 @@ select:focus-visible,
   }
 }
 
-/* Findings / research metric cards: content-driven, not oversized shells */
+/* Findings / research metric cards: compact, content-sized */
 .metric-card {
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 11.5rem;
   min-height: 0;
-  padding: var(--s-5);
+  padding: var(--s-3) var(--s-4);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: var(--s-2);
+  gap: 0.25rem;
   border-radius: var(--radius);
   border: 1px solid var(--line);
   background: var(--bg-metric);
@@ -866,7 +967,7 @@ select:focus-visible,
 
 .metric-label {
   margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: var(--text-meta);
   font-weight: 600;
   letter-spacing: 0;
@@ -876,7 +977,7 @@ select:focus-visible,
 
 .metric-value {
   margin: 0;
-  font-size: clamp(1.45rem, 2vw, 1.75rem);
+  font-size: clamp(1.25rem, 1.5vw, 1.5rem);
   font-weight: 600;
   line-height: 1.15;
   color: var(--ink);
@@ -890,10 +991,17 @@ select:focus-visible,
 }
 
 .metric-subtitle {
-  margin: 0.4rem 0 0;
-  font-size: var(--text-meta);
-  line-height: 1.4;
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
   color: var(--ink-soft);
+}
+
+.metric-card-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  align-items: stretch;
 }
 
 .methodology-note {
@@ -901,6 +1009,51 @@ select:focus-visible,
   line-height: 1.55;
   font-style: italic;
   color: var(--ink-soft);
+}
+
+.findings-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.findings-pagination-page {
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0 0.45rem;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--plaster-hi);
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+  font-size: var(--text-meta);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.findings-pagination-page:hover {
+  border-color: var(--blue);
+  color: var(--ink);
+}
+
+.findings-pagination-page.is-current {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--plaster-hi);
+  cursor: default;
+}
+
+.findings-pagination-page:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.findings-pagination-ellipsis {
+  min-width: 1.25rem;
+  text-align: center;
+  color: var(--ink-faint);
+  user-select: none;
 }
 
 .consent-banner p {
@@ -911,7 +1064,7 @@ select:focus-visible,
 }
 
 .role-name {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: var(--text-label);
   font-weight: 600;
   line-height: 1.25;
@@ -919,7 +1072,7 @@ select:focus-visible,
 }
 
 .model-name {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: var(--text-mono);
   line-height: 1.3;
   color: var(--ink-soft);
@@ -1006,7 +1159,7 @@ select:focus-visible,
 /* ── Project credit footer ── */
 .credit {
   color: var(--ink-soft);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: var(--text-meta);
   font-weight: 400;
   line-height: 1.6;
@@ -1155,7 +1308,7 @@ select:focus-visible,
 
 .easter-egg-name {
   margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 650;
   line-height: 1.3;
@@ -1164,7 +1317,7 @@ select:focus-visible,
 
 .easter-egg-meta {
   margin: 0.3rem 0 0;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 0.875rem;
   line-height: 1.45;
   color: var(--ink-soft);
@@ -1173,7 +1326,7 @@ select:focus-visible,
 .easter-egg-link {
   display: inline-block;
   margin-top: 0.7rem;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--blue);
@@ -1195,7 +1348,7 @@ select:focus-visible,
 
 .easter-egg-inscription {
   margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 1.05rem;
   font-weight: 500;
   line-height: 1.45;
@@ -1237,7 +1390,7 @@ select:focus-visible,
   height: 100%;
   align-items: center;
   justify-content: center;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 1.15rem;
   font-weight: 500;
   color: var(--blue-deep);
@@ -1341,7 +1494,7 @@ select:focus-visible,
 }
 
 .easter-archive-link {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--blue);
@@ -1393,7 +1546,7 @@ select:focus-visible,
 .easter-lineage-notice-text {
   margin: 0;
   flex: 1 1 auto;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 0.9375rem;
   color: var(--ink);
 }
@@ -1401,7 +1554,7 @@ select:focus-visible,
 .easter-archive-notice-link,
 .easter-lineage-notice-exit,
 .easter-archive-notice-dismiss {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--blue);
@@ -1518,8 +1671,10 @@ html[data-lineage-mode] .claim-block {
 /* ── Babylon environment shell ── */
 .babel-shell {
   position: relative;
-  min-height: 100dvh;
+  height: 100dvh;
+  max-height: 100dvh;
   width: 100%;
+  overflow: hidden;
   color: var(--text-primary);
 }
 
@@ -1584,44 +1739,62 @@ html[data-lineage-mode] .claim-block {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .babel-global-nav {
-  position: sticky;
-  top: 0;
+  flex: 0 0 auto;
+  position: relative;
   z-index: 40;
-  padding: 10px 12px;
-  padding-top: calc(10px + env(safe-area-inset-top, 0px));
+  width: 100%;
+  padding: 0;
 }
 
 .babel-global-nav-inner {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 10px;
-  width: min(1180px, calc(100vw - 24px));
-  max-width: 1180px;
-  margin-inline: auto;
-  min-height: 52px;
-  padding: 4px 14px;
+  gap: 4px 8px;
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  min-height: 40px;
+  padding: 2px 12px;
   border-radius: var(--radius-nav);
   border: 1px solid var(--border-primary);
   background: color-mix(in srgb, var(--plaster) 96%, transparent);
   box-shadow: 0 2px 10px rgba(28, 27, 20, 0.06);
 }
 
+/* Longer top Babel bar; side icons stay vertical and track its edges */
+.babel-chrome {
+  flex: 0 0 auto;
+  width: min(var(--chrome), calc(100vw - 24px));
+  max-width: 100%;
+  margin-inline: auto;
+  padding: 10px 12px 0;
+  padding-top: calc(10px + env(safe-area-inset-top, 0px));
+  z-index: 40;
+}
+
+.babel-env-shortcuts {
+  display: none;
+}
+
 .babel-global-wordmark {
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 2rem;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--ink);
   background: transparent;
   border: none;
   cursor: pointer;
-  min-height: 44px;
+  min-height: 32px;
   padding: 0 4px;
+  line-height: 1;
 }
 
 .babel-global-wordmark:focus-visible {
@@ -1640,15 +1813,15 @@ html[data-lineage-mode] .claim-block {
 }
 
 .babel-global-link {
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: var(--text-control);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
   font-weight: 500;
   color: var(--ink-soft);
   background: transparent;
   border: none;
-  border-radius: 8px;
-  min-height: 44px;
-  padding: 10px 14px;
+  border-radius: 6px;
+  min-height: 32px;
+  padding: 4px 10px;
   cursor: pointer;
   text-decoration: none;
   display: inline-flex;
@@ -1684,16 +1857,16 @@ html[data-lineage-mode] .claim-block {
 }
 
 .babel-global-icon-btn {
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 0.875rem;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--ink-soft);
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 8px;
-  min-height: 44px;
-  min-width: 44px;
-  padding: 0 0.65rem;
+  border-radius: 6px;
+  min-height: 32px;
+  min-width: 32px;
+  padding: 0 0.5rem;
   cursor: pointer;
 }
 
@@ -1709,24 +1882,30 @@ html[data-lineage-mode] .claim-block {
 }
 
 .babel-global-cta {
-  min-height: 48px;
-  padding-inline: 1.1rem;
-  font-size: var(--text-control);
+  min-height: 32px;
+  padding-inline: 0.85rem;
+  font-size: 0.875rem;
 }
 
 .babel-shell-stage {
   width: 100%;
   flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: 8px 10px 16px;
   padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 }
 
 .babel-app-window {
   width: 100%;
-  min-height: calc(100dvh - 100px);
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
   margin: 0 auto;
   border-radius: 18px;
-  overflow: clip;
+  overflow: hidden;
   border: 1px solid rgba(27, 44, 67, 0.18);
   background: color-mix(in srgb, var(--plaster) 97%, transparent);
   box-shadow: var(--shadow-window);
@@ -1754,7 +1933,7 @@ html[data-lineage-mode] .claim-block {
 
 .babel-window-title {
   margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-display);
   font-size: var(--text-control);
   font-weight: 600;
   color: var(--ink);
@@ -1776,7 +1955,7 @@ html[data-lineage-mode] .claim-block {
 }
 
 .babel-model-identity-role {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 0.8125rem;
   font-weight: 600;
   line-height: 1.25;
@@ -1784,7 +1963,7 @@ html[data-lineage-mode] .claim-block {
 }
 
 .babel-model-identity-model {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: var(--text-mono);
   font-weight: 450;
   line-height: 1.3;
@@ -1794,7 +1973,12 @@ html[data-lineage-mode] .claim-block {
 .babel-app-window-body {
   flex: 1 1 auto;
   min-width: 0;
+  min-height: 0;
   padding: 24px 20px 28px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .babel-app-window-body > .stage,
@@ -1830,13 +2014,13 @@ html[data-lineage-mode] .claim-block {
 }
 
 @media (min-width: 600px) {
-  .babel-global-nav {
-    padding: 12px 20px;
+  .babel-chrome {
+    padding: 12px 20px 0;
   }
 
   .babel-global-nav-inner {
-    padding: 4px 14px;
-    min-height: 54px;
+    padding: 2px 12px;
+    min-height: 40px;
     border-radius: var(--radius-nav);
   }
 
@@ -1864,29 +2048,39 @@ html[data-lineage-mode] .claim-block {
   }
 }
 
-/* Desktop framed workspace with environment margins */
+/* Desktop: wide top bar; side buttons align to its ends (not the middle window) */
 @media (min-width: 1180px) {
-  .babel-global-nav {
-    padding: 16px 24px 0;
+  .babel-shell {
+    --chrome-width: min(
+      var(--chrome),
+      calc(100vw - 2 * (var(--env-rail) + var(--env-rail-gap) + 8px))
+    );
+    --stage-width: min(var(--stage), calc(100vw - var(--shell-inset)));
+  }
+
+  .babel-chrome {
+    width: var(--chrome-width);
+    padding: 16px 0 0;
   }
 
   .babel-global-nav-inner {
-    width: min(1180px, calc(100vw - var(--shell-inset, 240px)));
-    padding: 6px 12px;
-    border-radius: 12px;
+    width: 100%;
+    padding: 2px 14px;
+    border-radius: 10px;
     background: rgba(244, 239, 222, 0.88);
     box-shadow: 0 4px 16px rgba(30, 29, 20, 0.07);
   }
 
   .babel-shell-stage {
-    /* Room for side shortcuts + visible Babylon margins */
-    padding: 20px max(120px, calc((100vw - min(1180px, calc(100vw - var(--shell-inset, 240px)))) / 2 - 8px)) 40px;
+    padding: 16px
+      max(24px, calc((100vw - var(--stage-width)) / 2))
+      24px;
   }
 
   .babel-app-window {
-    width: min(1180px, calc(100vw - var(--shell-inset, 240px)));
-    min-height: calc(100vh - 140px);
-    margin: 52px auto 48px;
+    width: var(--stage-width);
+    min-height: 0;
+    margin: 0 auto;
     border-radius: 22px;
     background: rgba(244, 239, 222, 0.94);
     box-shadow:
@@ -1895,7 +2089,6 @@ html[data-lineage-mode] .claim-block {
   }
 
   .babel-app-window--workspace {
-    /* Debate: slightly more opaque for long work sessions */
     background: rgba(244, 239, 222, 0.96);
   }
 
@@ -1908,14 +2101,7 @@ html[data-lineage-mode] .claim-block {
   .babel-window-titlebar {
     min-height: 48px;
   }
-}
 
-/* Environment side shortcuts — large screens only */
-.babel-env-shortcuts {
-  display: none;
-}
-
-@media (min-width: 1180px) {
   .babel-env-shortcuts {
     display: contents;
   }
@@ -1933,12 +2119,25 @@ html[data-lineage-mode] .claim-block {
     list-style: none;
   }
 
+  /* Outer edge of bar = inner edge of rail (+ gap) */
   .babel-env-shortcuts-col--left {
-    left: max(12px, calc((100vw - min(1180px, calc(100vw - var(--shell-inset, 240px)))) / 2 - 96px));
+    left: max(
+      8px,
+      calc(
+        (100vw - var(--chrome-width)) / 2 - var(--env-rail) -
+          var(--env-rail-gap)
+      )
+    );
   }
 
   .babel-env-shortcuts-col--right {
-    right: max(12px, calc((100vw - min(1180px, calc(100vw - var(--shell-inset, 240px)))) / 2 - 96px));
+    right: max(
+      8px,
+      calc(
+        (100vw - var(--chrome-width)) / 2 - var(--env-rail) -
+          var(--env-rail-gap)
+      )
+    );
   }
 
   .babel-env-shortcut {
@@ -1947,7 +2146,7 @@ html[data-lineage-mode] .claim-block {
     align-items: center;
     justify-content: center;
     gap: 6px;
-    width: 74px;
+    width: var(--env-rail);
     min-height: 68px;
     padding: 10px 8px;
     border-radius: 12px;
@@ -1990,7 +2189,7 @@ html[data-lineage-mode] .claim-block {
   }
 
   .babel-env-shortcut-label {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--font-body);
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.02em;
@@ -2054,7 +2253,7 @@ html[data-lineage-mode] .claim-block {
 }
 
 .babel-trash-nav-label {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 0.65rem;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -2113,14 +2312,14 @@ html[data-lineage-mode] .claim-block {
 
 .babel-trash-title {
   margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 1.15rem;
   font-weight: 550;
   color: var(--ink);
 }
 
 .babel-trash-close {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--blue);
@@ -2165,7 +2364,7 @@ html[data-lineage-mode] .claim-block {
   background: transparent;
   color: var(--ink);
   cursor: pointer;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
 }
 
 .babel-trash-item:hover {
@@ -2204,7 +2403,7 @@ html[data-lineage-mode] .claim-block {
 }
 
 .babel-trash-action {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--plaster-hi);
@@ -2250,7 +2449,7 @@ html[data-lineage-mode] .claim-block {
 
 .babel-trash-error-title {
   margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 650;
   color: var(--ink);
@@ -2258,7 +2457,7 @@ html[data-lineage-mode] .claim-block {
 
 .babel-trash-error-body {
   margin: 0.55rem 0 0;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 0.9375rem;
   line-height: 1.45;
   color: var(--ink-soft);
@@ -2266,7 +2465,7 @@ html[data-lineage-mode] .claim-block {
 
 .babel-trash-error-close {
   margin-top: 1rem;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--plaster-hi);
@@ -2340,16 +2539,16 @@ html[data-lineage-mode] .claim-block {
 
 .builder-note-heading {
   margin: 0 0 0.45rem;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-display);
   font-size: 1.25rem;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.25;
   color: var(--ink);
 }
 
 .builder-note-text {
   margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 1rem;
   line-height: 1.55;
   color: var(--ink-soft);
@@ -2386,7 +2585,7 @@ html[data-lineage-mode] .claim-block {
   height: 100%;
   align-items: center;
   justify-content: center;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 1.75rem;
   font-weight: 500;
   color: var(--plaster-hi);

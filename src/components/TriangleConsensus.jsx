@@ -174,10 +174,10 @@ export default function TriangleConsensus({
       >
         <defs>
           <style>{`
-            .tc-edge-label { font-family: Arial, Helvetica, sans-serif; font-size: 14px; font-weight: 500; fill: var(--text-secondary); }
-            .tc-center-pct { font-family: Arial, Helvetica, sans-serif; font-size: 26px; font-weight: 700; fill: var(--text-primary); }
-            .tc-center-sub { font-family: Arial, Helvetica, sans-serif; font-size: 11px; font-weight: 500; fill: var(--text-muted); }
-            .tc-init { font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-weight: 700; fill: #fff; }
+            .tc-edge-label { font-family: var(--font-body); font-size: 14px; font-weight: 500; fill: var(--text-secondary); }
+            .tc-center-pct { font-family: var(--font-display); font-size: 26px; font-weight: 700; fill: var(--text-primary); }
+            .tc-center-sub { font-family: var(--font-body); font-size: 11px; font-weight: 500; fill: var(--text-muted); }
+            .tc-init { font-family: var(--font-body); font-size: 12px; font-weight: 700; fill: #fff; }
           `}</style>
         </defs>
 
