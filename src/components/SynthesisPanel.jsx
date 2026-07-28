@@ -211,7 +211,7 @@ export default function SynthesisPanel({ synthesis }) {
               >
                 <p
                   id="synthesis-how-works-heading"
-                  className="font-mono text-[10px] font-semibold tracking-wide text-[var(--text-muted)]"
+                  className="font-mono text-[10px] font-semibold text-[var(--text-muted)]"
                 >
                   How this works
                 </p>
@@ -277,8 +277,9 @@ export default function SynthesisPanel({ synthesis }) {
                 return (
                   <section
                     key={f.findingId}
+                    data-lineage-finding={f.findingId}
                     aria-labelledby={`synth-${f.findingId}`}
-                    className="rounded-[var(--radius)] border border-transparent"
+                    className="synthesis-finding rounded-[var(--radius)] border border-transparent"
                   >
                     <h3
                       id={`synth-${f.findingId}`}
@@ -382,7 +383,7 @@ export default function SynthesisPanel({ synthesis }) {
       />
 
       <div className="border-t border-dashed border-[var(--border)] px-6 py-6 md:px-10">
-        <h3 className="mb-4 font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
+        <h3 className="mb-4 font-mono text-[10px] font-semibold text-[var(--text-muted)]">
           Contributions
         </h3>
         <div className="flex flex-col flex-wrap gap-2 sm:flex-row sm:gap-3">
@@ -410,7 +411,7 @@ export default function SynthesisPanel({ synthesis }) {
 
       {settings.showRationale && rationale ? (
         <div className="border-t border-dashed border-[var(--border)] px-6 py-6 md:px-10">
-          <h3 className="mb-2 font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
+          <h3 className="mb-2 font-mono text-[10px] font-semibold text-[var(--text-muted)]">
             Why this answer
           </h3>
           <p className="text-[17px] italic leading-relaxed text-[var(--text-secondary)]">

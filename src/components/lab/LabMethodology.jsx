@@ -3,6 +3,7 @@ import { METHODOLOGY } from '../../lib/lab/methodology.js'
 import {
   formatLastUpdatedLabel,
 } from '../../lib/lab/schema.js'
+import { useEasterEggDiscovery } from '../../hooks/useEasterEggDiscovery.js'
 import MetadataRow from '../layout/MetadataRow.jsx'
 import PageHeader from '../layout/PageHeader.jsx'
 import PageSection from '../layout/PageSection.jsx'
@@ -12,20 +13,37 @@ import ReadingColumn from '../layout/ReadingColumn.jsx'
  * @param {{
  *   onBack: () => void,
  *   datasetVersion: string,
+ *   onOpenArchive?: () => void,
  * }} props
  */
-export default function LabMethodology({ onBack, datasetVersion }) {
+export default function LabMethodology({
+  onBack,
+  datasetVersion,
+  onOpenArchive,
+}) {
   const updated = formatLastUpdatedLabel(datasetVersion)
+  const { archiveUnlocked } = useEasterEggDiscovery()
 
   return (
     <article className="reading-page" aria-labelledby="lab-method-title">
-      <button
-        type="button"
-        className="babel-btn babel-btn-quiet mb-6 px-2"
-        onClick={onBack}
-      >
-        ← Babel Lab
-      </button>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <button
+          type="button"
+          className="babel-btn babel-btn-quiet px-2"
+          onClick={onBack}
+        >
+          ← Babel Lab
+        </button>
+        {archiveUnlocked && onOpenArchive ? (
+          <button
+            type="button"
+            className="easter-archive-link"
+            onClick={onOpenArchive}
+          >
+            Archive
+          </button>
+        ) : null}
+      </div>
 
       <PageHeader
         eyebrow="Evaluation method"

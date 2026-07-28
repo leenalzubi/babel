@@ -121,7 +121,7 @@ export default function CompetitionResults({ synthesisWinner, config }) {
               }`}
             >
               {isWinner ? (
-                <div className="mb-3 inline-block rounded-[4px] bg-[#FEF3C7] px-2 py-0.5 font-[family-name:var(--font-mono)] text-[9px] font-medium uppercase tracking-wide text-[#B45309]">
+                <div className="mb-3 inline-block rounded-[4px] bg-[#FEF3C7] px-2 py-0.5 font-[family-name:var(--font-mono)] text-[9px] font-medium text-[#B45309]">
                   Earns synthesis
                 </div>
               ) : null}

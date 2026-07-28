@@ -30,7 +30,7 @@ function DivergenceChip({ label, color, pct }) {
         {label}
         <span className="font-medium text-[var(--text-primary)]">{pct}%</span>
       </span>
-      <span className="text-[8px] font-normal tracking-wide text-[var(--text-muted)]">
+      <span className="text-[8px] font-normal text-[var(--text-muted)]">
         Claims
       </span>
     </span>

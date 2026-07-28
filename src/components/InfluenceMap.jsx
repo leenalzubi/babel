@@ -383,7 +383,7 @@ export default function InfluenceMap({
   return (
     <div className="flex w-full max-w-4xl flex-col gap-8">
       <section aria-label="Between-model divergence">
-        <p className="mb-3 font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+        <p className="mb-3 font-[family-name:var(--font-mono)] text-[10px] font-semibold text-[var(--text-muted)]">
           Between-model divergence
         </p>
         {divergenceReady ? (
@@ -399,7 +399,7 @@ export default function InfluenceMap({
 
       {showPositionTracks ? (
         <section aria-label="Position change across rounds">
-          <p className="mb-3 font-[family-name:var(--font-mono)] text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+          <p className="mb-3 font-[family-name:var(--font-mono)] text-[10px] font-semibold text-[var(--text-muted)]">
             Position change across rounds
           </p>
           {influenceLoading ? (

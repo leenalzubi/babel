@@ -99,7 +99,7 @@ export default function ValidationBadge() {
         </button>
         <p
           className="mt-1 font-[family-name:var(--font-body)] text-[13px] leading-snug opacity-95"
-          style={{ fontFamily: 'var(--font-body), Georgia, serif' }}
+          style={{ fontFamily: 'var(--font-body)' }}
         >
           {approved ? (
             <>

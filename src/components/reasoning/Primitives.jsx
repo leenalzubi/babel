@@ -72,7 +72,7 @@ export function Counterpoint({ targetClaimId, text, linked = false }) {
             vs {targetClaimId}
           </button>
         ) : (
-          <span className="mr-2 font-mono text-[0.72rem] uppercase tracking-wide text-[var(--ink-soft)]">
+          <span className="mr-2 font-mono text-[0.72rem] text-[var(--ink-soft)]">
             Unlinked critique
           </span>
         )}
@@ -101,7 +101,7 @@ export function PositionChange({
   return (
     <div className="position-change mb-3">
       <p className="m-0 text-[0.92rem] leading-relaxed">
-        <span className="font-mono text-[0.75rem] uppercase tracking-wide">
+        <span className="font-mono text-[0.75rem]">
           {claimId}
           {revisedId ? ` → ${revisedId}` : ''}
         </span>

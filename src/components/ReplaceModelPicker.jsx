@@ -40,7 +40,7 @@ export default function ReplaceModelPicker({ agentKey, onDone }) {
 
   return (
     <div className="mt-3 flex flex-col gap-2 border-t border-dashed border-[var(--border)] pt-3">
-      <label className="font-mono text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
+      <label className="font-mono text-[10px] text-[var(--text-muted)]">
         Replace {current.name}
         <select
           className="mt-1 w-full rounded-[4px] border border-[var(--border)] bg-[var(--bg-base)] px-2 py-1.5 font-[family-name:var(--font-body)] text-sm text-[var(--text-primary)]"

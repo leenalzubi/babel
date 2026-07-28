@@ -199,7 +199,7 @@ export default function DecisionMemo({
                 />
                 {row.original ? (
                   <p className="mt-2 text-[0.85rem] text-[var(--ink-soft)]">
-                    <span className="font-mono text-[0.72rem] uppercase tracking-wide text-[var(--ink-soft)]">
+                    <span className="font-mono text-[0.72rem] text-[var(--ink-soft)]">
                       Original
                     </span>
                     <br />

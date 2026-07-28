@@ -337,7 +337,7 @@ function StabilityReportView({ report, busy, onRetry, onOpenVariant }) {
         </p>
       ) : null}
 
-      <h3 className="mt-5 font-mono text-[0.72rem] uppercase tracking-wide text-[var(--ink-soft)]">
+      <h3 className="mt-5 font-mono text-[0.72rem] text-[var(--ink-soft)]">
         Progress
       </h3>
       <ul className="mt-2 list-none space-y-2 p-0" aria-live="polite">
@@ -362,7 +362,7 @@ function StabilityReportView({ report, busy, onRetry, onOpenVariant }) {
         ))}
       </ul>
 
-      <h3 className="mt-5 font-mono text-[0.72rem] uppercase tracking-wide text-[var(--ink-soft)]">
+      <h3 className="mt-5 font-mono text-[0.72rem] text-[var(--ink-soft)]">
         Configuration results
       </h3>
       <ul className="mt-2 list-none space-y-4 p-0">
@@ -431,7 +431,7 @@ function StabilityReportView({ report, busy, onRetry, onOpenVariant }) {
 
       {report.limitations?.length ? (
         <div className="mt-5">
-          <h3 className="font-mono text-[0.72rem] uppercase tracking-wide text-[var(--ink-soft)]">
+          <h3 className="font-mono text-[0.72rem] text-[var(--ink-soft)]">
             Limitations
           </h3>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-[0.85rem] text-[var(--ink-soft)]">

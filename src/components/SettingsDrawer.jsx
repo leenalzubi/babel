@@ -89,7 +89,7 @@ export default function SettingsDrawer({ open, onClose }) {
         <header className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
           <h2
             id="settings-drawer-title"
-            className="font-mono text-sm font-semibold tracking-wide text-[var(--text-primary)]"
+            className="font-mono text-sm font-semibold text-[var(--text-primary)]"
           >
             Settings
           </h2>

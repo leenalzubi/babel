@@ -12,7 +12,7 @@ export default function ClaimIdLinks({ claimIds = [] }) {
         <button
           key={id}
           type="button"
-          className="min-h-11 rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--blue-wash)] px-2 text-[var(--blue-deep)] underline-offset-2 hover:underline"
+          className="claim-id-chip min-h-11 rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--blue-wash)] px-2 text-[var(--blue-deep)] underline-offset-2 hover:underline"
           onClick={() => jumpToClaim(id)}
         >
           {id}

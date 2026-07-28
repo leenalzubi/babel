@@ -15,11 +15,10 @@ export default function ModelsAnnouncementBanner() {
           className="mt-0.5 h-4 w-4 shrink-0 text-[var(--blue)]"
           aria-hidden
         />
-        <div className="min-w-0 space-y-2">
-          <p className="babel-eyebrow">New models under review</p>
+        <div className="min-w-0 babel-intro">
+          <p className="babel-eyebrow m-0">New models under review</p>
           <p
-            className="text-[13px] leading-relaxed text-[var(--text-secondary)]"
-            style={{ fontFamily: 'var(--font-body)' }}
+            className="babel-meta m-0 leading-relaxed text-[var(--text-secondary)]"
           >
             We&apos;re looking into expanding which models can debate here.
             Right now Babel uses the{' '}

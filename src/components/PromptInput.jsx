@@ -93,7 +93,7 @@ function PromptInputInner(
       : 'Add VITE_GITHUB_TOKEN to .env.local'
 
   const statusMessage = hasToken
-    ? 'GitHub Models connected'
+    ? null
     : tokenHint ?? 'GitHub Models unavailable'
 
   const MIN_PROMPT_CHARS = 20
@@ -113,13 +113,13 @@ function PromptInputInner(
 
   return (
     <section className="convene-field babel-card flex flex-col gap-8 shadow-forge-card sm:gap-10 sm:p-8">
-      <div className="flex flex-col gap-3">
+      <div className="babel-intro">
         <h1 className="babel-eyebrow m-0">Frame the decision</h1>
-        <p className="babel-lede reading-column m-0 mt-0">
+        <p className="babel-lede reading-column m-0">
           Stress-test a consequential decision across three cognitive roles.
           Criteria are your instructions. Babel never silently adds them.
         </p>
-        <div className={`babel-field mt-1 ${disabled ? 'opacity-50' : ''}`}>
+        <div className={`babel-field ${disabled ? 'opacity-50' : ''}`}>
           <label htmlFor="babel-decision" className="babel-eyebrow">
             Decision or proposal
           </label>
@@ -170,20 +170,54 @@ function PromptInputInner(
             </p>
           ) : null}
         </div>
-      </div>
 
-      <div>
-        <p className="babel-eyebrow mb-4">Decision criteria</p>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Decision criteria">
-          {SUGGESTED_CRITERIA.map((label) => (
-            <DecisionCriterion
-              key={label}
-              label={label}
-              selected={criteria.includes(label)}
-              disabled={disabled}
-              onToggle={() => toggleCriterion(label)}
-            />
-          ))}
+        <div className="convene-prompt-stack">
+          <div>
+            <p className="babel-eyebrow mb-4">Decision criteria</p>
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Decision criteria">
+              {SUGGESTED_CRITERIA.map((label) => (
+                <DecisionCriterion
+                  key={label}
+                  label={label}
+                  selected={criteria.includes(label)}
+                  disabled={disabled}
+                  onToggle={() => toggleCriterion(label)}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="convene-actions convene-actions--inline">
+            <div className="action-group convene-actions__buttons">
+              <button
+                type="button"
+                onClick={onRun}
+                disabled={!canRun}
+                title="Run Babel's full debate pipeline via GitHub Models"
+                aria-label="Convene debate (⌘ or Ctrl + Enter from prompt)"
+                className="babel-btn babel-btn-primary btn w-full sm:w-auto disabled:opacity-50"
+              >
+                <Flame className="h-4 w-4 shrink-0" aria-hidden />
+                {disabled ? 'Convening…' : 'Convene'}
+              </button>
+              <button
+                type="button"
+                onClick={onReset}
+                disabled={disabled}
+                aria-label="Reset debate and clear prompt"
+                className="babel-btn babel-btn-quiet w-full sm:w-auto"
+              >
+                Reset
+              </button>
+            </div>
+            {statusMessage ? (
+              <p className="convene-models-status babel-meta" role="status">
+                {statusMessage}
+              </p>
+            ) : (
+              <span className="sr-only">GitHub Models ready</span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -250,42 +284,6 @@ function PromptInputInner(
               </div>
             )
           })}
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] pt-6 sm:pt-8">
-        <div
-          className="flex items-center gap-2 babel-meta"
-          role="status"
-        >
-          <span
-            className={`h-1.5 w-1.5 shrink-0 rounded-full ${hasToken ? '' : 'bg-[var(--diverge)]'}`}
-            style={hasToken ? { backgroundColor: 'var(--oasis)' } : undefined}
-            aria-hidden
-          />
-          {statusMessage}
-        </div>
-        <div className="action-group w-full sm:w-auto">
-          <button
-            type="button"
-            onClick={onRun}
-            disabled={!canRun}
-            title="Run Babel's full debate pipeline via GitHub Models"
-            aria-label="Convene debate (⌘ or Ctrl + Enter from prompt)"
-            className="babel-btn babel-btn-primary btn w-full sm:w-auto disabled:opacity-50"
-          >
-            <Flame className="h-4 w-4 shrink-0" aria-hidden />
-            {disabled ? 'Convening…' : 'Convene'}
-          </button>
-          <button
-            type="button"
-            onClick={onReset}
-            disabled={disabled}
-            aria-label="Reset debate and clear prompt"
-            className="babel-btn babel-btn-quiet w-full sm:w-auto"
-          >
-            Reset
-          </button>
         </div>
       </div>
 

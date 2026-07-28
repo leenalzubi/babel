@@ -13,15 +13,14 @@ import CompetitionResults from './components/CompetitionResults.jsx'
 import ErrorBanner from './components/ErrorBanner.jsx'
 import FindingsPanel from './components/FindingsPanel.jsx'
 import ResearchPanel from './components/ResearchPanel.jsx'
+import ArchivePanel from './components/ArchivePanel.jsx'
 import LabPanel from './components/lab/LabPanel.jsx'
-import ForgeEmptyState from './components/ForgeEmptyState.jsx'
 import ModelsAnnouncementBanner from './components/ModelsAnnouncementBanner.jsx'
 import PromptInput from './components/PromptInput.jsx'
 import FinalPositionCard from './components/FinalPositionCard.jsx'
 import ReviewCard from './components/ReviewCard.jsx'
 import RoundCard from './components/RoundCard.jsx'
 import SettingsDrawer from './components/SettingsDrawer.jsx'
-import WelcomeModal from './components/WelcomeModal.jsx'
 import WorkflowTimeline from './components/WorkflowTimeline.jsx'
 import MashrabiyaScreen from './components/MashrabiyaScreen.jsx'
 import ProjectCreditFooter from './components/ProjectCreditFooter.jsx'
@@ -30,6 +29,10 @@ import MobileActionBar from './components/MobileActionBar.jsx'
 import DecisionMemo from './components/DecisionMemo.jsx'
 import StabilityCheckPanel from './components/StabilityCheckPanel.jsx'
 import VoiceAnnouncer from './components/VoiceAnnouncer.jsx'
+import BabelShell from './components/shell/BabelShell.jsx'
+import ArchiveUnlockedNotice from './components/easterEggs/ArchiveUnlockedNotice.jsx'
+import LineageModeNotice from './components/easterEggs/LineageModeNotice.jsx'
+import { useEasterEggDiscovery } from './hooks/useEasterEggDiscovery.js'
 import { roleLabel } from './lib/babelRoles.js'
 import { useDebateEngine } from './hooks/useDebateEngine.js'
 import { useForge } from './store/useForgeStore.js'
@@ -90,7 +93,7 @@ function hrefForAppRoute(route) {
 /**
  * @param {string} pathname
  * @returns {{
- *   tab: 'babel' | 'findings' | 'about' | 'lab',
+ *   tab: 'babel' | 'findings' | 'about' | 'lab' | 'archive',
  *   labView?: 'index' | 'methodology' | 'case',
  *   caseSlug?: string | null,
  * }}
@@ -99,6 +102,7 @@ function parseAppRoute(pathname) {
   const path = normalizePathname(pathname)
   if (path === '/findings') return { tab: 'findings' }
   if (path === '/about') return { tab: 'about' }
+  if (path === '/archive') return { tab: 'archive' }
   if (path === '/lab' || path.startsWith('/lab/')) {
     const rest = path === '/lab' ? '' : path.slice('/lab'.length)
     if (!rest || rest === '/') {
@@ -120,7 +124,7 @@ function mainTabFromPathname(pathname) {
 
 /**
  * @param {{
- *   tab: 'babel' | 'findings' | 'about' | 'lab',
+ *   tab: 'babel' | 'findings' | 'about' | 'lab' | 'archive',
  *   labView?: 'index' | 'methodology' | 'case',
  *   caseSlug?: string | null,
  * }} route
@@ -128,6 +132,7 @@ function mainTabFromPathname(pathname) {
 function pathnameForAppRoute(route) {
   if (route.tab === 'findings') return '/findings'
   if (route.tab === 'about') return '/about'
+  if (route.tab === 'archive') return '/archive'
   if (route.tab === 'lab') {
     if (route.labView === 'methodology') return '/lab/methodology'
     if (route.labView === 'case' && route.caseSlug) {
@@ -182,15 +187,15 @@ function scrollSectionIntoView(ref) {
 
 function HeaderAgentPill({ role, model, color }) {
   return (
-    <div className="inline-flex max-w-[200px] items-center gap-2 truncate sm:max-w-none">
+    <div className="babel-model-identity inline-flex max-w-[220px] items-center gap-2 sm:max-w-none">
       <span
-        className="h-1.5 w-1.5 shrink-0 rounded-full"
+        className="babel-model-identity-dot shrink-0"
         style={{ backgroundColor: color }}
         aria-hidden
       />
-      <span className="min-w-0 truncate">
-        <span className="role-name block truncate">{role}</span>
-        <span className="model-name block truncate">{model}</span>
+      <span className="min-w-0">
+        <span className="babel-model-identity-role block truncate">{role}</span>
+        <span className="babel-model-identity-model block truncate">{model}</span>
       </span>
     </div>
   )
@@ -199,6 +204,7 @@ function HeaderAgentPill({ role, model, color }) {
 export default function App() {
   const { state, dispatch } = useForge()
   const { settings } = useForgeUiSettings()
+  const { archiveUnlocked } = useEasterEggDiscovery()
   const {
     runDebate,
     resetAndRetry,
@@ -216,7 +222,7 @@ export default function App() {
   const [promptDraft, setPromptDraft] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [mainTab, setMainTab] = useState(
-    /** @type {'babel' | 'findings' | 'about' | 'lab'} */ () =>
+    /** @type {'babel' | 'findings' | 'about' | 'lab' | 'archive'} */ () =>
       typeof window !== 'undefined'
         ? mainTabFromPathname(window.location.pathname)
         : 'babel'
@@ -234,9 +240,7 @@ export default function App() {
   const [workflowSidebarCollapsed, setWorkflowSidebarCollapsed] = useState(
     () => readWorkflowSidebarCollapsed()
   )
-  const [showWelcome, setShowWelcome] = useState(
-    !sessionStorage.getItem('babel_welcomed')
-  )
+  const [lineageMode, setLineageMode] = useState(false)
 
   const voiceActionsValue = useMemo(
     () => ({
@@ -267,7 +271,7 @@ export default function App() {
   ])
 
   const navigateMainTab = useCallback(
-    /** @param {'babel' | 'findings' | 'about' | 'lab'} tab */ (tab) => {
+    /** @param {'babel' | 'findings' | 'about' | 'lab' | 'archive'} tab */ (tab) => {
       const route =
         tab === 'lab'
           ? { tab: 'lab', labView: /** @type {const} */ ('index'), caseSlug: null }
@@ -295,6 +299,17 @@ export default function App() {
     window.history.pushState(route, '', hrefForAppRoute(route))
   }, [])
 
+  const navigateShell = useCallback(
+    /** @param {'babel' | 'findings' | 'lab' | 'about' | 'method'} tab */ (tab) => {
+      if (tab === 'method') {
+        navigateLab({ view: 'methodology', caseSlug: null })
+        return
+      }
+      navigateMainTab(tab)
+    },
+    [navigateLab, navigateMainTab]
+  )
+
   useEffect(() => {
     const path = window.location.pathname
     const parsed = parseAppRoute(path)
@@ -318,9 +333,10 @@ export default function App() {
         (parsed.tab === 'babel' ||
           parsed.tab === 'findings' ||
           parsed.tab === 'about' ||
+          parsed.tab === 'archive' ||
           parsed.tab === 'lab')
           ? {
-              tab: /** @type {'babel' | 'findings' | 'about' | 'lab'} */ (
+              tab: /** @type {'babel' | 'findings' | 'about' | 'lab' | 'archive'} */ (
                 parsed.tab
               ),
               labView:
@@ -458,6 +474,11 @@ export default function App() {
   )
   const errorBannerRef = useRef(/** @type {HTMLDivElement | null} */ (null))
 
+  const startDebateFromShell = useCallback(() => {
+    navigateMainTab('babel')
+    requestAnimationFrame(() => promptInputRef.current?.focusPrompt())
+  }, [navigateMainTab])
+
   const round1Ref = useRef(/** @type {HTMLDivElement | null} */ (null))
   const round2Ref = useRef(/** @type {HTMLDivElement | null} */ (null))
   const round3Ref = useRef(/** @type {HTMLDivElement | null} */ (null))
@@ -476,10 +497,6 @@ export default function App() {
     },
     []
   )
-
-  const focusPromptAfterExample = useCallback(() => {
-    promptInputRef.current?.focusPrompt()
-  }, [])
 
   const jumpToSection = useCallback((target) => {
     const map = {
@@ -629,15 +646,6 @@ export default function App() {
     scrollSectionIntoView(auditRef)
   }, [state.lastCompletedStage])
 
-  const mainMobilePt = showWorkflowSidebar
-    ? 'pt-[calc(5.25rem+env(safe-area-inset-top,0px))]'
-    : 'pt-0'
-  const headerStickyTopMobile = showWorkflowSidebar
-    ? 'top-[calc(5.25rem+env(safe-area-inset-top,0px))]'
-    : 'top-0'
-  const headerPaddingY = showWorkflowSidebar
-    ? 'py-4 md:pt-10 md:pb-5'
-    : 'pt-[calc(1rem+env(safe-area-inset-top,0px))] pb-4 md:pt-10 md:pb-5'
   const mainMdPr =
     showWorkflowSidebar && !workflowSidebarCollapsed
       ? 'md:pr-[272px]'
@@ -646,93 +654,142 @@ export default function App() {
     ? 'scroll-mt-[calc(5.25rem+env(safe-area-inset-top,0px))]'
     : 'scroll-mt-[calc(4rem+env(safe-area-inset-top,0px))]'
 
+  /** @type {'babel' | 'findings' | 'lab' | 'about' | 'method'} */
+  const shellNavTab =
+    mainTab === 'lab' && labRoute.view === 'methodology'
+      ? 'method'
+      : mainTab === 'findings'
+        ? 'findings'
+        : mainTab === 'about' || mainTab === 'archive'
+          ? 'about'
+          : mainTab === 'lab'
+            ? 'lab'
+            : 'babel'
+
+  /** @type {'workspace' | 'data' | 'reading' | 'hybrid'} */
+  const shellLayout =
+    shellNavTab === 'method' || mainTab === 'about' || mainTab === 'archive'
+      ? 'reading'
+      : mainTab === 'findings'
+        ? 'data'
+        : mainTab === 'lab'
+          ? 'hybrid'
+          : 'workspace'
+
+  const shellWindowTitle =
+    shellNavTab === 'method'
+      ? 'How Babel Works'
+      : mainTab === 'findings'
+        ? 'Babel - Findings'
+        : mainTab === 'about'
+          ? 'About Babel'
+          : mainTab === 'archive'
+            ? 'The Babel Archive'
+            : mainTab === 'lab'
+              ? 'Babel Lab'
+              : ''
+
+  const debateComplete =
+    state.status === 'complete' || state.status === 'complete_with_gaps'
+
+  const toggleLineageMode = useCallback(() => {
+    setLineageMode((v) => !v)
+  }, [])
+
+  useEffect(() => {
+    if (mainTab === 'archive' && !archiveUnlocked) {
+      navigateMainTab('about')
+    }
+  }, [mainTab, archiveUnlocked, navigateMainTab])
+
+  useEffect(() => {
+    if (!lineageMode) return
+    /** @param {KeyboardEvent} event */
+    const onKeyDown = (event) => {
+      if (event.key !== 'Escape') return
+      // Defer to open dialogs / egg cards / trash
+      if (
+        document.querySelector(
+          '[role="dialog"][aria-modal="true"], [role="alertdialog"], .easter-egg.is-open, .builder-note'
+        )
+      ) {
+        return
+      }
+      event.preventDefault()
+      setLineageMode(false)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [lineageMode])
+
+  useEffect(() => {
+    document.documentElement.toggleAttribute('data-lineage-mode', lineageMode)
+    return () => {
+      document.documentElement.removeAttribute('data-lineage-mode')
+    }
+  }, [lineageMode])
+
+  const shellTitleContext =
+    mainTab === 'babel' ? (
+      <div className="flex max-w-full flex-wrap items-center justify-end gap-2 sm:gap-3">
+        <HeaderAgentPill
+          role={roleLabel(state.roles?.a)}
+          model={cfg.agentA.name}
+          color={cfg.agentA.color}
+        />
+        <HeaderAgentPill
+          role={roleLabel(state.roles?.b)}
+          model={cfg.agentB.name}
+          color={cfg.agentB.color}
+        />
+        <HeaderAgentPill
+          role={roleLabel(state.roles?.c)}
+          model={cfg.agentC.name}
+          color={cfg.agentC.color}
+        />
+      </div>
+    ) : null
+
   return (
-    <div className="app-shell relative flex min-h-dvh w-full flex-row bg-[var(--bg-base)] text-[var(--text-primary)]">
-      <main
-        className={`main-content relative z-[2] flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto pb-0 md:min-h-0 md:pb-0 md:pt-0 ${mainMobilePt} ${mainMdPr}`}
+    <div className="relative min-h-dvh w-full text-[var(--text-primary)]">
+      <BabelShell
+        activeTab={shellNavTab}
+        windowTitle={shellWindowTitle}
+        layout={shellLayout}
+        titleContext={shellTitleContext}
+        onNavigate={navigateShell}
+        onOpenSettings={() => setSettingsOpen(true)}
+        onStartDebate={startDebateFromShell}
+        debateComplete={debateComplete}
+        lineageMode={lineageMode}
+        onToggleLineageMode={toggleLineageMode}
+        hideEnvironmentShortcuts={
+          showWorkflowSidebar && !workflowSidebarCollapsed
+        }
+        settingsControl={
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="babel-global-icon-btn inline-flex items-center justify-center"
+            aria-label="Open settings"
+          >
+            <Settings className="h-4 w-4" aria-hidden />
+          </button>
+        }
       >
-        <div className="stage flex min-h-0 flex-1 flex-col">
-        <header
-          className={`sticky z-20 mb-8 border-b border-[var(--border)] bg-[var(--bg-base)] md:top-0 md:mb-10 ${headerPaddingY} ${headerStickyTopMobile}`}
-        >
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <span className="font-display text-[clamp(1.35rem,2.5vw,1.75rem)] font-[440] tracking-[0.04em] text-[var(--ink)]">
-              BABEL
-            </span>
-            <div className="order-3 flex w-full flex-wrap items-center justify-center gap-2 md:order-none md:flex-1 md:justify-end md:pr-4">
-              <HeaderAgentPill
-                role={roleLabel(state.roles?.a)}
-                model={cfg.agentA.name}
-                color={cfg.agentA.color}
-              />
-              <HeaderAgentPill
-                role={roleLabel(state.roles?.b)}
-                model={cfg.agentB.name}
-                color={cfg.agentB.color}
-              />
-              <HeaderAgentPill
-                role={roleLabel(state.roles?.c)}
-                model={cfg.agentC.name}
-                color={cfg.agentC.color}
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => setSettingsOpen(true)}
-              className="order-2 inline-flex min-h-12 min-w-12 items-center justify-center rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] p-2.5 text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] md:order-none"
-              aria-label="Open settings"
-            >
-              <Settings className="h-4 w-4" aria-hidden />
-            </button>
-          </div>
-        </header>
-
-        <nav
-          className="app-main-nav flex justify-center border-b border-[var(--border)] bg-[var(--bg-base)] md:justify-start"
-          aria-label="Main views"
-        >
-          <div className="inline-flex max-w-full flex-wrap justify-center gap-0.5 rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] p-0.5">
-            <button
-              type="button"
-              onClick={() => navigateMainTab('babel')}
-              aria-pressed={mainTab === 'babel'}
-              className={`app-tab ${mainTab === 'babel' ? 'is-active' : ''}`}
-            >
-              Babel
-            </button>
-            <button
-              type="button"
-              onClick={() => navigateMainTab('findings')}
-              aria-pressed={mainTab === 'findings'}
-              className={`app-tab ${mainTab === 'findings' ? 'is-active' : ''}`}
-            >
-              Findings
-            </button>
-            <button
-              type="button"
-              onClick={() => navigateMainTab('lab')}
-              aria-pressed={mainTab === 'lab'}
-              className={`app-tab ${mainTab === 'lab' ? 'is-active' : ''}`}
-            >
-              Lab
-            </button>
-            <button
-              type="button"
-              onClick={() => navigateMainTab('about')}
-              aria-pressed={mainTab === 'about'}
-              className={`app-tab ${mainTab === 'about' ? 'is-active' : ''}`}
-            >
-              About
-            </button>
-          </div>
-        </nav>
-
+        <div className={`stage flex min-h-0 flex-1 flex-col px-0 ${mainMdPr}`}>
         {mainTab === 'findings' ? (
           <FindingsPanel />
         ) : mainTab === 'about' ? (
-          <ResearchPanel />
+          <ResearchPanel onOpenArchive={() => navigateMainTab('archive')} />
+        ) : mainTab === 'archive' ? (
+          <ArchivePanel />
         ) : mainTab === 'lab' ? (
-          <LabPanel route={labRoute} onNavigate={navigateLab} />
+          <LabPanel
+            route={labRoute}
+            onNavigate={navigateLab}
+            onOpenArchive={() => navigateMainTab('archive')}
+          />
         ) : (
           <div className="workspace-page">
           <VoiceActionsProvider value={voiceActionsValue}>
@@ -840,13 +897,6 @@ export default function App() {
             </div>
 
             <div className="mt-2 flex flex-col gap-12 md:gap-14">
-              {showEmptyState ? (
-                <ForgeEmptyState
-                  onPickExample={setPromptDraft}
-                  onAfterExamplePick={focusPromptAfterExample}
-                />
-              ) : null}
-
               {!showEmptyState && sortedRounds.length > 0 ? (
                 <MashrabiyaScreen tight />
               ) : null}
@@ -1078,7 +1128,15 @@ export default function App() {
           hidden={mainTab !== 'babel' || actionBarHidden}
         />
         </div>
-      </main>
+      </BabelShell>
+
+      <ArchiveUnlockedNotice
+        onOpenArchive={() => navigateMainTab('archive')}
+      />
+      <LineageModeNotice
+        active={lineageMode}
+        onExit={() => setLineageMode(false)}
+      />
 
       {showWorkflowSidebar ? (
         <WorkflowTimeline
@@ -1091,17 +1149,6 @@ export default function App() {
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       />
-
-      {showWelcome ? (
-        <WelcomeModal
-          onClose={() => {
-            setShowWelcome(false)
-            requestAnimationFrame(() =>
-              promptInputRef.current?.focusPrompt()
-            )
-          }}
-        />
-      ) : null}
     </div>
   )
 }

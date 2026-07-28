@@ -1,8 +1,10 @@
-import { WELCOME_STORAGE_KEY } from './WelcomeModal.jsx'
+import { BUILDER_NOTE_STORAGE_KEY } from './BuilderNote.jsx'
 import Eyebrow from './Eyebrow.jsx'
 import PageHeader from './layout/PageHeader.jsx'
 import ReadingColumn from './layout/ReadingColumn.jsx'
-import React from 'react'
+import { useEasterEggDiscovery } from '../hooks/useEasterEggDiscovery.js'
+import { useTrash } from './easterEggs/TrashContext.jsx'
+import React, { useRef } from 'react'
 
 /** About tab content: editorial layout, light and spacious. */
 
@@ -116,9 +118,9 @@ function SectionShell({ num, title, children, first = false }) {
     <section
       className={`page-section scroll-mt-8 ${first ? 'is-first' : ''}`.trim()}
     >
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col">
         <Eyebrow>{num}</Eyebrow>
-        <h2 className="babel-display babel-display-section mt-3">{title}</h2>
+        <h2 className="babel-display babel-display-section m-0">{title}</h2>
       </div>
       <div className="mt-6 space-y-5">{children}</div>
     </section>
@@ -132,7 +134,7 @@ function ObservationCard({ title, children }) {
   return (
     <div className="babel-card border-l-[3px] border-l-[var(--accent-forge)]">
       <h3 className="babel-display babel-display-card m-0">{title}</h3>
-      <div className="babel-prose mt-3 space-y-4">{children}</div>
+      <div className="babel-prose space-y-4">{children}</div>
     </div>
   )
 }
@@ -144,20 +146,27 @@ function DirectionCard({ title, children }) {
   return (
     <div className="babel-card h-full">
       <h3 className="babel-display babel-display-card m-0">{title}</h3>
-      <div className="babel-prose mt-3 space-y-4">{children}</div>
+      <div className="babel-prose space-y-4">{children}</div>
     </div>
   )
 }
 
-export default function ResearchPanel() {
+/**
+ * @param {{ onOpenArchive?: () => void }} [props]
+ */
+export default function ResearchPanel({ onOpenArchive }) {
+  const { archiveUnlocked } = useEasterEggDiscovery()
+  const { openTrash } = useTrash()
+  const trashRef = useRef(/** @type {HTMLButtonElement | null} */ (null))
+
   return (
     <article className="reading-page" aria-label="About Babel">
-      <div className="mb-6">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
           onClick={() => {
             try {
-              window.sessionStorage.removeItem(WELCOME_STORAGE_KEY)
+              window.localStorage.removeItem(BUILDER_NOTE_STORAGE_KEY)
             } catch {
               /* ignore */
             }
@@ -165,8 +174,27 @@ export default function ResearchPanel() {
           }}
           className="babel-btn babel-btn-quiet px-2"
         >
-          Show welcome again
+          Show builder&apos;s note again
         </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            ref={trashRef}
+            type="button"
+            className="babel-trash-inline-trigger easter-archive-link"
+            onClick={() => openTrash(trashRef.current)}
+          >
+            Trash
+          </button>
+          {archiveUnlocked && onOpenArchive ? (
+            <button
+              type="button"
+              className="easter-archive-link"
+              onClick={onOpenArchive}
+            >
+              Archive
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <PageHeader
@@ -450,9 +478,10 @@ export default function ResearchPanel() {
       <SectionShell num="06" title="About">
         <div className="babel-prose space-y-6">
           <p>
-            Built by Leen Al-Zu&apos;bi, Senior Product Manager at Softchoice,
-            as self-directed study in AI research. No lab, no grant, just genuine
-            curiosity about how these models think and where they disagree.
+            Built by Leen Al-Zu&apos;bi, Product Manager at World Wide
+            Technology, as self-directed study in AI research. No lab, no grant,
+            just genuine curiosity about how these models think and where they
+            disagree.
           </p>
           <p>
             This tool is free to use. The dataset is open. Every debate logged

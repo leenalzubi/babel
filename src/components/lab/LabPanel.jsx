@@ -16,9 +16,10 @@ import LabCaseDetail from './LabCaseDetail.jsx'
  * @param {{
  *   route: LabRoute,
  *   onNavigate: (route: LabRoute) => void,
+ *   onOpenArchive?: () => void,
  * }} props
  */
-export default function LabPanel({ route, onNavigate }) {
+export default function LabPanel({ route, onNavigate, onOpenArchive }) {
   const catalog = useMemo(() => loadEvaluationCatalog(), [])
 
   useEffect(() => {
@@ -34,6 +35,7 @@ export default function LabPanel({ route, onNavigate }) {
       <LabMethodology
         onBack={() => onNavigate({ view: 'index' })}
         datasetVersion={catalog.datasetVersion}
+        onOpenArchive={onOpenArchive}
       />
     )
   }

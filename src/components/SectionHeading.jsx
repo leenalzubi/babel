@@ -1,5 +1,5 @@
 /**
- * Section heading block: optional eyebrow + Fraunces display title + optional lede.
+ * Section heading block: optional eyebrow + bold display title + optional lede.
  * @param {{
  *   eyebrow?: string,
  *   title: string,
@@ -21,7 +21,7 @@ export default function SectionHeading({
 }) {
   return (
     <header className={`babel-section-heading ${className}`.trim()}>
-      {eyebrow ? <Eyebrow className="mb-3">{eyebrow}</Eyebrow> : null}
+      {eyebrow ? <Eyebrow className="m-0">{eyebrow}</Eyebrow> : null}
       <Tag id={titleId} className="babel-display">
         {title}
       </Tag>

@@ -1,6 +1,6 @@
-/* Babel: Design System (revised)
-   Source: babel-design-system-revised.md
-   Existing app aliases (--bg-*, --text-*, --accent-forge) map onto these tokens. */
+/* Babel: Design System (visual direction)
+   Scholarly workbench inside an illustrated Babylonian environment.
+   Rich outside, quiet workspace inside. */
 
 :root {
   /* ground & surface, plaster in sun and shadow */
@@ -21,6 +21,9 @@
   /* earth line, umber rules and lattice */
   --line: #d3c6ac;
   --line-firm: #b29b77;
+  --border-primary: rgba(27, 44, 67, 0.2);
+  --border-subtle: rgba(60, 55, 43, 0.15);
+  --border-active: color-mix(in srgb, var(--blue) 60%, transparent);
 
   /* sun, ochre, sparing */
   --ochre: #b8862f;
@@ -31,11 +34,14 @@
   --oasis: #4c6647;
 
   /* form */
-  --radius-sm: 3px;
-  --radius: 6px;
+  --radius-sm: 8px;
+  --radius: 10px;
+  --radius-panel: 14px;
+  --radius-window: 20px;
+  --radius-nav: 13px;
   --radius-arch: 999px 999px 6px 6px;
 
-  /* rhythm, 4px base */
+  /* rhythm: 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64 / 80 */
   --s-1: 4px;
   --s-2: 8px;
   --s-3: 12px;
@@ -44,33 +50,41 @@
   --s-6: 32px;
   --s-7: 48px;
   --s-8: 64px;
-  --s-9: 96px;
+  --s-9: 80px;
+
+  /* type stacks: eyebrow → body, display → lede */
+  --gap-eyebrow: var(--s-2);
+  --gap-lede: var(--s-3);
 
   /* layout */
-  --stage: 1200px;
-  /* Reading column: ~65–70ch at 18px body ≈ 42rem */
-  --reading: 42rem;
+  --stage: 1180px;
+  --reading: 44rem;
   --measure: var(--reading);
   --maxw: var(--stage);
+  --shell-inset: 240px;
 
-  /* Type scale (product-wide) */
+  /* Type scale */
   --text-body: 1.125rem; /* 18px */
   --text-lede: 1.25rem; /* 20px */
-  --text-meta: 0.9375rem; /* 15px */
-  --text-label: 0.875rem; /* 14px */
-  --text-control: 1rem; /* 16px */
-  --lh-body: 1.65;
-  --lh-lede: 1.6;
+  --text-meta: 0.9375rem; /* 15px — secondary UI floor */
+  --text-label: 0.875rem; /* 14px form labels */
+  --text-eyebrow: 0.8125rem; /* 13px */
+  --text-mono: 0.8125rem; /* 13px technical */
+  --text-control: 1rem; /* 16px buttons / nav */
+  --lh-body: 1.6;
+  --lh-lede: 1.55;
+  --lh-meta: 1.4;
 
-  --shadow-soft: 0 1px 2px rgba(36, 32, 27, 0.06),
-    0 8px 24px -12px rgba(36, 32, 27, 0.18);
-  --shadow-lift: 0 2px 4px rgba(36, 32, 27, 0.08),
-    0 18px 40px -18px rgba(36, 32, 27, 0.26);
+  --shadow-soft: 0 1px 2px rgba(28, 27, 20, 0.05),
+    0 8px 24px -12px rgba(28, 27, 20, 0.14);
+  --shadow-lift: 0 2px 4px rgba(28, 27, 20, 0.06),
+    0 18px 40px -16px rgba(28, 27, 20, 0.18);
+  --shadow-window: 0 24px 64px rgba(28, 27, 20, 0.18);
 
-  /* Typography */
-  --font-display: 'Fraunces', Georgia, serif;
-  --font-body: 'Hanken Grotesk', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  /* Typography roles */
+  --font-display: Arial, Helvetica, sans-serif;
+  --font-body: Arial, Helvetica, sans-serif;
+  --font-mono: Arial, Helvetica, sans-serif;
 
   /* ── Legacy app aliases ── */
   --bg-base: var(--limewash);
@@ -96,7 +110,7 @@
   --agent-b: var(--oasis);
   --agent-c: var(--madder);
 
-  --card-radius: var(--radius);
+  --card-radius: var(--radius-panel);
   --card-shadow: var(--shadow-soft);
 }
 
@@ -113,6 +127,8 @@
   --blue-wash: #26343a;
   --line: #3a3327;
   --line-firm: #544a38;
+  --border-primary: rgba(143, 191, 203, 0.22);
+  --border-subtle: rgba(183, 172, 151, 0.14);
   --ochre: #d2a04a;
   --ochre-wash: #33291a;
   --madder: #c15a48;

@@ -265,7 +265,7 @@ export default function LineageDrawer({
                         key={`${claim.claimId}-chg-${i}`}
                         className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--plaster-hi)] p-3"
                       >
-                        <p className="position-change m-0 font-mono text-[0.75rem] uppercase tracking-wide">
+                        <p className="position-change m-0 font-mono text-[0.75rem]">
                           {later?.evolution || claim.evolution || 'revised'}
                         </p>
                         {earlier ? (

@@ -1,0 +1,119 @@
+import { useCallback, useMemo, useRef, useState } from 'react'
+import BabylonBackground from './BabylonBackground.jsx'
+import GlobalNav from './GlobalNav.jsx'
+import EnvironmentShortcuts from './EnvironmentShortcuts.jsx'
+import ApplicationWindow from './ApplicationWindow.jsx'
+import EnvironmentEasterEggs from '../easterEggs/EnvironmentEasterEggs.jsx'
+import TrashWindow from '../easterEggs/TrashWindow.jsx'
+import { TrashProvider } from '../easterEggs/TrashContext.jsx'
+import BuilderNote from '../BuilderNote.jsx'
+import { markEasterEggDiscovered } from '../../lib/easterEggs/discoveryStore.js'
+
+/**
+ * Persistent Babylon environment + framed application surface.
+ * @param {{
+ *   activeTab: 'babel' | 'findings' | 'lab' | 'about' | 'method',
+ *   windowTitle: string,
+ *   layout?: 'workspace' | 'data' | 'reading' | 'hybrid',
+ *   titleContext?: import('react').ReactNode,
+ *   onNavigate: (tab: 'babel' | 'findings' | 'lab' | 'about' | 'method') => void,
+ *   onOpenSettings: () => void,
+ *   onStartDebate: () => void,
+ *   settingsControl?: import('react').ReactNode,
+ *   hideEnvironmentShortcuts?: boolean,
+ *   debateComplete?: boolean,
+ *   lineageMode?: boolean,
+ *   onToggleLineageMode?: () => void,
+ *   suppressBuilderNote?: boolean,
+ *   children: import('react').ReactNode,
+ * }} props
+ */
+export default function BabelShell({
+  activeTab,
+  windowTitle,
+  layout = 'workspace',
+  titleContext = null,
+  onNavigate,
+  onOpenSettings,
+  onStartDebate,
+  settingsControl,
+  hideEnvironmentShortcuts = false,
+  debateComplete = false,
+  lineageMode = false,
+  onToggleLineageMode,
+  suppressBuilderNote = false,
+  children,
+}) {
+  const [trashOpen, setTrashOpen] = useState(false)
+  const trashReturnFocusRef = useRef(
+    /** @type {HTMLElement | null} */ (null)
+  )
+  const desktopTrashRef = useRef(
+    /** @type {HTMLButtonElement | null} */ (null)
+  )
+
+  const openTrash = useCallback(
+    (/** @type {HTMLElement | null | undefined} */ trigger) => {
+      trashReturnFocusRef.current = trigger ?? desktopTrashRef.current
+      markEasterEggDiscovered('trash-archive')
+      setTrashOpen(true)
+    },
+    []
+  )
+
+  const closeTrash = useCallback(() => {
+    setTrashOpen(false)
+  }, [])
+
+  const trashContextValue = useMemo(() => ({ openTrash }), [openTrash])
+
+  return (
+    <TrashProvider value={trashContextValue}>
+      <div
+        className="babel-shell"
+        data-layout={layout}
+        data-debate-complete={debateComplete ? 'true' : undefined}
+        data-lineage-mode={lineageMode ? 'true' : undefined}
+      >
+        <BabylonBackground gateLit={debateComplete && activeTab === 'babel'} />
+        <EnvironmentEasterEggs
+          activeTab={activeTab}
+          debateComplete={debateComplete}
+        />
+        <div className="babel-shell-foreground">
+          <GlobalNav
+            activeTab={activeTab}
+            onNavigate={onNavigate}
+            onOpenSettings={onOpenSettings}
+            onStartDebate={onStartDebate}
+            settingsControl={settingsControl}
+            lineageMode={lineageMode}
+            onToggleLineageMode={onToggleLineageMode}
+          />
+          <EnvironmentShortcuts
+            activeTab={activeTab}
+            onNavigate={onNavigate}
+            hidden={hideEnvironmentShortcuts}
+            onOpenTrash={() => openTrash(desktopTrashRef.current)}
+            trashTriggerRef={desktopTrashRef}
+          />
+          <div className="babel-shell-stage">
+            <ApplicationWindow
+              title={windowTitle}
+              layout={layout}
+              titleContext={titleContext}
+            >
+              {children}
+            </ApplicationWindow>
+          </div>
+        </div>
+        <TrashWindow
+          open={trashOpen}
+          onClose={closeTrash}
+          triggerRef={trashReturnFocusRef}
+        />
+        <BuilderNote suppressed={suppressBuilderNote || trashOpen} />
+      </div>
+    </TrashProvider>
+  )
+}

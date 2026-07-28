@@ -25,7 +25,7 @@ function StanceBadge({ stance }) {
   }
   return (
     <span
-      className={`inline-flex rounded-[4px] px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wider ${map[stance]}`}
+      className={`inline-flex rounded-[4px] px-2 py-0.5 font-mono text-[9px] font-semibold ${map[stance]}`}
     >
       {labels[stance]}
     </span>

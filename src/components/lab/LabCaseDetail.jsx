@@ -125,13 +125,13 @@ export default function LabCaseDetail({
       <PageSection first title="Case framing" titleId="lab-frame-h">
         <ReadingColumn>
           <h3 className="babel-eyebrow m-0">Prompt</h3>
-          <p className="babel-prose mt-3 mb-0 whitespace-pre-wrap text-[var(--ink)]">
+          <p className="babel-prose mb-0 whitespace-pre-wrap text-[var(--ink)]">
             {c.prompt}
           </p>
           {c.decisionCriteria?.length ? (
             <>
               <h3 className="babel-eyebrow mt-6 mb-0">Decision criteria</h3>
-              <ul className="babel-prose mt-3 mb-0 list-disc pl-5">
+              <ul className="babel-prose mb-0 list-disc pl-5">
                 {c.decisionCriteria.map((x) => (
                   <li key={x}>{x}</li>
                 ))}
@@ -139,11 +139,11 @@ export default function LabCaseDetail({
             </>
           ) : null}
           <h3 className="babel-eyebrow mt-6 mb-0">Why this case</h3>
-          <p className="babel-prose mt-3 mb-0">{c.whyThisCase}</p>
+          <p className="babel-prose mb-0">{c.whyThisCase}</p>
           {c.knownDifficulty ? (
             <>
               <h3 className="babel-eyebrow mt-6 mb-0">Expected difficulty</h3>
-              <p className="babel-prose mt-3 mb-0">{c.knownDifficulty}</p>
+              <p className="babel-prose mb-0">{c.knownDifficulty}</p>
             </>
           ) : null}
         </ReadingColumn>

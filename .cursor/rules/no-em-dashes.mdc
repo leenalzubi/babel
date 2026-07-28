@@ -1,0 +1,18 @@
+---
+description: Never use em dashes or en dashes in authored copy
+alwaysApply: true
+---
+
+# No em dashes or en dashes
+
+Do not use em dashes (`—`) or en dashes (`–`) in UI copy, comments, docs, prompts, or commit messages.
+
+Use ordinary punctuation instead:
+
+- Parenthetical asides: commas or parentheses
+- Breaks between clauses: a period or semicolon
+- Definitions or labels: a colon only when introducing what follows
+- Numeric or letter ranges: a hyphen (`1-5`, `A-B`)
+- Empty / missing placeholders in UI: a hyphen (`-`)
+
+Parsers may still *match* em/en dashes in model output so external text remains parseable. Do not *author* those characters.

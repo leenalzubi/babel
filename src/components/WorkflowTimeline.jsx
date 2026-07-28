@@ -472,7 +472,7 @@ export default function WorkflowTimeline({
 
   return (
     <aside
-      className={`fixed left-0 right-0 top-0 z-30 border-b border-[var(--border)] bg-[var(--bg-sidebar)] md:bottom-0 md:left-auto md:right-0 md:top-0 md:h-screen md:border-b-0 md:border-l ${
+      className={`fixed left-0 right-0 top-0 z-[45] border-b border-[var(--border)] bg-[var(--bg-sidebar)] md:bottom-0 md:left-auto md:right-0 md:top-0 md:h-screen md:border-b-0 md:border-l ${
         collapsed
           ? 'md:w-[40px] md:min-w-[40px] md:px-1.5 md:py-3'
           : 'md:w-[240px] md:min-w-[240px] md:px-4 md:py-5'

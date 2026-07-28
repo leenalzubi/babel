@@ -151,7 +151,7 @@ function PositionJourneyBlock({ audit, claimId, config }) {
 
   return (
     <section className="mb-6 border-b border-[#D4C9B0]/60 pb-6">
-      <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+      <p className="mb-3 font-mono text-[11px] font-medium text-[var(--text-muted)]">
         Position journey
       </p>
       <div className="space-y-3">
@@ -219,7 +219,7 @@ function PositionJourneyBlock({ audit, claimId, config }) {
 function VerdictPill({ verdict, minorityIncluded }) {
   const v = str(verdict).toLowerCase()
   const base =
-    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] font-medium tracking-wide'
+    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] font-medium'
   if (minorityIncluded || v === 'minority') {
     const label =
       v === 'minority' || !v ? 'Minority' : v.charAt(0).toUpperCase() + v.slice(1)
@@ -288,7 +288,7 @@ function ChallengeTypeBadge({ type }) {
     (t ? t.charAt(0).toUpperCase() + t.slice(1) : 'None')
   return (
     <span
-      className={`rounded-[4px] px-1.5 py-0.5 font-mono text-[9px] tracking-wide ${cls}`}
+      className={`rounded-[4px] px-1.5 py-0.5 font-mono text-[9px] ${cls}`}
     >
       {label}
     </span>
@@ -305,7 +305,7 @@ function FramingBadge({ framing }) {
       : f.charAt(0).toUpperCase() + f.slice(1)
   return (
     <span
-      className={`rounded-[4px] px-1.5 py-0.5 font-mono text-[9px] tracking-wide ${
+      className={`rounded-[4px] px-1.5 py-0.5 font-mono text-[9px] ${
         danger
           ? f === 'dropped'
             ? 'bg-[#97372B]/12 text-[#7A2C23]'
@@ -361,14 +361,14 @@ function TracePanel({ trace, config, audit, claimId }) {
   return (
     <div
       className="border-l-[3px] border-l-[#1E4E5E] bg-[#F8F3E8] px-6 py-5 text-[14px] leading-relaxed text-[#24201B]"
-      style={{ fontFamily: 'var(--font-body), Georgia, serif' }}
+      style={{ fontFamily: 'var(--font-body)' }}
     >
       {audit && claimId ? (
         <PositionJourneyBlock audit={audit} claimId={claimId} config={config} />
       ) : null}
 
       <section className="mb-6">
-        <p className="mb-2 font-mono text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+        <p className="mb-2 font-mono text-[11px] font-medium text-[var(--text-muted)]">
           01 Origin
         </p>
         <p className="font-[family-name:var(--font-body)]">
@@ -385,7 +385,7 @@ function TracePanel({ trace, config, audit, claimId }) {
       </section>
 
       <section className="mb-6">
-        <p className="mb-2 font-mono text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+        <p className="mb-2 font-mono text-[11px] font-medium text-[var(--text-muted)]">
           02 Challenge
         </p>
         {challenge.occurred ? (
@@ -413,7 +413,7 @@ function TracePanel({ trace, config, audit, claimId }) {
       </section>
 
       <section className="mb-6">
-        <p className="mb-2 font-mono text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+        <p className="mb-2 font-mono text-[11px] font-medium text-[var(--text-muted)]">
           03 Defense
         </p>
         {defense.occurred ? (
@@ -438,7 +438,7 @@ function TracePanel({ trace, config, audit, claimId }) {
       </section>
 
       <section>
-        <p className="mb-2 font-mono text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+        <p className="mb-2 font-mono text-[11px] font-medium text-[var(--text-muted)]">
           04 Synthesis decision
         </p>
         <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -451,7 +451,7 @@ function TracePanel({ trace, config, audit, claimId }) {
         ) : null}
         {syn.drift ? (
           <div className="mt-4 rounded-[4px] border border-dashed border-[#D97706]/50 bg-[#D97706]/10 px-3 py-2">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-wide text-[#B45309]">
+            <p className="font-mono text-[10px] font-semibold text-[#B45309]">
               ⚑ Drift detected
             </p>
             {syn.driftNote ? (
@@ -463,7 +463,7 @@ function TracePanel({ trace, config, audit, claimId }) {
         ) : null}
         {trace.flag ? (
           <div className="mt-4 rounded-[4px] border border-dashed border-[#97372B]/40 bg-[#97372B]/8 px-3 py-2">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-wide text-[#7A2C23]">
+            <p className="font-mono text-[10px] font-semibold text-[#7A2C23]">
               ⚑ Notable
             </p>
             {trace.flagReason ? (
@@ -644,7 +644,7 @@ export default function AuditTrail({ onRetryAudit, auditRetrying = false }) {
     >
       {competitionMatrix ? (
         <div className="mb-10 overflow-x-auto rounded-[6px] border border-dashed border-[#D4C9B0] bg-[var(--bg-surface)]/60 px-4 py-5 md:px-6">
-          <h3 className="mb-4 font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
+          <h3 className="mb-4 font-mono text-[10px] font-semibold text-[var(--text-muted)]">
             Competition scores
           </h3>
           <p className="mb-4 font-[family-name:var(--font-body)] text-xs italic text-[var(--text-muted)]">
@@ -653,7 +653,7 @@ export default function AuditTrail({ onRetryAudit, auditRetrying = false }) {
           </p>
           <table className="w-full min-w-[420px] border-collapse text-left font-mono text-[12px]">
             <thead>
-              <tr className="border-b border-[#D4C9B0] text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
+              <tr className="border-b border-[#D4C9B0] text-[10px] text-[var(--text-muted)]">
                 <th className="px-2 py-2 font-medium">Evaluator</th>
                 {(
                   [
@@ -736,7 +736,7 @@ export default function AuditTrail({ onRetryAudit, auditRetrying = false }) {
 
       {concessions.length > 0 ? (
         <div className="mb-10 rounded-[6px] border border-dashed border-[#4C6647]/35 bg-[#4C6647]/6 px-4 py-5 md:px-6">
-          <h3 className="mb-4 font-mono text-[10px] font-semibold tracking-[0.12em] text-[#3D5439]">
+          <h3 className="mb-4 font-mono text-[10px] font-semibold text-[#3D5439]">
             Concessions made
           </h3>
           <ul className="flex flex-col gap-3">
@@ -769,7 +769,7 @@ export default function AuditTrail({ onRetryAudit, auditRetrying = false }) {
 
       {heldFirmLines.length > 0 ? (
         <div className="mb-10 rounded-[6px] border border-dashed border-[var(--border)] bg-[var(--bg-surface)]/80 px-4 py-5 md:px-6">
-          <h3 className="mb-4 font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
+          <h3 className="mb-4 font-mono text-[10px] font-semibold text-[var(--text-muted)]">
             Positions maintained under challenge
           </h3>
           <ul className="flex flex-col gap-3">
@@ -874,31 +874,31 @@ export default function AuditTrail({ onRetryAudit, auditRetrying = false }) {
                     <tr className="border-b border-[#D4C9B0]">
                       <th
                         rowSpan={2}
-                        className="px-3 py-2 align-bottom font-mono text-[11px] font-medium tracking-[0.12em] text-[var(--text-muted)]"
+                        className="px-3 py-2 align-bottom font-mono text-[11px] font-medium text-[var(--text-muted)]"
                       >
                         Claim
                       </th>
                       <th
                         colSpan={3}
-                        className="px-2 py-2 text-center font-mono text-[11px] font-medium tracking-[0.12em] text-[var(--text-muted)]"
+                        className="px-2 py-2 text-center font-mono text-[11px] font-medium text-[var(--text-muted)]"
                       >
                         {config.agentA.name}
                       </th>
                       <th
                         colSpan={3}
-                        className="px-2 py-2 text-center font-mono text-[11px] font-medium tracking-[0.12em] text-[var(--text-muted)]"
+                        className="px-2 py-2 text-center font-mono text-[11px] font-medium text-[var(--text-muted)]"
                       >
                         {config.agentB.name}
                       </th>
                       <th
                         colSpan={3}
-                        className="px-2 py-2 text-center font-mono text-[11px] font-medium tracking-[0.12em] text-[var(--text-muted)]"
+                        className="px-2 py-2 text-center font-mono text-[11px] font-medium text-[var(--text-muted)]"
                       >
                         {config.agentC.name}
                       </th>
                       <th
                         rowSpan={2}
-                        className="px-2 py-2 align-bottom text-center font-mono text-[11px] font-medium tracking-[0.12em] text-[var(--text-muted)]"
+                        className="px-2 py-2 align-bottom text-center font-mono text-[11px] font-medium text-[var(--text-muted)]"
                       >
                         Final verdict
                       </th>
@@ -912,7 +912,7 @@ export default function AuditTrail({ onRetryAudit, auditRetrying = false }) {
                         ['R1', 'R2', 'R3'].map((r) => (
                           <th
                             key={`${agentName}-${r}`}
-                            className="px-1 py-1.5 text-center font-mono text-[10px] font-medium tracking-wide text-[var(--text-muted)]"
+                            className="px-1 py-1.5 text-center font-mono text-[10px] font-medium text-[var(--text-muted)]"
                           >
                             {r}
                           </th>
@@ -955,7 +955,7 @@ export default function AuditTrail({ onRetryAudit, auditRetrying = false }) {
                             <td
                               className="px-3 py-3 align-top text-[14px] leading-snug text-[#24201B]"
                               style={{
-                                fontFamily: 'var(--font-body), Georgia, serif',
+                                fontFamily: 'var(--font-body)',
                               }}
                             >
                               {row.text}
@@ -1097,12 +1097,12 @@ export default function AuditTrail({ onRetryAudit, auditRetrying = false }) {
               : 'border-l-[3px] border-l-[#4C6647] bg-[#E8EDE6]/90'
           } border-[var(--border)]`}
         >
-          <h3 className="font-mono text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
+          <h3 className="font-mono text-[10px] font-semibold text-[var(--text-muted)]">
             Peer validation
           </h3>
           <p
             className="mt-1 text-sm leading-relaxed text-[var(--text-secondary)]"
-            style={{ fontFamily: 'var(--font-body), Georgia, serif' }}
+            style={{ fontFamily: 'var(--font-body)' }}
           >
             The two non-synthesizing agents reviewed the synthesis for fairness
           </p>
@@ -1118,7 +1118,7 @@ export default function AuditTrail({ onRetryAudit, auditRetrying = false }) {
                 <div className="flex flex-wrap items-center gap-2">
                   <span
                     className="font-[family-name:var(--font-body)] text-[15px] font-medium text-[var(--text-primary)]"
-                    style={{ fontFamily: 'var(--font-body), Georgia, serif' }}
+                    style={{ fontFamily: 'var(--font-body)' }}
                   >
                     {spec.name}
                   </span>
@@ -1139,7 +1139,7 @@ export default function AuditTrail({ onRetryAudit, auditRetrying = false }) {
                 {v.bias_note ? (
                   <p
                     className="mt-2 text-[14px] leading-relaxed text-[var(--text-secondary)]"
-                    style={{ fontFamily: 'var(--font-body), Georgia, serif' }}
+                    style={{ fontFamily: 'var(--font-body)' }}
                   >
                     <span className="font-[family-name:var(--font-mono)] text-[10px] text-[var(--text-muted)]">
                       bias_note:{' '}
@@ -1150,7 +1150,7 @@ export default function AuditTrail({ onRetryAudit, auditRetrying = false }) {
                 {v.missing ? (
                   <p
                     className="mt-2 text-[14px] leading-relaxed text-[var(--text-secondary)]"
-                    style={{ fontFamily: 'var(--font-body), Georgia, serif' }}
+                    style={{ fontFamily: 'var(--font-body)' }}
                   >
                     <span className="font-[family-name:var(--font-mono)] text-[10px] text-[var(--text-muted)]">
                       missing:{' '}

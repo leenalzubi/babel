@@ -74,7 +74,7 @@ export function ConsensusMeterBar({ scores, initials = { a: 'A', b: 'B', c: 'C' 
       aria-label="Pairwise claim disagreement between agents."
     >
       <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
-        <span className="font-[family-name:var(--font-mono)] text-[10px] font-medium tracking-[0.12em] text-[var(--text-muted)]">
+        <span className="font-[family-name:var(--font-mono)] text-[10px] font-medium text-[var(--text-muted)]">
           Claim disagreement
         </span>
         <div className="flex flex-col items-end gap-0.5 text-right">
@@ -174,10 +174,10 @@ export default function TriangleConsensus({
       >
         <defs>
           <style>{`
-            .tc-edge-label { font-family: var(--font-mono), monospace; font-size: 14px; font-weight: 500; fill: var(--text-secondary); }
-            .tc-center-pct { font-family: var(--font-mono), monospace; font-size: 26px; font-weight: 700; fill: var(--text-primary); }
-            .tc-center-sub { font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 500; fill: var(--text-muted); }
-            .tc-init { font-family: var(--font-mono), monospace; font-size: 12px; font-weight: 700; fill: #fff; }
+            .tc-edge-label { font-family: Arial, Helvetica, sans-serif; font-size: 14px; font-weight: 500; fill: var(--text-secondary); }
+            .tc-center-pct { font-family: Arial, Helvetica, sans-serif; font-size: 26px; font-weight: 700; fill: var(--text-primary); }
+            .tc-center-sub { font-family: Arial, Helvetica, sans-serif; font-size: 11px; font-weight: 500; fill: var(--text-muted); }
+            .tc-init { font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-weight: 700; fill: #fff; }
           `}</style>
         </defs>
 
