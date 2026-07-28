@@ -45,6 +45,8 @@ Babel Lab (public evaluation): [docs/BABEL_LAB.md](docs/BABEL_LAB.md): routes `/
 
 Conclusion stability check: [docs/CONCLUSION_STABILITY.md](docs/CONCLUSION_STABILITY.md).
 
+Environment easter eggs (spoilers): [docs/EASTER_EGGS.md](docs/EASTER_EGGS.md).
+
 Create a `.env.local` file:
 ```
 VITE_GITHUB_TOKEN=your_github_pat_with_models_read_scope
