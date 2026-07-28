@@ -108,16 +108,11 @@ export default function SynthesisPanel({ synthesis }) {
   const activeFinding =
     enrichedFindings.find((f) => f.findingId === lineageFindingId) ?? null
 
-  const divergence =
-    settings.showResearchSurfaces && state.divergenceScores.length > 0
-      ? state.divergenceScores[state.divergenceScores.length - 1]
-      : null
-
-  const triInitials = {
-    a: (agentA.name?.[0] ?? 'A').toUpperCase(),
-    b: (agentB.name?.[0] ?? 'B').toUpperCase(),
-    c: (agentC.name?.[0] ?? 'C').toUpperCase(),
-  }
+  const showInfluence =
+    settings.showResearchSurfaces &&
+    (state.influenceReport != null ||
+      state.influenceLoading ||
+      state.stageErrors?.influence != null)
 
   const attPills = [
     {
@@ -241,20 +236,18 @@ export default function SynthesisPanel({ synthesis }) {
         <ValidationBadge />
       </div>
 
-      {divergence && (
+      {showInfluence ? (
         <div className="border-t border-dashed border-[var(--border)] bg-[var(--bg-synthesis)] px-6 py-6 md:px-10">
           <div className="flex justify-center">
             <InfluenceMap
-              scores={divergence}
-              initials={triInitials}
               config={state.config}
               influenceReport={state.influenceReport}
               influenceLoading={state.influenceLoading}
-              showPositionTracks
+              influenceError={state.stageErrors?.influence ?? null}
             />
           </div>
         </div>
-      )}
+      ) : null}
 
       <div className="px-6 py-8 md:px-10 md:py-10">
         {lineage.debateLineageStatus === 'unavailable' &&

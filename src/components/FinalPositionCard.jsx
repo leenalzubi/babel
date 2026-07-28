@@ -212,7 +212,6 @@ function FinalColumn({ agentKey, agentSpec, text, finalTimer, totalMs }) {
  *   reviewTimers: Record<string, { startTime: number | null, endTime: number | null }>,
  *   rebuttalTimers: Record<string, { startTime: number | null, endTime: number | null }>,
  *   scores: { ab: number, ac: number, bc: number, average?: number } | null,
- *   divergenceReady?: boolean,
  *   influenceReport?: Record<string, unknown> | null,
  *   influenceLoading?: boolean,
  *   influenceError?: { title?: string, detail?: string, userMessage?: string } | null,
@@ -222,7 +221,6 @@ function FinalColumn({ agentKey, agentSpec, text, finalTimer, totalMs }) {
 function FinalPositionCard({
   config,
   scores = null,
-  divergenceReady = false,
   finalPositions,
   finalPositionTimers,
   agentTimers,
@@ -239,12 +237,6 @@ function FinalPositionCard({
   const fa = finalPositions?.a ?? ''
   const fb = finalPositions?.b ?? ''
   const fc = finalPositions?.c ?? ''
-
-  const initials = {
-    a: (agentA.name?.[0] ?? 'A').toUpperCase(),
-    b: (agentB.name?.[0] ?? 'B').toUpperCase(),
-    c: (agentC.name?.[0] ?? 'C').toUpperCase(),
-  }
 
   const totalA = useTotalDebateMs({
     agentKey: 'a',
@@ -341,15 +333,11 @@ function FinalPositionCard({
       {showInfluenceSection && scores ? (
         <div className="border-t border-dashed border-[var(--border)] pt-6">
           <InfluenceMap
-            scores={scores}
-            initials={initials}
             config={config}
             influenceReport={influenceReport}
             influenceLoading={influenceLoading}
             influenceError={influenceError}
             onRetryInfluence={onRetryInfluence}
-            showPositionTracks
-            divergenceReady={divergenceReady}
           />
         </div>
       ) : null}

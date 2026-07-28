@@ -6,8 +6,9 @@ export const FORGE_SETTINGS_DEFAULTS = {
   synthesisMode: 'always',
   showRationale: true,
   /**
-   * Influence map, divergence chips, and post-hoc audit trail.
-   * Off by default: Phase C / evaluation surfaces, not the flagship path.
+   * Influence map and divergence chips.
+   * Off by default: evaluation surfaces, not the flagship path.
+   * Audit always runs after a settled debate regardless of this flag.
    */
   showResearchSurfaces: false,
 }

@@ -19,6 +19,7 @@ import { readBabelSynthesisEnabled } from '../lib/babelSynthesisPref.js'
 import { copyToClipboard, downloadMarkdown, exportToMarkdown } from '../utils/exportUtils.js'
 import { useForge } from '../store/useForgeStore.js'
 import {
+  ensureDebateAudit,
   retryDebateAudit,
   retryInfluenceAnalysis,
   runPipelineAfterRound1,
@@ -267,6 +268,10 @@ export function useDebateEngine() {
             type: 'SET_STATUS',
             payload: hasVoiceGaps ? 'complete_with_gaps' : 'complete',
           })
+          ensureDebateAudit(dispatch, {
+            ...stateRef.current,
+            status: hasVoiceGaps ? 'complete_with_gaps' : 'complete',
+          })
         }
       } catch (err) {
         if (!isActive()) return
@@ -407,6 +412,17 @@ export function useDebateEngine() {
         payload: stillGaps ? 'complete_with_gaps' : 'complete',
       })
     }
+    ensureDebateAudit(dispatch, {
+      ...stateRef.current,
+      status:
+        stillGaps || snap.status === 'complete_with_gaps'
+          ? 'complete_with_gaps'
+          : 'complete',
+    })
+  }, [dispatch])
+
+  const ensureAudit = useCallback(() => {
+    ensureDebateAudit(dispatch, stateRef.current)
   }, [dispatch])
 
   const retryAudit = useCallback(() => {
@@ -415,6 +431,7 @@ export function useDebateEngine() {
     try {
       retryDebateAudit(dispatch, stateRef.current)
     } finally {
+      // Loading state lives on the store while the audit runs.
       setStageRetrying(null)
     }
   }, [dispatch, stageRetrying])
@@ -473,6 +490,7 @@ export function useDebateEngine() {
     startNewDebate,
     retrySynthesis,
     finishWithoutSynthesis,
+    ensureAudit,
     retryAudit,
     retryInfluence,
     retryVoice,

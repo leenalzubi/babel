@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Loader2, Flag } from 'lucide-react'
 import {
   buildRowsForClaim,
@@ -500,7 +500,11 @@ function synthesisLineAgentPill(line, config) {
   return { name: '-', color: 'var(--text-muted)' }
 }
 
-export default function AuditTrail({ onRetryAudit, auditRetrying = false }) {
+export default function AuditTrail({
+  onEnsureAudit,
+  onRetryAudit,
+  auditRetrying = false,
+}) {
   const { state } = useForge()
   const {
     audit,
@@ -510,9 +514,12 @@ export default function AuditTrail({ onRetryAudit, auditRetrying = false }) {
     synthesis,
     validation,
     synthesisWinner,
+    status,
   } = state
   const stageAuditError = state.stageErrors?.audit ?? null
   const showAuditUnavailable = Boolean(auditError || stageAuditError)
+  const debateSettled =
+    status === 'complete' || status === 'complete_with_gaps'
   const concessions = Array.isArray(synthesis?.concessions)
     ? synthesis.concessions
     : []
@@ -520,6 +527,19 @@ export default function AuditTrail({ onRetryAudit, auditRetrying = false }) {
     ? synthesis.heldFirm
     : []
   const [expandedId, setExpandedId] = useState(/** @type {string | null} */ (null))
+
+  useEffect(() => {
+    if (!debateSettled) return
+    if (audit || auditLoading || showAuditUnavailable) return
+    if (typeof onEnsureAudit !== 'function') return
+    onEnsureAudit()
+  }, [
+    debateSettled,
+    audit,
+    auditLoading,
+    showAuditUnavailable,
+    onEnsureAudit,
+  ])
 
   const claimById = useMemo(() => {
     const list = audit?.claims
@@ -625,10 +645,15 @@ export default function AuditTrail({ onRetryAudit, auditRetrying = false }) {
     )
   }, [synthesisWinner])
 
+  const awaitingAutoAudit =
+    debateSettled && !audit && !auditLoading && !showAuditUnavailable
+
   if (
     !auditLoading &&
+    !awaitingAutoAudit &&
     !audit &&
     !auditError &&
+    !stageAuditError &&
     concessions.length === 0 &&
     heldFirmLines.length === 0 &&
     validation == null &&
@@ -802,7 +827,7 @@ export default function AuditTrail({ onRetryAudit, auditRetrying = false }) {
         </div>
       ) : null}
 
-      {auditLoading ? (
+      {auditLoading || awaitingAutoAudit ? (
         <div
           className="mb-6 flex items-center justify-center gap-2 font-mono text-[13px] text-[var(--text-muted)]"
           role="status"
@@ -819,7 +844,8 @@ export default function AuditTrail({ onRetryAudit, auditRetrying = false }) {
           role="status"
         >
           <p className="font-mono text-xs text-[var(--text-muted)]">
-            Evaluation unavailable. The debate and synthesis remain above.
+            Automatic audit could not finish. The debate and synthesis remain
+            above. You can retry below.
           </p>
           {typeof onRetryAudit === 'function' ? (
             <button

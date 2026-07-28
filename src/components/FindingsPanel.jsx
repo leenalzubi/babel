@@ -1,5 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
-import InfluenceMap from './InfluenceMap.jsx'
+import { useEffect, useMemo, useState } from 'react'
 import PageHeader from './layout/PageHeader.jsx'
 import PageSection from './layout/PageSection.jsx'
 import ReadingColumn from './layout/ReadingColumn.jsx'
@@ -199,7 +198,6 @@ export default function FindingsPanel() {
   const [divMax, setDivMax] = useState(100)
   const [sort, setSort] = useState(/** @type {'recent' | 'contested' | 'aligned'} */ ('recent'))
   const [page, setPage] = useState(1)
-  const [expandedId, setExpandedId] = useState(/** @type {string | null} */ (null))
 
   useEffect(() => {
     let cancelled = false
@@ -959,17 +957,14 @@ export default function FindingsPanel() {
                           })
                         : '-'
                       return (
-                        <Fragment key={id}>
-                          <tr
-                            className={`cursor-pointer border-b border-[var(--line)] transition hover:bg-[color-mix(in_srgb,var(--blue-wash)_55%,transparent)] ${
-                              rowIdx % 2 === 0
-                                ? 'bg-[var(--plaster-hi)]'
-                                : 'bg-[color-mix(in_srgb,var(--plaster)_88%,transparent)]'
-                            }`}
-                            onClick={() =>
-                              setExpandedId((e) => (e === id ? null : id))
-                            }
-                          >
+                        <tr
+                          key={id}
+                          className={`border-b border-[var(--line)] transition hover:bg-[color-mix(in_srgb,var(--blue-wash)_55%,transparent)] ${
+                            rowIdx % 2 === 0
+                              ? 'bg-[var(--plaster-hi)]'
+                              : 'bg-[color-mix(in_srgb,var(--plaster)_88%,transparent)]'
+                          }`}
+                        >
                             <td className="whitespace-nowrap px-3 py-3.5 babel-meta-tech text-[var(--ink-soft)]">
                               {dateStr}
                             </td>
@@ -1011,47 +1006,6 @@ export default function FindingsPanel() {
                               {row.rounds != null ? String(row.rounds) : '-'}
                             </td>
                           </tr>
-                          {expandedId === id ? (
-                            <tr className="border-b border-[var(--line)] bg-[var(--plaster-hi)]">
-                              <td colSpan={7} className="px-6 py-6">
-                                <p className="mb-2 babel-eyebrow">
-                                  Pairwise claim disagreement
-                                </p>
-                                <p className="mb-3 max-w-md babel-meta italic">
-                                  Edges aggregate agree / disagree / partial / silent
-                                  labels from the debate audit.
-                                </p>
-                                <div className="flex justify-center md:justify-start">
-                                  <InfluenceMap
-                                    scores={scores}
-                                    initials={{
-                                      a: (String(row.model_a ?? 'A')[0] ?? 'A').toUpperCase(),
-                                      b: (String(row.model_b ?? 'B')[0] ?? 'B').toUpperCase(),
-                                      c: (String(row.model_c ?? 'C')[0] ?? 'C').toUpperCase(),
-                                    }}
-                                    config={{
-                                      agentA: {
-                                        name: String(row.model_a ?? 'Agent A'),
-                                        color: 'var(--agent-a)',
-                                      },
-                                      agentB: {
-                                        name: String(row.model_b ?? 'Agent B'),
-                                        color: 'var(--agent-b)',
-                                      },
-                                      agentC: {
-                                        name: String(row.model_c ?? 'Agent C'),
-                                        color: 'var(--agent-c)',
-                                      },
-                                    }}
-                                    influenceReport={null}
-                                    influenceLoading={false}
-                                    showPositionTracks={false}
-                                  />
-                                </div>
-                              </td>
-                            </tr>
-                          ) : null}
-                        </Fragment>
                       )
                     })}
                   </tbody>

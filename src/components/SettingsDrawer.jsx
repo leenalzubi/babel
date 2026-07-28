@@ -202,12 +202,13 @@ export default function SettingsDrawer({ open, onClose }) {
                 className="h-4 w-4 rounded border-[var(--border)] accent-[var(--accent-forge)]"
               />
               <span className="babel-meta text-[var(--text-primary)]">
-                Show research surfaces (influence, divergence, audit trail)
+                Show research surfaces (influence, divergence chips)
               </span>
             </label>
             <p className="mt-2 babel-meta leading-relaxed text-[var(--text-muted)]">
-              Off by default. The flagship path ends at the decision memo; these
-              surfaces add influence, divergence, and the audit trail.
+              Off by default. Adds influence tracks and divergence chips. The
+              audit trail always runs after a debate; this toggle only controls
+              those extra research surfaces.
             </p>
           </section>
 

@@ -209,6 +209,7 @@ export default function App() {
     startNewDebate,
     retrySynthesis,
     finishWithoutSynthesis,
+    ensureAudit,
     retryAudit,
     retryInfluence,
     retryVoice,
@@ -1022,7 +1023,6 @@ export default function App() {
                           <FinalPositionCard
                             config={cfg}
                             scores={scores}
-                            divergenceReady={divergenceReady}
                             finalPositions={state.finalPositions}
                             finalPositionTimers={state.finalPositionTimers}
                             agentTimers={state.agentTimers}
@@ -1150,12 +1150,12 @@ export default function App() {
                   </div>
                 </>
               ) : null}
-              {settings.showResearchSurfaces &&
-              isDebateSettled(state.status) &&
+              {isDebateSettled(state.status) &&
               state.status !== 'blocked' ? (
                 <>
                   <MashrabiyaScreen tight />
-                  {state.synthesis != null &&
+                  {settings.showResearchSurfaces &&
+                  state.synthesis != null &&
                   state.divergenceScores.length > 0 ? (
                     <p className="mx-auto mb-6 max-w-xl px-6 text-center babel-meta italic leading-relaxed text-[var(--text-muted)] md:px-10">
                       Note: claim disagreement scores reflect how agents aligned
@@ -1165,8 +1165,11 @@ export default function App() {
                   ) : null}
                   <div ref={auditRef} className={roundScrollMt}>
                     <AuditTrail
+                      onEnsureAudit={ensureAudit}
                       onRetryAudit={retryAudit}
-                      auditRetrying={stageRetrying === 'audit'}
+                      auditRetrying={
+                        stageRetrying === 'audit' || state.auditLoading
+                      }
                     />
                   </div>
                 </>

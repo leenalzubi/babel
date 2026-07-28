@@ -1561,6 +1561,23 @@ export function retryDebateAudit(dispatch, state) {
 }
 
 /**
+ * Start audit automatically when a settled debate has no audit yet.
+ * Does not retry after a failed audit (Retry audit is the fallback).
+ * @param {import('react').Dispatch<unknown>} dispatch
+ * @param {Record<string, unknown>} state
+ * @returns {boolean} true if an audit was scheduled
+ */
+export function ensureDebateAudit(dispatch, state) {
+  const status = String(state.status ?? '')
+  if (status !== 'complete' && status !== 'complete_with_gaps') return false
+  if (state.audit) return false
+  if (state.auditLoading) return false
+  if (state.auditError) return false
+  if (state.stageErrors?.audit) return false
+  return retryDebateAudit(dispatch, state)
+}
+
+/**
  * Re-run influence analysis from stored finals / reviews.
  * @param {import('react').Dispatch<unknown>} dispatch
  * @param {Record<string, unknown>} state

@@ -5,111 +5,6 @@ import React from 'react'
 
 /** About tab content: editorial layout, light and spacious. */
 
-/** Default forge agent accent colors (match useForgeStore). */
-const AGENT_DOT = {
-  a: '#1E4E5E',
-  b: '#4C6647',
-  c: '#97372B',
-}
-
-function TriangleDivergenceIllustration() {
-  const r = 3.5
-  const c = [AGENT_DOT.a, AGENT_DOT.b, AGENT_DOT.c]
-
-  /** @param {number} x0 @param {number} y0 @param {number} x1 @param {number} y1 @param {number} x2 @param {number} y2 */
-  function tri(x0, y0, x1, y1, x2, y2, strokeW = 1.25) {
-    return (
-      <g>
-        <polygon
-          points={`${x0},${y0} ${x1},${y1} ${x2},${y2}`}
-          fill="none"
-          stroke="var(--text-muted)"
-          strokeWidth={strokeW}
-          opacity={0.85}
-        />
-        <circle cx={x0} cy={y0} r={r} fill={c[0]} />
-        <circle cx={x1} cy={y1} r={r} fill={c[1]} />
-        <circle cx={x2} cy={y2} r={r} fill={c[2]} />
-      </g>
-    )
-  }
-
-  return (
-    <figure
-      className="mx-auto w-[200px] max-w-full"
-      aria-label="Three triangle divergence patterns: consensus, uniform divergence, and two versus one"
-    >
-      <svg
-        width="200"
-        height="82"
-        viewBox="0 0 200 82"
-        className="overflow-visible"
-        role="img"
-      >
-        <title>Triangle consensus map patterns</title>
-        {/* Column centers ~33, 100, 167: small eq */}
-        {tri(33, 28, 24, 44, 42, 44)}
-        {/* Large eq */}
-        {tri(100, 18, 82, 48, 118, 48, 1.35)}
-        {/* Two vs one: long edge bottom */}
-        {tri(167, 22, 152, 50, 188, 50, 1.35)}
-        <text
-          x="33"
-          y="72"
-          textAnchor="middle"
-          className="fill-[var(--text-muted)]"
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '8px',
-            letterSpacing: '0.02em',
-          }}
-        >
-          Consensus
-        </text>
-        <text
-          x="100"
-          y="68"
-          textAnchor="middle"
-          className="fill-[var(--text-muted)]"
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '6.5px',
-            letterSpacing: '0.02em',
-          }}
-        >
-          Uniform
-        </text>
-        <text
-          x="100"
-          y="75"
-          textAnchor="middle"
-          className="fill-[var(--text-muted)]"
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '6.5px',
-            letterSpacing: '0.02em',
-          }}
-        >
-          divergence
-        </text>
-        <text
-          x="167"
-          y="72"
-          textAnchor="middle"
-          className="fill-[var(--text-muted)]"
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '8px',
-            letterSpacing: '0.02em',
-          }}
-        >
-          Two vs one
-        </text>
-      </svg>
-    </figure>
-  )
-}
-
 function SectionShell({ num, title, children, first = false }) {
   return (
     <section
@@ -269,22 +164,9 @@ export default function ResearchPanel() {
             <p>
               Three pairwise scores are computed per debate: GPT vs Phi-4, GPT
               vs Mistral, and Phi-4 vs Mistral. A debate where two models agree
-              but a third dissents shows two low-divergence edges and one
-              high-divergence edge.
+              but a third dissents shows two low-divergence pairs and one
+              high-divergence pair.
             </p>
-          </div>
-
-          <div>
-            <h3 className="babel-display babel-display-card mb-4">
-              What the triangle shows
-            </h3>
-            <p className="mb-6">
-              Each corner is a model. Each edge shows how differently those two
-              models reasoned about the same question. Edge thickness reflects
-              divergence. A tight triangle means consensus. A lopsided triangle
-              means two models aligned against a third.
-            </p>
-            <TriangleDivergenceIllustration />
           </div>
 
           <div>

@@ -1,7 +1,6 @@
 import { memo } from 'react'
 import AgentThinking from './AgentThinking.jsx'
 import AgentTimer from './AgentTimer.jsx'
-import InfluenceMap from './InfluenceMap.jsx'
 import SectionHeading from './SectionHeading.jsx'
 import VoiceCard from './VoiceCard.jsx'
 import VoiceFailureNotice from './VoiceFailureNotice.jsx'
@@ -178,43 +177,27 @@ function AgentRoundColumn({ agentKey, agentSpec, responseText, timer }) {
   return <RoundAgentWaiting title={roleTitle} color={agentSpec.color} />
 }
 
-/** @param {{ scores: { ab: number, ac: number, bc: number }, initials: { a: string, b: string, c: string }, colors: { a: string, b: string, c: string }, config: { agentA: { name: string, color: string }, agentB: { name: string, color: string }, agentC: { name: string, color: string } }, divergenceReady: boolean }} props */
-function DivergenceRow({ scores, initials, colors, config, divergenceReady }) {
+/** @param {{ scores: { ab: number, ac: number, bc: number }, initials: { a: string, b: string, c: string }, colors: { a: string, b: string, c: string }, divergenceReady: boolean }} props */
+function DivergenceRow({ scores, initials, colors, divergenceReady }) {
   const pct = (n) => Math.min(100, Math.max(0, Math.round(Number(n) * 100)))
+  if (!divergenceReady) return null
   return (
-    <div className="mt-6 flex flex-col gap-4 border-t border-dashed border-[var(--border)] pt-6 md:flex-row md:items-center md:justify-between">
-      {divergenceReady ? (
-        <div className="flex flex-wrap gap-2">
-          <DivergenceChip
-            label={`${initials.a}-${initials.b}`}
-            color={colors.a}
-            pct={pct(scores.ab)}
-          />
-          <DivergenceChip
-            label={`${initials.a}-${initials.c}`}
-            color={colors.c}
-            pct={pct(scores.ac)}
-          />
-          <DivergenceChip
-            label={`${initials.b}-${initials.c}`}
-            color={colors.b}
-            pct={pct(scores.bc)}
-          />
-        </div>
-      ) : null}
-      <div
-        className={`flex shrink-0 justify-center md:justify-end${divergenceReady ? '' : ' md:ml-auto md:w-full'}`}
-      >
-        <InfluenceMap
-          scores={scores}
-          initials={initials}
-          config={config}
-          influenceReport={null}
-          influenceLoading={false}
-          showPositionTracks={false}
-          divergenceReady={divergenceReady}
-        />
-      </div>
+    <div className="mt-6 flex flex-wrap gap-2 border-t border-dashed border-[var(--border)] pt-6">
+      <DivergenceChip
+        label={`${initials.a}-${initials.b}`}
+        color={colors.a}
+        pct={pct(scores.ab)}
+      />
+      <DivergenceChip
+        label={`${initials.a}-${initials.c}`}
+        color={colors.c}
+        pct={pct(scores.ac)}
+      />
+      <DivergenceChip
+        label={`${initials.b}-${initials.c}`}
+        color={colors.b}
+        pct={pct(scores.bc)}
+      />
     </div>
   )
 }
@@ -309,7 +292,6 @@ function RoundCard({
           scores={scores}
           initials={initials}
           colors={colors}
-          config={config}
           divergenceReady={divergenceReady}
         />
       ) : null}
