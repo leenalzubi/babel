@@ -334,7 +334,7 @@ export default function ResearchPanel() {
                 debate.
               </p>
               <p>
-                Synthesis is optional. When enabled, the model that scored
+                Synthesis always runs after Round 3. The model that scored
                 highest in peer evaluation writes the synthesis.
               </p>
             </div>

@@ -206,6 +206,7 @@ export default function App() {
     runDebate,
     resetAndRetry,
     resetForEditPrompt,
+    startNewDebate,
     retrySynthesis,
     finishWithoutSynthesis,
     retryAudit,
@@ -213,6 +214,7 @@ export default function App() {
     retryVoice,
     continueWithout,
     copyPartialTranscript,
+    downloadTranscript,
     resumeAfterReconnect,
     stageRetrying,
   } = useDebateEngine()
@@ -485,6 +487,19 @@ export default function App() {
     requestAnimationFrame(() => promptInputRef.current?.focusPrompt())
   }, [navigateMainTab])
 
+  const handleStartNewDebate = useCallback(() => {
+    startNewDebate()
+    setPromptDraft('')
+    navigateMainTab('babel')
+    requestAnimationFrame(() => {
+      const main =
+        document.querySelector('.babel-app-window-body') ||
+        document.querySelector('.main-content')
+      if (main) main.scrollTop = 0
+      promptInputRef.current?.focusPrompt()
+    })
+  }, [startNewDebate, navigateMainTab])
+
   const round1Ref = useRef(/** @type {HTMLDivElement | null} */ (null))
   const round2Ref = useRef(/** @type {HTMLDivElement | null} */ (null))
   const round3Ref = useRef(/** @type {HTMLDivElement | null} */ (null))
@@ -520,6 +535,17 @@ export default function App() {
     if (running) {
       return { label: 'Starting…', action: handleRun, disabled: true }
     }
+    if (
+      state.status === 'complete' ||
+      state.status === 'complete_with_gaps' ||
+      state.status === 'failed'
+    ) {
+      return {
+        label: 'Start new debate',
+        action: handleStartNewDebate,
+        disabled: false,
+      }
+    }
     if (showEmptyState || !state.prompt) {
       return {
         label: 'Start debate',
@@ -553,10 +579,12 @@ export default function App() {
     running,
     showEmptyState,
     state.prompt,
+    state.status,
     state.stageErrors,
     state.synthesis,
     promptDraft,
     handleRun,
+    handleStartNewDebate,
     retrySynthesis,
     stageRetrying,
     jumpToSection,
@@ -697,6 +725,16 @@ export default function App() {
   const debateComplete =
     state.status === 'complete' || state.status === 'complete_with_gaps'
 
+  const showStartNewDebate =
+    debateComplete || state.status === 'failed'
+
+  const shellStartDebateLabel = showStartNewDebate
+    ? 'Start new debate'
+    : 'Start a debate'
+  const shellStartDebateAction = showStartNewDebate
+    ? handleStartNewDebate
+    : startDebateFromShell
+
   const toggleLineageMode = useCallback(() => {
     setLineageMode((v) => !v)
   }, [])
@@ -764,7 +802,8 @@ export default function App() {
         titleContext={shellTitleContext}
         onNavigate={navigateShell}
         onOpenSettings={() => setSettingsOpen(true)}
-        onStartDebate={startDebateFromShell}
+        onStartDebate={shellStartDebateAction}
+        startDebateLabel={shellStartDebateLabel}
         debateComplete={debateComplete}
         lineageMode={lineageMode}
         onToggleLineageMode={toggleLineageMode}
@@ -807,6 +846,20 @@ export default function App() {
                 onRun={handleRun}
                 disabled={running}
               />
+              {showStartNewDebate ? (
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    className="babel-btn babel-btn-primary min-h-11"
+                    onClick={handleStartNewDebate}
+                  >
+                    Start new debate
+                  </button>
+                  <p className="babel-meta m-0 text-[var(--text-muted)]">
+                    Clears this run so you can enter a new prompt.
+                  </p>
+                </div>
+              ) : null}
             </div>
 
             <DebateTopBar
@@ -878,7 +931,7 @@ export default function App() {
                     <button
                       type="button"
                       className="babel-btn babel-btn-ghost"
-                      onClick={() => void copyPartialTranscript()}
+                      onClick={downloadTranscript}
                     >
                       Download transcript
                     </button>
@@ -1117,6 +1170,20 @@ export default function App() {
                     />
                   </div>
                 </>
+              ) : null}
+              {showStartNewDebate ? (
+                <div className="mt-10 flex flex-col items-start gap-3 border-t border-[var(--line)] pt-8">
+                  <button
+                    type="button"
+                    className="babel-btn babel-btn-primary min-h-11"
+                    onClick={handleStartNewDebate}
+                  >
+                    Start new debate
+                  </button>
+                  <p className="babel-meta m-0 text-[var(--text-muted)]">
+                    Clears this run so you can enter a new prompt.
+                  </p>
+                </div>
               ) : null}
             </div>
           </VoiceActionsProvider>

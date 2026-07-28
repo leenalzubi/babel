@@ -130,33 +130,6 @@ function contributorDisplay(c, row) {
   return model ?? String(c).toUpperCase()
 }
 
-/** @param {unknown} changeLabel @param {string} borderColor */
-function changeBadge(changeLabel, borderColor) {
-  const s = changeLabel == null || changeLabel === '' ? '-' : String(changeLabel)
-  const low = s.toLowerCase()
-  let bg = 'bg-[var(--bg-raised)]'
-  let text = 'text-[var(--text-muted)]'
-  if (low.includes('held firm')) {
-    bg = 'bg-[#4C6647]/15'
-    text = 'text-[#3D5439]'
-  } else if (low.includes('significant')) {
-    bg = 'bg-[#97372B]/12'
-    text = 'text-[#7A2C23]'
-  } else if (low.includes('minor') || low.includes('shifted')) {
-    bg = 'bg-[#D97706]/12'
-    text = 'text-[#B45309]'
-  }
-  return (
-    <span
-      className={`inline-block max-w-[8rem] truncate rounded-[var(--radius)] border px-2 py-1 font-mono text-[0.8125rem] font-medium leading-snug ${bg} ${text}`}
-      style={{ borderColor }}
-      title={s}
-    >
-      {s}
-    </span>
-  )
-}
-
 /** @param {string} raw @param {number} fallback */
 function clampPctInput(raw, fallback) {
   const n = Number.parseInt(String(raw).trim(), 10)
@@ -178,7 +151,6 @@ function TableSkeleton() {
               'B↔C',
               'Top',
               'Rounds',
-              'Changed',
             ].map((h) => (
               <th key={h}>{h}</th>
             ))}
@@ -187,7 +159,7 @@ function TableSkeleton() {
         <tbody>
           {Array.from({ length: 8 }, (_, i) => (
             <tr key={i} className="border-b border-[var(--line)]">
-              {Array.from({ length: 8 }, (_, j) => (
+              {Array.from({ length: 7 }, (_, j) => (
                 <td key={j} className="px-3 py-3.5">
                   <div className="h-4 w-full animate-pulse rounded bg-[var(--line)]/60" />
                 </td>
@@ -285,12 +257,6 @@ export default function FindingsPanel() {
               'gpt_competition_score',
               'phi_competition_score',
               'mistral_competition_score',
-              'change_a',
-              'change_b',
-              'change_c',
-              'change_type_a',
-              'change_type_b',
-              'change_type_c',
               'most_influenced',
               'most_resistant',
             ].join(',')
@@ -971,7 +937,6 @@ export default function FindingsPanel() {
                       <th>B↔C</th>
                       <th>Top</th>
                       <th>Rounds</th>
-                      <th className="min-w-[140px]">Changed</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1045,17 +1010,10 @@ export default function FindingsPanel() {
                             <td className="px-3 py-3.5 babel-meta-tech text-[var(--ink-soft)]">
                               {row.rounds != null ? String(row.rounds) : '-'}
                             </td>
-                            <td className="px-2 py-3">
-                              <div className="flex flex-wrap gap-1">
-                                {changeBadge(row.change_a, 'var(--agent-a)')}
-                                {changeBadge(row.change_b, 'var(--agent-b)')}
-                                {changeBadge(row.change_c, 'var(--agent-c)')}
-                              </div>
-                            </td>
                           </tr>
                           {expandedId === id ? (
                             <tr className="border-b border-[var(--line)] bg-[var(--plaster-hi)]">
-                              <td colSpan={8} className="px-6 py-6">
+                              <td colSpan={7} className="px-6 py-6">
                                 <p className="mb-2 babel-eyebrow">
                                   Pairwise claim disagreement
                                 </p>

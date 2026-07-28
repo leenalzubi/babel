@@ -270,7 +270,7 @@ function RoundCard({
         className="mb-6 border-b border-[var(--line)] pb-4"
         eyebrow={`Round ${roundNum}`}
         title="Independent positions"
-        lede="Each role answers without seeing the others. Structured claims appear when extraction validates; otherwise the original response is shown."
+        lede="Each role answers without seeing the others. An organized response appears when extraction validates; otherwise the AI reasoning is shown."
       />
 
       <div className="majlis">

@@ -16,7 +16,7 @@ import {
 import { normalizeDebateFailure } from '../lib/modelCallErrors.js'
 import { clipInferenceText } from '../lib/clipInferenceText.js'
 import { readBabelSynthesisEnabled } from '../lib/babelSynthesisPref.js'
-import { copyToClipboard, exportToMarkdown } from '../utils/exportUtils.js'
+import { copyToClipboard, downloadMarkdown, exportToMarkdown } from '../utils/exportUtils.js'
 import { useForge } from '../store/useForgeStore.js'
 import {
   retryDebateAudit,
@@ -363,6 +363,12 @@ export function useDebateEngine() {
     dispatch({ type: 'SET_PROMPT', payload: p })
   }, [dispatch])
 
+  /** Clear the finished (or failed) debate so the user can start fresh. */
+  const startNewDebate = useCallback(() => {
+    runIdRef.current += 1
+    dispatch({ type: 'RESET' })
+  }, [dispatch])
+
   const retrySynthesis = useCallback(async () => {
     if (stageRetrying) return
     setStageRetrying('synthesis')
@@ -456,10 +462,15 @@ export function useDebateEngine() {
     return copyToClipboard(md)
   }, [])
 
+  const downloadTranscript = useCallback(() => {
+    downloadMarkdown(stateRef.current)
+  }, [])
+
   return {
     runDebate,
     resetAndRetry,
     resetForEditPrompt,
+    startNewDebate,
     retrySynthesis,
     finishWithoutSynthesis,
     retryAudit,
@@ -467,6 +478,7 @@ export function useDebateEngine() {
     retryVoice,
     continueWithout,
     copyPartialTranscript,
+    downloadTranscript,
     resumeAfterReconnect,
     stageRetrying,
   }

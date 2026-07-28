@@ -18,7 +18,7 @@ IDs are assigned when data enters the app (pipeline + parsers), not during React
 
 - **Raw** (`rounds` / `reviews` / `finalPositions` strings, and `RawVoiceResponse.rawText`): exact model text. Immutable for lineage purposes.
 - **Structured** (`structures.round1|2|3`): best-effort interpretation (`parseStructuredResponse.js`). Overlay only.
-- Extraction failure sets `structureStatus` to `structure_failed` / `raw_only`. The voice remains successful; the UI can say “Claim structure was unavailable. View the original response.”
+- Extraction failure sets `structureStatus` to `structure_failed` / `raw_only`. The voice remains successful; the UI can say “Organized response was unavailable. View the AI reasoning.”
 
 ## How synthesis claim references are validated
 
@@ -38,7 +38,7 @@ If structured synthesis parsing fails, `parseSynthesisOutput` keeps the existing
 | --- | --- |
 | **complete** | Cited IDs resolve to stored claims; withdrawn claims were not counted as support |
 | **partial** | Some IDs invalid, withdrawn, or incomplete: finding still shown with limitations |
-| **unavailable** | No claim structure / no usable IDs for this finding or debate |
+| **unavailable** | No organized response / no usable IDs for this finding or debate |
 
 ## Evidence labels
 
@@ -63,7 +63,7 @@ History aggregates do not restore full transcripts. In-session older runs withou
 ## UI entry points
 
 - `SynthesisPanel`: “Trace this finding” per finding
-- `LineageDrawer`: Finding, Supported by, Challenged by, What changed, Limitations, Original response
+- `LineageDrawer`: Finding, Supported by, Challenged by, What changed, Limitations, AI reasoning
 - `buildLineageBundle(state)`: single builder used by the panel (no surprise network call on click)
 
 ## Key modules

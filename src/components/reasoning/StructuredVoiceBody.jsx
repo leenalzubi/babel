@@ -11,7 +11,7 @@ import {
 import { claimAnchorId, jumpToClaim } from '../../lib/claimNavigation.js'
 
 const replyMd =
-  'max-w-none text-[length:var(--text-body)] leading-[var(--lh-body)] text-[var(--text-secondary)] [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:text-[var(--text-primary)]'
+  'max-w-none min-w-0 break-words text-[length:var(--text-body)] leading-[var(--lh-body)] text-[var(--text-secondary)] [&_code]:break-words [&_p]:mb-2 [&_p:last-child]:mb-0 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_strong]:text-[var(--text-primary)]'
 
 /**
  * Renders structured extraction with raw-response fallback.
@@ -58,7 +58,7 @@ export default function StructuredVoiceBody({
         {extraction === 'structure_failed' ||
         (!canStructure && extraction === 'raw_response') ? (
           <p className="mb-2 font-mono text-[0.72rem] text-[var(--ink-soft)]">
-            Claim structure was unavailable. View the original response.
+            Organized response was unavailable. View the AI reasoning.
           </p>
         ) : null}
         {canStructure ? (
@@ -67,7 +67,7 @@ export default function StructuredVoiceBody({
             className="babel-btn babel-btn-quiet mb-2 min-h-11 px-2 py-1"
             onClick={() => setShowOriginal(false)}
           >
-            View structured claims
+            Organized response
           </button>
         ) : null}
         <AgentResponseBody rawText={rawText} markdownClassName={replyMd} />
@@ -88,7 +88,7 @@ export default function StructuredVoiceBody({
           className="babel-btn babel-btn-quiet min-h-11 px-2 py-1"
           onClick={() => setShowOriginal(true)}
         >
-          View original response
+          AI reasoning
         </button>
       </div>
 

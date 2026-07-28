@@ -94,14 +94,45 @@ export async function copyToClipboard(text) {
   const t = typeof text === 'string' ? text : String(text ?? '')
   try {
     if (
-      typeof navigator === 'undefined' ||
-      !navigator.clipboard ||
-      typeof navigator.clipboard.writeText !== 'function'
+      typeof navigator !== 'undefined' &&
+      navigator.clipboard &&
+      typeof navigator.clipboard.writeText === 'function' &&
+      typeof window !== 'undefined' &&
+      window.isSecureContext
     ) {
-      return { ok: false, error: 'Clipboard API not available in this context.' }
+      await navigator.clipboard.writeText(t)
+      return { ok: true }
     }
-    await navigator.clipboard.writeText(t)
-    return { ok: true }
+  } catch {
+    /* fall through to legacy path */
+  }
+
+  try {
+    if (typeof document === 'undefined') {
+      return { ok: false, error: 'Clipboard is not available in this context.' }
+    }
+    const ta = document.createElement('textarea')
+    ta.value = t
+    ta.setAttribute('readonly', '')
+    ta.style.position = 'fixed'
+    ta.style.top = '0'
+    ta.style.left = '0'
+    ta.style.width = '1px'
+    ta.style.height = '1px'
+    ta.style.padding = '0'
+    ta.style.border = 'none'
+    ta.style.outline = 'none'
+    ta.style.boxShadow = 'none'
+    ta.style.background = 'transparent'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.focus()
+    ta.select()
+    ta.setSelectionRange(0, t.length)
+    const ok = document.execCommand('copy')
+    ta.remove()
+    if (ok) return { ok: true }
+    return { ok: false, error: 'Could not copy to clipboard.' }
   } catch (err) {
     const msg =
       err instanceof Error ? err.message : 'Could not copy to clipboard.'
@@ -117,14 +148,16 @@ export function downloadMarkdown(state) {
   const md = exportToMarkdown(state)
   const ts = new Date().toISOString().replace(/[:.]/g, '-')
   const filename = `babel-export-${ts}.md`
-  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
+  const blob = new Blob([md], { type: 'text/plain;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
   a.download = filename
   a.rel = 'noopener'
+  a.style.display = 'none'
   document.body.appendChild(a)
   a.click()
   a.remove()
-  URL.revokeObjectURL(url)
+  // Revoke after the browser has a chance to start the download.
+  window.setTimeout(() => URL.revokeObjectURL(url), 1_000)
 }

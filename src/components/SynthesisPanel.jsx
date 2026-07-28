@@ -22,13 +22,14 @@ import { buildLineageBundle } from '../lib/synthesisLineage.js'
 
 /** Prose for synthesis body: essay-like Scriptorium typography (wrapper around ReactMarkdown). */
 const synthesisOutputMarkdownClass =
-  'synthesis-output-md max-w-none text-[var(--text-primary)] ' +
+  'synthesis-output-md max-w-none min-w-0 break-words text-[var(--text-primary)] ' +
   '[&_a]:text-[var(--blue)] ' +
-  '[&_code]:rounded-[4px] [&_code]:bg-[var(--bg-raised)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.9em] ' +
+  '[&_code]:break-words [&_code]:rounded-[4px] [&_code]:bg-[var(--bg-raised)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.9em] ' +
   '[&_h1]:mt-8 [&_h1]:mb-4 [&_h1]:[font-family:var(--font-display)] [&_h1]:text-3xl [&_h1]:font-semibold [&_h1]:leading-tight [&_h1]:text-[var(--ink)] [&_h1:first-child]:mt-0 ' +
   '[&_h2]:mt-8 [&_h2]:mb-3 [&_h2]:[font-family:var(--font-display)] [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:leading-snug [&_h2]:text-[var(--ink)] [&_h2:first-child]:mt-0 ' +
   '[&_h3]:mt-6 [&_h3]:mb-3 [&_h3]:[font-family:var(--font-display)] [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:leading-snug [&_h3]:text-[var(--ink)] [&_h3:first-child]:mt-0 ' +
   '[&_p]:mb-4 [&_p]:[font-family:var(--font-body)] [&_p]:text-[17px] [&_p]:leading-[1.65] [&_p:last-child]:mb-0 ' +
+  '[&_pre]:max-w-full [&_pre]:overflow-x-auto ' +
   '[&_strong]:font-semibold ' +
   '[&_ul]:mb-4 [&_ul]:list-disc [&_ul]:pl-8 [&_ul]:[font-family:var(--font-body)] [&_ul]:text-[17px] ' +
   '[&_ol]:mb-4 [&_ol]:list-decimal [&_ol]:pl-8 [&_ol]:[font-family:var(--font-body)] [&_ol]:text-[17px] ' +

@@ -31,15 +31,15 @@ export function ClaimBlock({
         >
           {id}
         </button>
-        <p className="m-0 min-w-0 flex-1 text-[var(--ink)]">{text}</p>
+        <p className="m-0 min-w-0 flex-1 break-words text-[var(--ink)]">{text}</p>
       </div>
       {evidence.length > 0 ? (
         <ul className="mt-1.5 list-none space-y-1 pl-0">
           {evidence.map((ev, i) => (
-            <li key={`${id}-ev-${i}`}>
+            <li key={`${id}-ev-${i}`} className="min-w-0">
               <button
                 type="button"
-                className="evidence-link text-left text-[0.85rem] text-[var(--blue)] underline-offset-2 hover:underline"
+                className="evidence-link max-w-full break-words text-left text-[0.85rem] text-[var(--blue)] underline-offset-2 hover:underline"
                 onClick={() => {
                   onEvidence?.(id, i)
                   onOpenProvenance?.(id)
@@ -61,8 +61,8 @@ export function ClaimBlock({
  */
 export function Counterpoint({ targetClaimId, text, linked = false }) {
   return (
-    <div className="counterpoint mb-3">
-      <p className="m-0 text-[0.92rem] leading-relaxed text-[var(--ink)]">
+    <div className="counterpoint mb-3 min-w-0">
+      <p className="m-0 break-words text-[0.92rem] leading-relaxed text-[var(--ink)]">
         {linked && targetClaimId ? (
           <button
             type="button"
@@ -99,8 +99,8 @@ export function PositionChange({
   reason,
 }) {
   return (
-    <div className="position-change mb-3">
-      <p className="m-0 text-[0.92rem] leading-relaxed">
+    <div className="position-change mb-3 min-w-0">
+      <p className="m-0 break-words text-[0.92rem] leading-relaxed">
         <span className="font-mono text-[0.75rem]">
           {claimId}
           {revisedId ? ` → ${revisedId}` : ''}
@@ -109,7 +109,7 @@ export function PositionChange({
         {text ? <span className="text-[var(--ink)]">{text}</span> : null}
       </p>
       {reason ? (
-        <p className="mt-1 text-[0.85rem] text-[var(--ink-soft)]">{reason}</p>
+        <p className="mt-1 break-words text-[0.85rem] text-[var(--ink-soft)]">{reason}</p>
       ) : null}
     </div>
   )
@@ -187,12 +187,12 @@ export function UnresolvedQuestion({ children }) {
  */
 export function ConsensusFinding({ children, claimIds = [] }) {
   return (
-    <div className="mb-3 border-l-2 border-[var(--oasis)] pl-3">
-      <div className="text-[0.95rem] leading-relaxed text-[var(--ink)]">
+    <div className="mb-3 min-w-0 border-l-2 border-[var(--oasis)] pl-3">
+      <div className="break-words text-[0.95rem] leading-relaxed text-[var(--ink)]">
         {children}
       </div>
       {claimIds.length > 0 ? (
-        <p className="mt-1 font-mono text-[0.72rem] text-[var(--ink-soft)]">
+        <p className="mt-1 break-words font-mono text-[0.72rem] text-[var(--ink-soft)]">
           {claimIds.join('; ')}
         </p>
       ) : null}

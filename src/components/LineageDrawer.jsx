@@ -10,7 +10,7 @@ import {
 import { jumpToClaim } from '../lib/claimNavigation.js'
 
 const mdClass =
-  'max-w-none text-[length:var(--text-body)] leading-[var(--lh-body)] text-[var(--ink)] [&_p]:mb-2 [&_p:last-child]:mb-0 [&_code]:font-mono [&_code]:text-[0.9em]'
+  'max-w-none min-w-0 break-words text-[length:var(--text-body)] leading-[var(--lh-body)] text-[var(--ink)] [&_p]:mb-2 [&_p:last-child]:mb-0 [&_code]:break-words [&_code]:font-mono [&_code]:text-[0.9em] [&_pre]:max-w-full [&_pre]:overflow-x-auto'
 
 /**
  * @param {{
@@ -423,7 +423,7 @@ function ClaimSection({
                       onViewOriginal(c.responseId, c.claimId)
                     }}
                   >
-                    View original response
+                    AI reasoning
                   </button>
                   <button
                     type="button"
@@ -474,7 +474,7 @@ function OriginalResponseView({ record, claim, onBack }) {
       >
         ← Back to lineage
       </button>
-      <h3 className="babel-voice-name m-0">Original response</h3>
+      <h3 className="babel-voice-name m-0">AI reasoning</h3>
       <p className="mt-2 babel-meta-tech">
         <span className="meta-label">Role:</span> {record.roleLabel || 'Voice'}
         <span className="mx-2 text-[var(--ink-faint)]" aria-hidden>

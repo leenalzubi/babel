@@ -54,7 +54,7 @@ export default function ProvenancePanel({
         ) : null}
       </div>
       {claimText ? (
-        <p className="mb-3 text-[0.9rem] leading-relaxed text-[var(--ink-soft)]">
+        <p className="mb-3 min-w-0 break-words text-[0.9rem] leading-relaxed text-[var(--ink-soft)]">
           {claimText}
         </p>
       ) : null}

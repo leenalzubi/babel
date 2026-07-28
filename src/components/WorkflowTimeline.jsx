@@ -10,10 +10,6 @@ import {
 import AgentTimer from './AgentTimer.jsx'
 import { isUnavailableAgentResponse } from '../lib/debateConstants.js'
 import { computeProgressUi } from '../lib/progressEstimate.js'
-import {
-  BABEL_SYNTHESIS_TOGGLE_EVENT,
-  readBabelSynthesisEnabled,
-} from '../lib/babelSynthesisPref.js'
 import { useForge } from '../store/useForgeStore.js'
 
 /** @param {'pending' | 'active' | 'complete' | 'partial'} state */
@@ -214,7 +210,7 @@ function useWorkflowSteps(state, synthesisEnabled) {
     },
     {
       key: 'finalp',
-      label: 'Round 3: final positions',
+      label: 'Round 3: final positions (up to ~6 min)',
       state: s4,
       icon: 'agents',
     },
@@ -245,16 +241,7 @@ export default function WorkflowTimeline({
   onCollapsedChange = () => {},
 }) {
   const { state } = useForge()
-  const [synthesisUiEnabled, setSynthesisUiEnabled] = useState(
-    readBabelSynthesisEnabled
-  )
-  useEffect(() => {
-    const onToggle = () => setSynthesisUiEnabled(readBabelSynthesisEnabled())
-    window.addEventListener(BABEL_SYNTHESIS_TOGGLE_EVENT, onToggle)
-    return () =>
-      window.removeEventListener(BABEL_SYNTHESIS_TOGGLE_EVENT, onToggle)
-  }, [])
-  const { steps } = useWorkflowSteps(state, synthesisUiEnabled)
+  const { steps } = useWorkflowSteps(state, true)
   const { config, divergenceScores } = state
   const progress = computeProgressUi(state)
   const [progressFadeOut, setProgressFadeOut] = useState(false)

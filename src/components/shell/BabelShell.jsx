@@ -19,6 +19,7 @@ import { markEasterEggDiscovered } from '../../lib/easterEggs/discoveryStore.js'
  *   onNavigate: (tab: 'babel' | 'findings' | 'lab' | 'about' | 'method') => void,
  *   onOpenSettings: () => void,
  *   onStartDebate: () => void,
+ *   startDebateLabel?: string,
  *   settingsControl?: import('react').ReactNode,
  *   hideEnvironmentShortcuts?: boolean,
  *   debateComplete?: boolean,
@@ -36,6 +37,7 @@ export default function BabelShell({
   onNavigate,
   onOpenSettings,
   onStartDebate,
+  startDebateLabel = 'Start a debate',
   settingsControl,
   hideEnvironmentShortcuts = false,
   debateComplete = false,
@@ -105,6 +107,7 @@ export default function BabelShell({
               onNavigate={handleNavigate}
               onOpenSettings={onOpenSettings}
               onStartDebate={handleStartDebate}
+              startDebateLabel={startDebateLabel}
               settingsControl={settingsControl}
               lineageMode={lineageMode}
               onToggleLineageMode={onToggleLineageMode}

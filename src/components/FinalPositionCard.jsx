@@ -234,6 +234,7 @@ function FinalPositionCard({
   onRetryInfluence,
 }) {
   const { settings } = useForgeUiSettings()
+  const { state } = useForge()
   const { agentA, agentB, agentC } = config
   const fa = finalPositions?.a ?? ''
   const fb = finalPositions?.b ?? ''
@@ -272,6 +273,22 @@ function FinalPositionCard({
       typeof t === 'string' && t.length > 0 && !isUnavailableAgentResponse(t)
   )
 
+  const debateActive =
+    state.status === 'running' || state.status === 'degraded'
+  const anyFinalStarted = ['a', 'b', 'c'].some(
+    (k) => finalPositionTimers?.[k]?.startTime != null
+  )
+  const finalsComplete = [fa, fb, fc].every(
+    (t) => typeof t === 'string' && t.length > 0
+  )
+  /** Three sequential calls, each capped at 2 minutes. */
+  const waitHint =
+    debateActive && !finalsComplete
+      ? anyFinalStarted
+        ? 'Voices revise one at a time. Round 3 can take up to about 6 minutes.'
+        : 'Preparing Round 3. Peer scoring can take up to about 2 minutes before revisions begin.'
+      : null
+
   const showInfluenceSection =
     settings.showResearchSurfaces &&
     finalsReady &&
@@ -284,8 +301,18 @@ function FinalPositionCard({
         className="border-b border-[var(--line)] pb-4"
         eyebrow="Round 3"
         title="Revision"
-        lede="Each role marks earlier claims as preserved, narrowed, amended, or withdrawn, then states a closing position."
+        lede="Each role marks earlier claims as preserved, narrowed, amended, or withdrawn, then states a closing position. Voices revise one at a time."
       />
+
+      {waitHint ? (
+        <p
+          role="status"
+          aria-live="polite"
+          className="rounded-forge-card border border-[var(--accent-forge)]/35 bg-[color-mix(in_srgb,var(--highlight)_40%,var(--bg-surface))] px-4 py-3 font-mono text-xs text-[var(--text-primary)]"
+        >
+          {waitHint}
+        </p>
+      ) : null}
 
       <div className="majlis">
         <FinalColumn

@@ -84,7 +84,7 @@ describe('LineageDrawer a11y', () => {
     expect(document.activeElement).toBe(trigger)
   })
 
-  it('opens original response without executing HTML', () => {
+  it('opens AI reasoning without executing HTML', () => {
     const unsafe = {
       ...voiceRecords,
       'voice-r1-a': {
@@ -101,7 +101,7 @@ describe('LineageDrawer a11y', () => {
         voiceRecords={unsafe}
       />
     )
-    fireEvent.click(screen.getByRole('button', { name: /View original response/i }))
+    fireEvent.click(screen.getByRole('button', { name: /AI reasoning/i }))
     expect(screen.getByText(/Exact passage mapping unavailable/i)).toBeTruthy()
     expect(window.__xss).toBeUndefined()
     // react-markdown should not create an img from raw HTML

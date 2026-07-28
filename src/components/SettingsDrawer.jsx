@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { useForgeUiSettings } from '../context/ForgeSettingsContext.jsx'
-import {
-  dispatchBabelSynthesisToggled,
-  readBabelSynthesisEnabled,
-} from '../lib/babelSynthesisPref.js'
 import { FORGE_SETTINGS_DEFAULTS, loadForgeSettings } from '../lib/forgeSettings.js'
 
 function envKeySet(key) {
@@ -36,7 +32,6 @@ function StatusPill({ label, ok }) {
 export default function SettingsDrawer({ open, onClose }) {
   const { applySettings } = useForgeUiSettings()
   const [draft, setDraft] = useState(() => ({ ...FORGE_SETTINGS_DEFAULTS }))
-  const [synthesisPass, setSynthesisPass] = useState(readBabelSynthesisEnabled)
   const draftRef = useRef(draft)
 
   useEffect(() => {
@@ -47,7 +42,6 @@ export default function SettingsDrawer({ open, onClose }) {
     if (!open) return
     /* Reload persisted settings when the drawer opens (external source of truth). */
     setDraft(loadForgeSettings()) // eslint-disable-line react-hooks/set-state-in-effect -- sync from localStorage
-    setSynthesisPass(readBabelSynthesisEnabled())
   }, [open])
 
   const closeAndPersist = useCallback(() => {
@@ -133,34 +127,13 @@ export default function SettingsDrawer({ open, onClose }) {
           </section>
 
           <section>
-            <label className="flex cursor-pointer flex-col gap-1 rounded-lg border border-[var(--border)] bg-[var(--bg-base)] px-3 py-3">
-              <span className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={synthesisPass}
-                  onChange={(e) => {
-                    const v = e.target.checked
-                    setSynthesisPass(v)
-                    try {
-                      localStorage.setItem(
-                        'babel_synthesis_enabled',
-                        v ? 'true' : 'false'
-                      )
-                      dispatchBabelSynthesisToggled()
-                    } catch {
-                      /* ignore */
-                    }
-                  }}
-                  className="h-4 w-4 shrink-0 rounded border-[var(--border)] accent-[var(--accent-forge)]"
-                />
-                <span className="babel-meta font-medium text-[var(--text-primary)]">
-                  Synthesis
-                </span>
+            <p className="rounded-lg border border-[var(--border)] bg-[var(--bg-base)] px-3 py-3 babel-meta leading-snug text-[var(--text-secondary)]">
+              <span className="font-medium text-[var(--text-primary)]">
+                Synthesis
               </span>
-              <span className="pl-7 babel-meta leading-snug text-[var(--text-muted)]">
-                Generate a unified answer after final positions
-              </span>
-            </label>
+              {' '}
+              always runs after final positions and produces the decision memo.
+            </p>
           </section>
 
           <section>
@@ -195,7 +168,7 @@ export default function SettingsDrawer({ open, onClose }) {
             </div>
             <p className="mt-2 babel-meta leading-relaxed text-[var(--text-muted)]">
               Claim disagreement is computed after the debate audit. Until a pre-synthesis
-              gate exists, both modes run synthesis whenever synthesis is enabled.
+              gate exists, both modes run synthesis on every debate.
             </p>
           </section>
 
@@ -233,7 +206,8 @@ export default function SettingsDrawer({ open, onClose }) {
               </span>
             </label>
             <p className="mt-2 babel-meta leading-relaxed text-[var(--text-muted)]">
-              Off by default. The flagship path ends at the decision memo.
+              Off by default. The flagship path ends at the decision memo; these
+              surfaces add influence, divergence, and the audit trail.
             </p>
           </section>
 

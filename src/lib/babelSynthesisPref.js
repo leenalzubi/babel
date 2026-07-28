@@ -1,11 +1,11 @@
 export const BABEL_SYNTHESIS_TOGGLE_EVENT = 'babel-synthesis-toggle'
 
+/**
+ * Synthesis is required on every debate. Kept as a function so call sites and
+ * the workflow timeline stay stable if this ever becomes a gated flag again.
+ */
 export function readBabelSynthesisEnabled() {
-  try {
-    return localStorage.getItem('babel_synthesis_enabled') === 'true'
-  } catch {
-    return false
-  }
+  return true
 }
 
 export function dispatchBabelSynthesisToggled() {

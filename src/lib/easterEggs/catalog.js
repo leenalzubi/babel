@@ -85,7 +85,7 @@ export const ARCHIVE_CONTENT = {
     },
     {
       heading: 'What was kept',
-      body: 'Three models answer independently, then challenge each other across rounds. Babel measures disagreement, position change, and whether influence looks like genuine updating or social pressure. Synthesis is optional and peer-validated. Inspectable lineage walks findings back to stored claims and raw responses without inventing links.',
+      body: 'Three models answer independently, then challenge each other across rounds. Babel measures disagreement, position change, and whether influence looks like genuine updating or social pressure. Synthesis is required and peer-validated. Inspectable lineage walks findings back to stored claims and raw responses without inventing links.',
     },
     {
       heading: 'Unresolved questions',

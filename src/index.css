@@ -153,6 +153,8 @@ body {
   font-size: var(--text-body);
   line-height: var(--lh-body);
   color: var(--ink-soft);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .babel-prose p + p {
@@ -668,6 +670,7 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-width: 0;
   min-height: 0;
 }
 
@@ -681,6 +684,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: var(--s-2);
+  min-width: 0;
 }
 
 .babel-voice-stance {
@@ -694,8 +698,12 @@ body {
 .babel-voice-body {
   padding: var(--s-4);
   flex: 1;
+  min-width: 0;
   min-height: 0;
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: visible;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .babel-voice-foot {
@@ -1254,6 +1262,11 @@ select:focus-visible,
   gap: var(--s-5);
 }
 
+.majlis > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
 /* Sticky chrome hooks (Phase A product may wire these) */
 .topbar {
   position: sticky;
@@ -1294,6 +1307,17 @@ select:focus-visible,
 }
 
 /* Reasoning primitive hooks */
+.claim-block,
+.counterpoint,
+.position-change,
+.minority-report,
+.provenance-panel {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .counterpoint {
   border-left: 2px solid var(--ochre);
   padding-left: var(--s-3);
@@ -1323,6 +1347,9 @@ select:focus-visible,
   min-height: 48px;
   display: inline-flex;
   align-items: center;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* ── Project credit footer ── */

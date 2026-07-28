@@ -8,6 +8,7 @@ import { markEasterEggDiscovered } from '../../lib/easterEggs/discoveryStore.js'
  *   onNavigate: (tab: 'babel' | 'findings' | 'lab' | 'about' | 'method') => void,
  *   onOpenSettings: () => void,
  *   onStartDebate: () => void,
+ *   startDebateLabel?: string,
  *   settingsControl: import('react').ReactNode,
  *   lineageMode?: boolean,
  *   onToggleLineageMode?: () => void,
@@ -18,6 +19,7 @@ export default function GlobalNav({
   onNavigate,
   onOpenSettings,
   onStartDebate,
+  startDebateLabel = 'Start a debate',
   settingsControl,
   lineageMode = false,
   onToggleLineageMode,
@@ -117,7 +119,7 @@ export default function GlobalNav({
             className="babel-btn babel-btn-primary babel-global-cta"
             onClick={onStartDebate}
           >
-            Start a debate
+            {startDebateLabel}
           </button>
         </div>
       </div>

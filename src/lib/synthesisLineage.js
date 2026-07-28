@@ -417,7 +417,7 @@ export function enrichSynthesisFindings(artifact, registry, opts = {}) {
         relatedClaimIds: [],
         lineageStatus: /** @type {LineageStatus} */ ('unavailable'),
         limitation:
-          'Lineage unavailable for this debate. Claim structure was not recorded.',
+          'Lineage unavailable for this debate. Organized response was not recorded.',
         kind: f.kind,
       })),
       invalidReferences,
