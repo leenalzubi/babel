@@ -1,8 +1,9 @@
-/** @typedef {'creator-portrait' | 'tablet-gate' | 'tablet-water' | 'tablet-palms' | 'gate-completion' | 'lineage-mode' | 'trash-archive'} EasterEggId */
+/** @typedef {'creator-portrait' | 'cat-portrait' | 'tablet-gate' | 'tablet-water' | 'tablet-palms' | 'gate-completion' | 'lineage-mode' | 'trash-archive'} EasterEggId */
 
 /** @type {EasterEggId[]} */
 export const EASTER_EGG_IDS = [
   'creator-portrait',
+  'cat-portrait',
   'tablet-gate',
   'tablet-water',
   'tablet-palms',
@@ -15,12 +16,21 @@ export const ARCHIVE_UNLOCK_COUNT = 3
 
 export const LINKEDIN_URL = 'https://www.linkedin.com/in/leenalzubi'
 export const AVATAR_SRC = '/images/leen-avatar.png'
+export const CAT_AVATAR_SRC = '/images/leen-illustration.png'
+
+export const BUILDER_NOTE_HEADING = "Builder's note"
+export const BUILDER_NOTE_BODY =
+  'Babel does not claim that more AI reasoning is always better. It is an attempt to make disagreement easier to inspect, and bad certainty harder to fake.'
 
 /** @type {Record<EasterEggId, { label: string, title?: string }>} */
 export const EASTER_EGG_META = {
   'creator-portrait': {
     label: "About Leen Al-Zu'bi, creator of Babel",
     title: "Leen Al-Zu'bi",
+  },
+  'cat-portrait': {
+    label: "Builder's note",
+    title: "Builder's note",
   },
   'tablet-gate': {
     label: 'Clay tablet near the gate',

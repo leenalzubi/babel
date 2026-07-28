@@ -68,7 +68,6 @@ describe('Babel Lab UI', () => {
   it('renders methodology with evaluation-method language', () => {
     render(
       <LabMethodology
-        onBack={() => {}}
         datasetVersion="2026-07-26"
       />
     )

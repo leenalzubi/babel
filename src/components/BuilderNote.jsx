@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useId, useState } from 'react'
+import {
+  BUILDER_NOTE_BODY,
+  BUILDER_NOTE_HEADING,
+  CAT_AVATAR_SRC,
+} from '../lib/easterEggs/catalog.js'
 
 export const BUILDER_NOTE_STORAGE_KEY = 'babel-builder-note-dismissed'
-const ILLUSTRATION_SRC = '/images/leen-illustration.png'
 
 function readDismissed() {
   if (typeof window === 'undefined') return false
@@ -80,7 +84,7 @@ export default function BuilderNote({ suppressed = false }) {
         ) : (
           <img
             className="builder-note-illustration"
-            src={ILLUSTRATION_SRC}
+            src={CAT_AVATAR_SRC}
             alt=""
             width={493}
             height={750}
@@ -93,12 +97,10 @@ export default function BuilderNote({ suppressed = false }) {
       <div className="builder-note-body">
         <div className="builder-note-copy">
           <h2 id={titleId} className="builder-note-heading">
-            Builder&apos;s note
+            {BUILDER_NOTE_HEADING}
           </h2>
           <p id={bodyId} className="builder-note-text">
-            Babel does not claim that more AI reasoning is always better. It is
-            an attempt to make disagreement easier to inspect, and bad certainty
-            harder to fake.
+            {BUILDER_NOTE_BODY}
           </p>
         </div>
       </div>

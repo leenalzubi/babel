@@ -11,6 +11,7 @@ Source of truth: `src/lib/easterEggs/catalog.js`. Discovery store: `src/lib/east
 | Id | Name | How to find it |
 | --- | --- | --- |
 | `creator-portrait` | Creator portrait | Click the portrait hotspot on the Babylon background (profile card for Leen Al-Zu'bi). |
+| `cat-portrait` | Cat portrait | Click the cat circle beside the creator portrait (shows the Builder's note). |
 | `tablet-gate` | Clay tablet near the gate | On the **Debate** tab, click the clay tablet near the gate. |
 | `tablet-water` | Clay tablet near the water | On the **Findings** tab, click the clay tablet near the water. |
 | `tablet-palms` | Clay tablet among the palms | On the **Method** tab (or Lab, when enabled), click the clay tablet among the palms. |
@@ -24,7 +25,7 @@ Hotspots live in `src/components/easterEggs/EnvironmentEasterEggs.jsx` and open 
 
 ### Environment tablets and portrait
 
-Opening a tablet or the portrait marks that id as discovered and shows a short card (inscription or creator profile). Tablet copy:
+Opening a tablet, the creator portrait, or the cat portrait marks that id as discovered and shows a short card (inscription, creator profile, or Builder's note). Tablet copy:
 
 | Id | Inscription |
 | --- | --- |
@@ -47,8 +48,7 @@ Opening Trash marks `trash-archive` discovered and shows a small desktop window 
 
 After **3** distinct discoveries (`ARCHIVE_UNLOCK_COUNT`), the Archive unlocks.
 
-- A short notice appears: “Archive unlocked”.
-- **About** gains an Archive link.
+- A short notice appears: “Archive unlocked” (with an Open Archive action).
 - Route `/archive` becomes reachable (`ArchivePanel`); visiting Archive without the unlock redirects away.
 
 Archive copy is editorial product history from `ARCHIVE_CONTENT` in the catalog (not invented chronology).
@@ -78,9 +78,8 @@ Invalid or unknown ids are stripped on read. Clearing site data resets discoveri
 
 | Surface | Role |
 | --- | --- |
-| `EnvironmentEasterEggs.jsx` | Portrait, tablets, gate completion |
+| `EnvironmentEasterEggs.jsx` | Portrait, cat, tablets, gate completion |
 | `GlobalNav.jsx` | Lineage triple-click |
 | `TrashTrigger.jsx` / `TrashWindow.jsx` | Trash shell + window |
 | `ArchivePanel.jsx` | Unlocked archive page |
-| `ResearchPanel.jsx` | Archive link when unlocked |
 | `LineageModeNotice.jsx` / `ArchiveUnlockedNotice.jsx` | Unlock toasts |

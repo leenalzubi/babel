@@ -62,7 +62,11 @@ describe('visual system primitives', () => {
     expect(css).toMatch(/calc\(100vw - var\(--shell-inset/)
     expect(css).toMatch(/\.babel-chrome\s*\{/)
     expect(theme).toMatch(/--env-rail:\s*74px/)
+    expect(theme).toMatch(/--environment-edge-inset:\s*8px/)
     expect(theme).toMatch(/--chrome:\s*2400px/)
+    expect(css).toMatch(
+      /\.babel-chrome\s*\{[\s\S]*width:\s*calc\(100vw - 2 \* var\(--environment-edge-inset\)\)/
+    )
     expect(css).toMatch(
       /\.babel-env-shortcuts-col--left\s*\{[\s\S]*var\(--chrome-width\)/
     )
@@ -126,6 +130,8 @@ describe('visual system primitives', () => {
     )
     expect(findings).toMatch(/PageHeader/)
     expect(findings).toMatch(/An open record of disagreement/)
+    expect(findings).toMatch(/ReadingColumn/)
+    expect(findings).toMatch(/PageSection/)
     expect(about).toMatch(/PageHeader/)
     expect(about).toMatch(/What Babel is/)
   })

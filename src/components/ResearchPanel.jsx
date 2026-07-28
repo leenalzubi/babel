@@ -1,7 +1,6 @@
 import Eyebrow from './Eyebrow.jsx'
 import PageHeader from './layout/PageHeader.jsx'
 import ReadingColumn from './layout/ReadingColumn.jsx'
-import { useEasterEggDiscovery } from '../hooks/useEasterEggDiscovery.js'
 import React from 'react'
 
 /** About tab content: editorial layout, light and spacious. */
@@ -149,28 +148,10 @@ function DirectionCard({ title, children }) {
   )
 }
 
-/**
- * @param {{ onOpenArchive?: () => void }} [props]
- */
-export default function ResearchPanel({ onOpenArchive }) {
-  const { archiveUnlocked } = useEasterEggDiscovery()
-
+export default function ResearchPanel() {
   return (
     <article className="reading-page" aria-label="About Babel">
-      {archiveUnlocked && onOpenArchive ? (
-        <div className="mb-6 flex flex-wrap items-center justify-end gap-3">
-          <button
-            type="button"
-            className="easter-archive-link"
-            onClick={onOpenArchive}
-          >
-            Archive
-          </button>
-        </div>
-      ) : null}
-
       <PageHeader
-        eyebrow="About Babel"
         title="What Babel is"
         lede="Babel sends one question to three AI models, then lets them challenge each other so you can study disagreement, influence, and synthesis."
       />

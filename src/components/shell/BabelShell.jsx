@@ -45,6 +45,7 @@ export default function BabelShell({
   children,
 }) {
   const [trashOpen, setTrashOpen] = useState(false)
+  const [appWindowOpen, setAppWindowOpen] = useState(true)
   const trashReturnFocusRef = useRef(
     /** @type {HTMLElement | null} */ (null)
   )
@@ -65,6 +66,23 @@ export default function BabelShell({
     setTrashOpen(false)
   }, [])
 
+  const closeAppWindow = useCallback(() => {
+    setAppWindowOpen(false)
+  }, [])
+
+  const handleNavigate = useCallback(
+    /** @param {'babel' | 'findings' | 'lab' | 'about' | 'method'} tab */ (tab) => {
+      setAppWindowOpen(true)
+      onNavigate(tab)
+    },
+    [onNavigate]
+  )
+
+  const handleStartDebate = useCallback(() => {
+    setAppWindowOpen(true)
+    onStartDebate()
+  }, [onStartDebate])
+
   const trashContextValue = useMemo(() => ({ openTrash }), [openTrash])
 
   return (
@@ -84,9 +102,9 @@ export default function BabelShell({
           <header className="babel-chrome">
             <GlobalNav
               activeTab={activeTab}
-              onNavigate={onNavigate}
+              onNavigate={handleNavigate}
               onOpenSettings={onOpenSettings}
-              onStartDebate={onStartDebate}
+              onStartDebate={handleStartDebate}
               settingsControl={settingsControl}
               lineageMode={lineageMode}
               onToggleLineageMode={onToggleLineageMode}
@@ -94,7 +112,7 @@ export default function BabelShell({
           </header>
           <EnvironmentShortcuts
             activeTab={activeTab}
-            onNavigate={onNavigate}
+            onNavigate={handleNavigate}
             hidden={hideEnvironmentShortcuts}
             onOpenTrash={() => openTrash(desktopTrashRef.current)}
             trashTriggerRef={desktopTrashRef}
@@ -104,6 +122,8 @@ export default function BabelShell({
               title={windowTitle}
               layout={layout}
               titleContext={titleContext}
+              open={appWindowOpen}
+              onClose={closeAppWindow}
             >
               {children}
             </ApplicationWindow>

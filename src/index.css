@@ -317,8 +317,7 @@ body {
 }
 
 .data-page .page-header .babel-lede {
-  max-width: none;
-  white-space: nowrap;
+  max-width: var(--reading);
 }
 
 .data-page .babel-prose,
@@ -349,35 +348,6 @@ body {
 .reading-page .page-header,
 .hybrid-page .page-header {
   margin-bottom: var(--s-5);
-}
-
-.data-page .page-header {
-  text-align: center;
-  margin-inline: auto;
-}
-
-.data-page .page-header .babel-lede {
-  margin-inline: auto;
-}
-
-.data-page .consent-banner,
-.data-page .consent-banner p {
-  text-align: center;
-  margin-inline: auto;
-}
-
-.data-page .metric-card-row {
-  justify-content: center;
-}
-
-.data-page .metric-card {
-  text-align: center;
-  align-items: center;
-}
-
-.data-page > .babel-display,
-.data-page section > .babel-display {
-  text-align: center;
 }
 
 .reading-page .page-body {
@@ -949,10 +919,11 @@ select:focus-visible,
   }
 }
 
-/* Findings / research metric cards: compact, content-sized */
+/* Findings / research metric cards: compact, equal-sized */
 .metric-card {
   box-sizing: border-box;
-  width: max-content;
+  width: 11.5rem;
+  min-width: 11.5rem;
   max-width: 11.5rem;
   min-height: 0;
   padding: var(--s-3) var(--s-4);
@@ -1009,6 +980,204 @@ select:focus-visible,
   line-height: 1.55;
   font-style: italic;
   color: var(--ink-soft);
+}
+
+/* Findings: Method editorial column + wide data measure */
+.findings-page > .page-header {
+  max-width: min(46rem, 100%);
+  margin-inline: auto;
+}
+
+.findings-page > .reading-column {
+  max-width: var(--reading);
+  margin-inline: auto;
+}
+
+.findings-data-width {
+  width: min(100%, var(--stage));
+  max-width: var(--stage);
+  margin-inline: auto;
+}
+
+.findings-data-width > .page-section {
+  margin-top: var(--s-9);
+  padding-top: var(--s-8);
+  border-top: 1px solid var(--line);
+}
+
+.findings-disclosure {
+  margin-top: 0;
+  padding: var(--s-4) var(--s-5);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--ochre);
+  background: color-mix(in srgb, var(--ochre-wash) 55%, var(--plaster));
+}
+
+.findings-disclosure .babel-prose {
+  max-width: none;
+}
+
+.findings-inline-note {
+  margin-top: var(--s-5);
+  padding: var(--s-4) var(--s-5);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--blue-wash) 40%, var(--plaster));
+  color: var(--ink-soft);
+}
+
+.findings-inline-note--error {
+  border-color: color-mix(in srgb, var(--madder) 35%, var(--line));
+  background: color-mix(in srgb, var(--madder) 8%, var(--plaster));
+}
+
+.findings-metric-row {
+  gap: var(--s-3);
+}
+
+.findings-page .metric-card {
+  width: 12.5rem;
+  min-width: 12.5rem;
+  max-width: 12.5rem;
+  background: color-mix(in srgb, var(--blue-wash) 55%, var(--plaster));
+}
+
+.findings-page .metric-value:not(.is-empty) {
+  font-size: clamp(1.35rem, 1.8vw, 1.625rem);
+  font-weight: 650;
+}
+
+.findings-methodology-note {
+  margin: var(--s-5) 0 0;
+  padding: 0;
+  max-width: var(--reading);
+  border: none;
+  background: transparent;
+  text-align: left;
+}
+
+.findings-empty-state {
+  margin: 0;
+  padding: var(--s-4) var(--s-5);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--plaster) 92%, var(--blue-wash));
+  color: var(--ink-soft);
+}
+
+.findings-personality {
+  margin-top: var(--s-5);
+  padding: var(--s-4) var(--s-5);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--blue-wash) 40%, var(--plaster));
+}
+
+.findings-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s-5) var(--s-6);
+}
+
+.findings-control-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.findings-control-field--sort {
+  margin-left: auto;
+  min-width: 11rem;
+}
+
+.findings-range-inputs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 0.85rem;
+}
+
+.findings-control-input,
+.findings-control-select {
+  box-sizing: border-box;
+  min-height: 2.75rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--plaster-hi);
+  color: var(--ink);
+  font-size: var(--text-control, 0.9375rem);
+}
+
+.findings-control-input {
+  width: 4rem;
+  padding: 0.5rem 0.6rem;
+  font-variant-numeric: tabular-nums;
+  appearance: textfield;
+}
+
+.findings-control-input::-webkit-inner-spin-button,
+.findings-control-input::-webkit-outer-spin-button {
+  appearance: none;
+}
+
+.findings-control-select {
+  width: 100%;
+  min-width: 11rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.findings-filter-summary {
+  margin-top: var(--s-5);
+  color: var(--ink-soft);
+}
+
+.findings-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--plaster-hi);
+}
+
+.findings-table-wrap .babel-table th {
+  border-bottom-color: var(--line);
+  color: var(--ink-soft);
+}
+
+.findings-table-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+  color: var(--ink-soft);
+}
+
+@media (max-width: 599px) {
+  .findings-page .metric-card {
+    width: calc(50% - var(--s-3) / 2);
+    min-width: calc(50% - var(--s-3) / 2);
+    max-width: none;
+    flex: 1 1 calc(50% - var(--s-3) / 2);
+  }
+
+  .findings-control-field--sort {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .findings-control-select {
+    min-width: 0;
+  }
+
+  .findings-data-width > .page-section {
+    margin-top: var(--s-8);
+    padding-top: var(--s-6);
+  }
 }
 
 .findings-pagination {
@@ -1211,7 +1380,8 @@ select:focus-visible,
 .easter-egg-layer {
   position: fixed;
   inset: 0;
-  z-index: 5;
+  /* Above the framed app window so hover/click cards are not covered */
+  z-index: 25;
   pointer-events: none;
 }
 
@@ -1219,6 +1389,10 @@ select:focus-visible,
   position: absolute;
   pointer-events: auto;
   z-index: 6;
+}
+
+.easter-egg.is-open {
+  z-index: 8;
 }
 
 .easter-egg-trigger {
@@ -1291,6 +1465,11 @@ select:focus-visible,
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
+  pointer-events: auto;
+}
+
+.easter-egg.is-pinned .easter-egg-card {
+  /* Stay interactive while pinned via click */
   pointer-events: auto;
 }
 
@@ -1384,6 +1563,27 @@ select:focus-visible,
   display: block;
 }
 
+.easter-egg-portrait--cat {
+  background: var(--blue-deep);
+  border-color: color-mix(in srgb, var(--blue-deep) 40%, transparent);
+}
+
+.easter-egg-portrait--cat img {
+  object-position: center 10%;
+}
+
+.easter-egg-portrait--cat .easter-egg-initials {
+  color: var(--plaster-hi);
+}
+
+.easter-egg-card--builder-note {
+  width: min(320px, calc(100vw - 32px));
+}
+
+.easter-egg-card--builder-note .easter-egg-meta {
+  margin-top: 0.45rem;
+}
+
 .easter-egg-initials {
   display: flex;
   width: 100%;
@@ -1467,6 +1667,11 @@ select:focus-visible,
 /* Quiet corners — outside the application window where possible */
 .easter-egg-spot--portrait {
   left: max(12px, env(safe-area-inset-left, 0px));
+  bottom: max(16px, env(safe-area-inset-bottom, 0px));
+}
+
+.easter-egg-spot--cat {
+  left: max(68px, calc(env(safe-area-inset-left, 0px) + 56px));
   bottom: max(16px, env(safe-area-inset-bottom, 0px));
 }
 
@@ -1631,11 +1836,20 @@ html[data-lineage-mode] .claim-block {
     width: 54px;
     height: 54px;
   }
+
+  .easter-egg-spot--cat {
+    left: max(76px, calc(env(safe-area-inset-left, 0px) + 64px));
+  }
 }
 
 @media (min-width: 1180px) {
   .easter-egg-spot--portrait {
     left: max(16px, calc((100vw - min(1180px, 100vw - var(--shell-inset, 240px))) / 2 - 96px));
+    bottom: 18%;
+  }
+
+  .easter-egg-spot--cat {
+    left: max(76px, calc((100vw - min(1180px, 100vw - var(--shell-inset, 240px))) / 2 - 34px));
     bottom: 18%;
   }
 
@@ -1734,14 +1948,8 @@ html[data-lineage-mode] .claim-block {
   }
 }
 
-.babel-shell-foreground {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
+.babel-shell[data-app-window='closed'] .babel-shell-stage {
+  pointer-events: none;
 }
 
 .babel-global-nav {
@@ -1768,7 +1976,7 @@ html[data-lineage-mode] .claim-block {
   box-shadow: 0 2px 10px rgba(28, 27, 20, 0.06);
 }
 
-/* Longer top Babel bar; side icons stay vertical and track its edges */
+/* Top nav surface; width is independent of the centred app window */
 .babel-chrome {
   flex: 0 0 auto;
   width: min(var(--chrome), calc(100vw - 24px));
@@ -1887,6 +2095,18 @@ html[data-lineage-mode] .claim-block {
   font-size: 0.875rem;
 }
 
+.babel-shell-foreground {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .babel-shell-stage {
   width: 100%;
   flex: 1 1 auto;
@@ -1899,18 +2119,26 @@ html[data-lineage-mode] .claim-block {
 }
 
 .babel-app-window {
+  position: relative;
+  z-index: 20;
+  isolation: isolate;
   width: 100%;
   flex: 1 1 auto;
   min-height: 0;
   height: 100%;
+  max-height: 100%;
   margin: 0 auto;
   border-radius: 18px;
   overflow: hidden;
   border: 1px solid rgba(27, 44, 67, 0.18);
-  background: color-mix(in srgb, var(--plaster) 97%, transparent);
+  background: rgba(244, 239, 222, 0.97);
   box-shadow: var(--shadow-window);
   display: flex;
   flex-direction: column;
+}
+
+.babel-app-window[data-open='false'] {
+  display: none;
 }
 
 /* Debate workspace: denser, calmer surface */
@@ -1921,14 +2149,23 @@ html[data-lineage-mode] .claim-block {
 .babel-window-titlebar {
   flex: 0 0 auto;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px 16px;
-  min-height: 48px;
-  padding: 0 20px;
+  gap: 8px 12px;
+  min-height: 40px;
+  padding: 0 12px 0 20px;
   border-bottom: 1px solid var(--line);
   background: color-mix(in srgb, var(--plaster) 98%, transparent);
+}
+
+.babel-window-titlebar-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .babel-window-title {
@@ -1946,6 +2183,37 @@ html[data-lineage-mode] .claim-block {
   align-items: center;
   gap: 8px 16px;
   min-width: 0;
+}
+
+.babel-window-close {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+  font-size: 1.35rem;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.babel-window-close:hover {
+  color: var(--ink);
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--plaster-hi) 80%, transparent);
+}
+
+.babel-window-close:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
 }
 
 .babel-model-identity-dot {
@@ -2003,6 +2271,11 @@ html[data-lineage-mode] .claim-block {
   max-width: min(46rem, 100%);
 }
 
+/* Findings needs a wide data measure for the debate table */
+.babel-app-window--reading .babel-app-window-body > .stage:has(.findings-page) {
+  max-width: min(var(--stage), 100%);
+}
+
 .babel-app-window--reading .page-header {
   max-width: min(46rem, 100%);
 }
@@ -2037,8 +2310,8 @@ html[data-lineage-mode] .claim-block {
   }
 
   .babel-window-titlebar {
-    min-height: 48px;
-    padding: 0 20px;
+    min-height: 40px;
+    padding: 0 10px 0 20px;
   }
 }
 
@@ -2048,9 +2321,10 @@ html[data-lineage-mode] .claim-block {
   }
 }
 
-/* Desktop: wide top bar; side buttons align to its ends (not the middle window) */
+/* Desktop: top bar spans rail outer edges; side buttons keep prior chrome-width math */
 @media (min-width: 1180px) {
   .babel-shell {
+    /* Kept only for side-rail horizontal math; do not drive the top bar width */
     --chrome-width: min(
       var(--chrome),
       calc(100vw - 2 * (var(--env-rail) + var(--env-rail-gap) + 8px))
@@ -2059,7 +2333,9 @@ html[data-lineage-mode] .claim-block {
   }
 
   .babel-chrome {
-    width: var(--chrome-width);
+    width: calc(100vw - 2 * var(--environment-edge-inset));
+    max-width: none;
+    margin-inline: auto;
     padding: 16px 0 0;
   }
 
@@ -2099,7 +2375,7 @@ html[data-lineage-mode] .claim-block {
   }
 
   .babel-window-titlebar {
-    min-height: 48px;
+    min-height: 40px;
   }
 
   .babel-env-shortcuts {

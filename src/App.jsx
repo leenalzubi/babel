@@ -674,21 +674,22 @@ export default function App() {
 
   /** @type {'workspace' | 'data' | 'reading' | 'hybrid'} */
   const shellLayout =
-    shellNavTab === 'method' || mainTab === 'about' || mainTab === 'archive'
+    shellNavTab === 'method' ||
+    shellNavTab === 'findings' ||
+    mainTab === 'about' ||
+    mainTab === 'archive'
       ? 'reading'
-      : mainTab === 'findings'
-        ? 'data'
-        : mainTab === 'lab'
-          ? 'hybrid'
-          : 'workspace'
+      : mainTab === 'lab'
+        ? 'hybrid'
+        : 'workspace'
 
   const shellWindowTitle =
     shellNavTab === 'method'
-      ? 'How Babel Works'
+      ? ''
       : mainTab === 'findings' || mainTab === 'lab'
         ? ''
         : mainTab === 'about'
-          ? 'About Babel'
+          ? ''
           : mainTab === 'archive'
             ? 'The Babel Archive'
             : ''
@@ -785,14 +786,13 @@ export default function App() {
         {mainTab === 'findings' ? (
           <FindingsPanel />
         ) : mainTab === 'about' ? (
-          <ResearchPanel onOpenArchive={() => navigateMainTab('archive')} />
+          <ResearchPanel />
         ) : mainTab === 'archive' ? (
           <ArchivePanel />
         ) : mainTab === 'lab' && labRoute.view === 'methodology' ? (
           <LabPanel
             route={labRoute}
             onNavigate={navigateLab}
-            onOpenArchive={() => navigateMainTab('archive')}
           />
         ) : (
           <div className="workspace-page">

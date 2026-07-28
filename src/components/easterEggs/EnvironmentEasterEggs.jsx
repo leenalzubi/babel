@@ -1,6 +1,9 @@
 import EasterEgg from './EasterEgg.jsx'
 import {
   AVATAR_SRC,
+  BUILDER_NOTE_BODY,
+  BUILDER_NOTE_HEADING,
+  CAT_AVATAR_SRC,
   EASTER_EGG_META,
   LINKEDIN_URL,
   TABLET_INSCRIPTIONS,
@@ -25,6 +28,7 @@ export default function EnvironmentEasterEggs({
   return (
     <div className="easter-egg-layer" aria-label="Environment details">
       <CreatorPortraitEgg />
+      <CatPortraitEgg />
 
       {showGateTablet ? (
         <ClayTabletEgg
@@ -100,6 +104,44 @@ function CreatorPortraitEgg() {
         ) : (
           <img
             src={AVATAR_SRC}
+            alt=""
+            width={128}
+            height={128}
+            decoding="async"
+            onError={() => setImgFailed(true)}
+          />
+        )}
+      </span>
+    </EasterEgg>
+  )
+}
+
+function CatPortraitEgg() {
+  const [imgFailed, setImgFailed] = useState(false)
+  const meta = EASTER_EGG_META['cat-portrait']
+
+  return (
+    <EasterEgg
+      id="cat-portrait"
+      label={meta.label}
+      cardTitle={meta.title}
+      className="easter-egg-spot easter-egg-spot--cat"
+      triggerClassName="easter-egg-portrait-trigger"
+      cardClassName="easter-egg-card--builder-note"
+      placement="end"
+      card={
+        <>
+          <p className="easter-egg-name">{BUILDER_NOTE_HEADING}</p>
+          <p className="easter-egg-meta">{BUILDER_NOTE_BODY}</p>
+        </>
+      }
+    >
+      <span className="easter-egg-portrait easter-egg-portrait--cat" aria-hidden>
+        {imgFailed ? (
+          <span className="easter-egg-initials">C</span>
+        ) : (
+          <img
+            src={CAT_AVATAR_SRC}
             alt=""
             width={128}
             height={128}

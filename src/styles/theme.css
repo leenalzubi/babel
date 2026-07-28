@@ -66,6 +66,8 @@
   --shell-inset: 160px;
   --env-rail: 74px;
   --env-rail-gap: 0px;
+  /* Shared outer inset used by side rails (max(8px, …)) and the top bar */
+  --environment-edge-inset: 8px;
 
   /* Type scale */
   --text-body: 1rem; /* 16px */
