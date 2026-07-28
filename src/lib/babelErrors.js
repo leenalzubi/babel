@@ -298,11 +298,11 @@ export function toBabelError(err, ctx = {}) {
       scope: 'infrastructure',
       title: 'Authentication failed',
       detail: import.meta.env.PROD
-        ? 'The model service is not configured for this deployment.'
+        ? 'The model service is not configured for this deployment. Add GITHUB_MODELS_PAT in Vercel, then redeploy.'
         : 'Babel could not authenticate with GitHub Models. Add a valid GitHub token and try again.',
       suggestion: import.meta.env.PROD
-        ? 'Retry connection or contact the site operator.'
-        : 'Open setup instructions and add VITE_GITHUB_TOKEN.',
+        ? 'Vercel → Project → Settings → Environment Variables → GITHUB_MODELS_PAT (Production and Preview), then Redeploy.'
+        : 'Open setup instructions and add VITE_GITHUB_TOKEN to .env.local, then restart npm run dev.',
       agent: ctx.agent,
       agentId: ctx.agentId,
       stage: ctx.stage,

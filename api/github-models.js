@@ -75,7 +75,8 @@ export default async function handler(req, res) {
     if (!token) {
       return res.status(503).json({
         error:
-          'GitHub PAT missing on the server. In Vercel add GITHUB_MODELS_PAT (recommended) under Environment Variables for this environment, then redeploy.',
+          'GitHub PAT missing on the server. In Vercel add GITHUB_MODELS_PAT (recommended) under Environment Variables for Production and Preview, then redeploy.',
+        code: 'GITHUB_TOKEN_MISSING',
       })
     }
 

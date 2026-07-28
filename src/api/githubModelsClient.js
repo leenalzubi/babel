@@ -47,7 +47,11 @@ export async function classifyError(response, agentName) {
     body = {}
   }
 
-  const rawMessage = body?.error?.message || body?.message || ''
+  const rawMessage =
+    (typeof body?.error === 'string' && body.error) ||
+    body?.error?.message ||
+    body?.message ||
+    ''
   const message = typeof rawMessage === 'string' ? rawMessage : String(rawMessage ?? '')
   const messageLower = message.toLowerCase()
 
@@ -100,11 +104,11 @@ export async function classifyError(response, agentName) {
       retryMode: 'after_configuration',
       title: 'Authentication failed',
       detail: import.meta.env.PROD
-        ? 'The model service is not configured for this deployment.'
+        ? 'GitHub Models rejected the server credentials for this deployment (missing, expired, or without Models access).'
         : 'Your GitHub token was rejected. It may have expired or have insufficient permissions.',
       suggestion: import.meta.env.PROD
-        ? 'Retry connection or contact the site operator.'
-        : 'Generate a new fine-grained GitHub token with Models access and update your environment variables.',
+        ? 'In Vercel, set GITHUB_MODELS_PAT (Production and Preview), confirm Models access on that token, then redeploy.'
+        : 'Generate a new fine-grained GitHub token with Models access and update VITE_GITHUB_TOKEN in .env.local, then restart the dev server.',
     }
   }
 
@@ -122,6 +126,24 @@ export async function classifyError(response, agentName) {
   }
 
   if (status === 500 || status === 502 || status === 503) {
+    if (
+      status === 503 &&
+      (messageLower.includes('pat missing') ||
+        messageLower.includes('github_token_missing') ||
+        body?.code === 'GITHUB_TOKEN_MISSING')
+    ) {
+      return {
+        type: 'auth',
+        agent: agentName,
+        scope: 'infrastructure',
+        retryMode: 'after_configuration',
+        title: 'Authentication failed',
+        detail:
+          'The model service is not configured for this deployment. Add GITHUB_MODELS_PAT in Vercel, then redeploy.',
+        suggestion:
+          'Vercel → Project → Settings → Environment Variables → GITHUB_MODELS_PAT (Production and Preview), then Redeploy.',
+      }
+    }
     return {
       type: 'server_error',
       agent: agentName,
@@ -149,6 +171,13 @@ export async function classifyError(response, agentName) {
  * @returns {{ url: string, authorization: string | null }}
  */
 function resolveGithubChatRequest() {
+  // Production always uses the server proxy so a Vercel VITE_* token is not
+  // required in the browser bundle (and a stale baked-in token cannot bypass
+  // GITHUB_MODELS_PAT on the server).
+  if (import.meta.env.PROD) {
+    return { url: PROXY_PATH, authorization: null }
+  }
+
   const vite =
     typeof import.meta.env.VITE_GITHUB_TOKEN === 'string'
       ? import.meta.env.VITE_GITHUB_TOKEN.trim()
@@ -158,9 +187,6 @@ function resolveGithubChatRequest() {
       url: GITHUB_MODELS_CHAT_URL,
       authorization: `Bearer ${vite}`,
     }
-  }
-  if (import.meta.env.PROD) {
-    return { url: PROXY_PATH, authorization: null }
   }
   return { url: '', authorization: null }
 }
@@ -476,10 +502,12 @@ export async function callGitHubModel(model, messages, systemPrompt, options) {
 
 
 /**
- * Whether the browser has a direct VITE token (local / legacy client-only prod).
+ * Whether the browser should use a direct VITE token (local/dev only).
+ * Production always uses `/api/github-models`.
  * @returns {boolean}
  */
 export function hasGithubModelsClientToken() {
+  if (import.meta.env.PROD) return false
   const v = import.meta.env.VITE_GITHUB_TOKEN
   return typeof v === 'string' && Boolean(v.trim())
 }

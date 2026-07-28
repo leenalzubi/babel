@@ -3,10 +3,15 @@
   "functions": {
     "api/github-models.js": {
       "maxDuration": 300
+    },
+    "api/github-models-embeddings.js": {
+      "maxDuration": 60
     }
   },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/" }
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
   ]
 }

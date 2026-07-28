@@ -58,7 +58,7 @@ function PromptInputInner(
   ]
 
   const clientToken = hasGithubModelsClientToken()
-  const needsProxyProbe = import.meta.env.PROD && !clientToken
+  const needsProxyProbe = import.meta.env.PROD
   const [probe, setProbe] = useState(
     () =>
       needsProxyProbe ? { done: false, ok: false } : { done: true, ok: false }
@@ -75,18 +75,18 @@ function PromptInputInner(
     }
   }, [needsProxyProbe])
 
-  const hasToken =
-    clientToken ||
-    (needsProxyProbe && probe.done && probe.ok)
+  const hasToken = import.meta.env.PROD
+    ? probe.done && probe.ok
+    : clientToken
 
-  const tokenHint = clientToken
-    ? null
-    : import.meta.env.PROD
-      ? !probe.done
-        ? 'Checking GitHub Models (server)…'
-        : !probe.ok
-          ? 'Add GITHUB_MODELS_PAT in Vercel → Environment Variables, then redeploy (do not rely on linking GitHub to the project)'
-          : null
+  const tokenHint = import.meta.env.PROD
+    ? !probe.done
+      ? 'Checking GitHub Models (server)…'
+      : !probe.ok
+        ? 'Add GITHUB_MODELS_PAT in Vercel → Environment Variables (Production and Preview), then redeploy. A VITE_GITHUB_TOKEN alone is not enough on the live site.'
+        : null
+    : clientToken
+      ? null
       : 'Add VITE_GITHUB_TOKEN to .env.local'
 
   const statusMessage = hasToken
@@ -136,10 +136,11 @@ function PromptInputInner(
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault()
-                if (canRun) onRun()
-              }
+              if (e.key !== 'Enter') return
+              // Enter starts; Shift+Enter inserts a newline.
+              if (e.shiftKey) return
+              e.preventDefault()
+              if (canRun) onRun()
             }}
             disabled={disabled}
             rows={6}
@@ -163,7 +164,7 @@ function PromptInputInner(
               <span className="mx-2 text-[var(--ink-faint)]" aria-hidden>
                 |
               </span>
-              ⌘/Ctrl+Enter to start
+              Enter to start · Shift+Enter for newline
             </span>
           </div>
           {fieldError ? (
