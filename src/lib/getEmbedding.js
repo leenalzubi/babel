@@ -38,14 +38,15 @@ export async function getEmbedding(text) {
         ? import.meta.env.VITE_GITHUB_TOKEN.trim()
         : ''
 
-    const useProxy = import.meta.env.PROD && !vite
+    // Match chat: production always uses the server proxy.
+    const useProxy = import.meta.env.PROD
     const url = useProxy ? PROXY_PATH : GITHUB_MODELS_EMBEDDINGS_URL
-    if (!url) return null
+    if (!useProxy && !vite) return null
 
     const headers = githubModelsFetchHeaders({
       'Content-Type': 'application/json',
     })
-    if (vite) {
+    if (!useProxy && vite) {
       headers.Authorization = `Bearer ${vite}`
     }
 

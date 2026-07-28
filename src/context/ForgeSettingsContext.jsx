@@ -8,7 +8,7 @@ import {
 import { loadForgeSettings, saveForgeSettings } from '../lib/forgeSettings.js'
 import { useForge } from '../store/useForgeStore.js'
 
-/** @typedef {{ maxRounds: number, synthesisMode: 'always' | 'divergence', showRationale: boolean }} ForgeUiSettings */
+/** @typedef {{ maxRounds: number, synthesisMode: 'always' | 'divergence', showRationale: boolean, showResearchSurfaces: boolean }} ForgeUiSettings */
 
 const ForgeSettingsContext = createContext(null)
 

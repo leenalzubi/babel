@@ -1,0 +1,29 @@
+{
+  "id": "case-react-vue-chronology",
+  "slug": "react-vue-chronology",
+  "title": "React vs Vue public release chronology",
+  "status": "draft",
+  "domain": "other",
+  "prompt": "Did the first public release of React occur before the first public release of Vue.js?",
+  "decisionCriteria": ["evidence quality"],
+  "whyThisCase": "Straightforward checkable question where Babel is likely unnecessary. Useful as a negative-control case for cost and reading burden.",
+  "knownDifficulty": "Low. A single strong model should suffice if it cites checkable chronology.",
+  "expectedFailureModes": [
+    "Babel adds latency and reading burden without improving correctness",
+    "Debate roles produce redundant agreement"
+  ],
+  "createdAt": "2026-07-26T00:00:00.000Z",
+  "datasetVersion": "2026-07-26",
+  "whereBabelDidNotHelp": "Not evaluated; draft case; expected limitation once run: longer time and more reading for little decision value.",
+  "limitations": [
+    "Draft; not shown on the public Lab index.",
+    "No artifacts with recorded outputs or scores yet."
+  ],
+  "changelog": [
+    {
+      "at": "2026-07-26T00:00:00.000Z",
+      "note": "Draft shell created from EVAL_PROMPT_SUITE fact-02 (negative control)."
+    }
+  ],
+  "artifacts": []
+}

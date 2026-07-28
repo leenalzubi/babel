@@ -1,0 +1,29 @@
+{
+  "id": "case-hiring-screener-dissent",
+  "slug": "hiring-screener-dissent",
+  "title": "Hiring screener and employment gaps",
+  "status": "draft",
+  "domain": "ethics",
+  "prompt": "Should an automated hiring screener reject all candidates who took more than six months between jobs?",
+  "decisionCriteria": ["error cost", "user trust", "evidence quality"],
+  "whyThisCase": "Dangerous-majority pattern: consensus could conceal a strong minority argument about bias, legality, and false negatives.",
+  "knownDifficulty": "Majority-sounding efficiency arguments may drown dissent unless the condition preserves it.",
+  "expectedFailureModes": [
+    "Synthesis flattens dissent into mild caveats",
+    "No substantive revision after critique"
+  ],
+  "createdAt": "2026-07-26T00:00:00.000Z",
+  "datasetVersion": "2026-07-26",
+  "whereBabelDidNotHelp": "Not evaluated; draft case; no runs recorded.",
+  "limitations": [
+    "Draft; not shown on the public Lab index.",
+    "No artifacts with recorded outputs or scores yet."
+  ],
+  "changelog": [
+    {
+      "at": "2026-07-26T00:00:00.000Z",
+      "note": "Draft shell created from EVAL_PROMPT_SUITE maj-01."
+    }
+  ],
+  "artifacts": []
+}

@@ -1,3 +1,8 @@
+import {
+  decisionArtifactToMarkdown,
+  parseDecisionArtifact,
+} from './parseDecisionArtifact.js'
+
 const ATTR = '---ATTRIBUTIONS---'
 const CONC = '---CONCESSIONS---'
 const HELD = '---HELD-FIRM---'
@@ -40,10 +45,12 @@ function escapeRe(s) {
  *   rationale: string,
  *   concessions: string[],
  *   heldFirm: string[],
+ *   decisionArtifact: import('./parseDecisionArtifact.js').DecisionArtifact,
  * }}
  */
 export function parseSynthesisOutput(raw, config) {
   const text = typeof raw === 'string' ? raw.trim() : ''
+  const decisionArtifact = parseDecisionArtifact(text)
 
   const markerPositions = [ATTR, CONC, HELD, RAT]
     .map((m) => text.indexOf(m))
@@ -62,6 +69,11 @@ export function parseSynthesisOutput(raw, config) {
   output = output
     .replace(/^\[(?:Synthesized answer|Your synthesized answer[^\]]*)\]\s*\n?/i, '')
     .trim()
+
+  const artifactMd = decisionArtifactToMarkdown(decisionArtifact)
+  if (artifactMd) {
+    output = artifactMd
+  }
 
   const attributions = { a: '', b: '', c: '' }
   if (attrBlock) {
@@ -122,5 +134,12 @@ export function parseSynthesisOutput(raw, config) {
         .filter(Boolean)
     : []
 
-  return { output, attributions, rationale, concessions, heldFirm }
+  return {
+    output,
+    attributions,
+    rationale,
+    concessions,
+    heldFirm,
+    decisionArtifact,
+  }
 }

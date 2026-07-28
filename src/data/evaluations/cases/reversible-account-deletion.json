@@ -1,0 +1,29 @@
+{
+  "id": "case-reversible-account-deletion",
+  "slug": "reversible-account-deletion",
+  "title": "Permanent account deletion after 24 months",
+  "status": "draft",
+  "domain": "policy",
+  "prompt": "Should we permanently delete inactive user accounts after 24 months with no recovery window?",
+  "decisionCriteria": ["reversibility", "error cost", "user trust"],
+  "whyThisCase": "Reversible versus irreversible launch/policy decision. Irreversibility should force careful dissent and evidence honesty.",
+  "knownDifficulty": "Models may treat deletion as a compliance checkbox without naming recovery-window trade-offs.",
+  "expectedFailureModes": [
+    "Cosmetic agreement on “privacy” without a reversible staging plan",
+    "Failure to preserve a minority argument for delayed hard-delete"
+  ],
+  "createdAt": "2026-07-26T00:00:00.000Z",
+  "datasetVersion": "2026-07-26",
+  "whereBabelDidNotHelp": "Not evaluated; draft case; no runs recorded.",
+  "limitations": [
+    "Draft; not shown on the public Lab index.",
+    "No artifacts with recorded outputs or scores yet."
+  ],
+  "changelog": [
+    {
+      "at": "2026-07-26T00:00:00.000Z",
+      "note": "Draft shell created from EVAL_PROMPT_SUITE rev-01."
+    }
+  ],
+  "artifacts": []
+}

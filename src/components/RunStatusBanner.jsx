@@ -1,7 +1,8 @@
 const LABELS = {
   round1: 'Running Round 1...',
   crossReview: 'Round 2: cross-review and rebuttal…',
-  finalPosition: 'Round 3: final positions…',
+  finalPosition:
+    'Round 3: final positions (voices revise one at a time; up to about 6 minutes)…',
   synthesis: 'Synthesizing...',
 }
 

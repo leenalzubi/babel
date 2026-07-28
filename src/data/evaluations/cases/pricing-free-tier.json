@@ -1,0 +1,29 @@
+{
+  "id": "case-pricing-free-tier",
+  "slug": "pricing-free-tier",
+  "title": "Charge from day one vs twelve-month free tier",
+  "status": "draft",
+  "domain": "strategy",
+  "prompt": "For a seed-stage B2B tool, should we charge from day one or offer a generous free tier for twelve months?",
+  "decisionCriteria": ["time to learn", "feasibility", "user trust"],
+  "whyThisCase": "Strategy question with materially different assumptions about learning speed versus revenue discipline.",
+  "knownDifficulty": "Assumption clashes (runway, sales motion, product-led growth) may stay implicit.",
+  "expectedFailureModes": [
+    "Side-by-side answers talk past each other",
+    "Babel fails to name the assumption driving the split"
+  ],
+  "createdAt": "2026-07-26T00:00:00.000Z",
+  "datasetVersion": "2026-07-26",
+  "whereBabelDidNotHelp": "Not evaluated; draft case; no runs recorded.",
+  "limitations": [
+    "Draft; not shown on the public Lab index.",
+    "No artifacts with recorded outputs or scores yet."
+  ],
+  "changelog": [
+    {
+      "at": "2026-07-26T00:00:00.000Z",
+      "note": "Draft shell created from EVAL_PROMPT_SUITE amb-01."
+    }
+  ],
+  "artifacts": []
+}

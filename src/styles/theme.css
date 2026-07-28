@@ -1,52 +1,148 @@
-/* Babel — Scriptorium (research library) tokens */
+/* Babel: Design System (visual direction)
+   Scholarly workbench inside an illustrated Babylonian environment.
+   Rich outside, quiet workspace inside. */
 
 :root {
-  --bg-base: #f5f0e8;
-  --bg-surface: #fdfaf4;
-  --bg-raised: #f0ebe3;
-  --bg-notebook: #f5f0e8;
-  --bg-synthesis: #f0e8d5;
-  --bg-sidebar: #f0e8d5;
-  --bg-metric: #f0e8d5;
-  --border: #d4c9b0;
-  --text-primary: #1c1814;
-  --text-secondary: #6b5e4e;
-  --text-muted: #9c8e7e;
-  /* Deep manuscript red — code still references --accent-forge */
-  --accent-forge: #8b1a1a;
-  --agent-a: #2563eb;
-  --agent-b: #16a34a;
-  --agent-c: #dc2626;
-  --highlight: #e8d5a3;
-  --agree: #2d5a3d;
-  --diverge: #8b1a1a;
-  --neutral: #8b6914;
+  /* ground & surface, plaster in sun and shadow */
+  --limewash: #e6decc;
+  --plaster: #f1ebdd;
+  --plaster-hi: #f8f3e8;
 
-  --font-display: 'Playfair Display', Georgia, serif;
-  --font-body: 'Source Serif 4', Georgia, serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  /* ink, warm iron, never pure black */
+  --ink: #24201b;
+  --ink-soft: #554e42;
+  --ink-faint: #857a68;
 
-  --card-radius: 6px;
-  --card-shadow: none;
+  /* nubian blue, the voice, primary accent */
+  --blue: #1e4e5e;
+  --blue-deep: #163b47;
+  --blue-wash: #d6e0df;
+
+  /* earth line, umber rules and lattice */
+  --line: #d3c6ac;
+  --line-firm: #b29b77;
+  --border-primary: rgba(27, 44, 67, 0.2);
+  --border-subtle: rgba(60, 55, 43, 0.15);
+  --border-active: color-mix(in srgb, var(--blue) 60%, transparent);
+
+  /* sun, ochre, sparing */
+  --ochre: #b8862f;
+  --ochre-wash: #ede0c2;
+
+  /* the hot notes, rationed */
+  --madder: #97372b;
+  --oasis: #4c6647;
+
+  /* form */
+  --radius-sm: 8px;
+  --radius: 10px;
+  --radius-panel: 14px;
+  --radius-window: 20px;
+  --radius-nav: 13px;
+  --radius-arch: 999px 999px 6px 6px;
+
+  /* rhythm: 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64 / 80 */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+  --s-9: 80px;
+
+  /* type stacks: eyebrow → body, display → lede */
+  --gap-eyebrow: var(--s-2);
+  --gap-lede: var(--s-3);
+
+  /* layout */
+  --stage: 1180px;
+  /* Wide top bar; grows with the viewport, rails sit flush outside its ends */
+  --chrome: 2400px;
+  --reading: 44rem;
+  --measure: var(--reading);
+  --maxw: var(--stage);
+  --shell-inset: 160px;
+  --env-rail: 74px;
+  --env-rail-gap: 0px;
+  /* Shared outer inset used by side rails (max(8px, …)) and the top bar */
+  --environment-edge-inset: 8px;
+
+  /* Type scale */
+  --text-body: 1rem; /* 16px */
+  --text-lede: 1.0625rem; /* 17px */
+  --text-meta: 0.8125rem; /* 13px — secondary UI floor */
+  --text-label: 0.75rem; /* 12px form labels */
+  --text-eyebrow: 0.6875rem; /* 11px */
+  --text-mono: 0.75rem; /* 12px technical */
+  --text-control: 0.875rem; /* 14px buttons / nav */
+  --lh-body: 1.6;
+  --lh-lede: 1.55;
+  --lh-meta: 1.4;
+
+  --shadow-soft: 0 1px 2px rgba(28, 27, 20, 0.05),
+    0 8px 24px -12px rgba(28, 27, 20, 0.14);
+  --shadow-lift: 0 2px 4px rgba(28, 27, 20, 0.06),
+    0 18px 40px -16px rgba(28, 27, 20, 0.18);
+  --shadow-window: 0 24px 64px rgba(28, 27, 20, 0.18);
+
+  /* Typography roles */
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'Inter', system-ui, sans-serif;
+
+  /* ── Legacy app aliases ── */
+  --bg-base: var(--limewash);
+  --bg-surface: var(--plaster);
+  --bg-raised: var(--plaster-hi);
+  --bg-notebook: var(--plaster);
+  --bg-synthesis: var(--ochre-wash);
+  --bg-sidebar: var(--plaster);
+  --bg-metric: var(--blue-wash);
+  --border: var(--line);
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-soft);
+  /* Essential secondary UI uses soft ink (≥4.5:1). Keep --ink-faint for
+     separators, placeholders, disabled, and genuinely unavailable values. */
+  --text-muted: var(--ink-soft);
+  --accent-forge: var(--blue);
+  --highlight: var(--ochre-wash);
+  --agree: var(--oasis);
+  --diverge: var(--madder);
+  --neutral: var(--ochre);
+
+  --agent-a: var(--blue);
+  --agent-b: var(--oasis);
+  --agent-c: var(--madder);
+
+  --card-radius: var(--radius-panel);
+  --card-shadow: var(--shadow-soft);
 }
 
-/* Scrollable debate response bodies (R1 / R2 / R3) */
+/* mud brick by night */
+[data-theme='night'] {
+  --limewash: #1c1813;
+  --plaster: #241f19;
+  --plaster-hi: #2c261e;
+  --ink: #ede4d2;
+  --ink-soft: #b7ac97;
+  --ink-faint: #87795f;
+  --blue: #6fa6b4;
+  --blue-deep: #8fbfcb;
+  --blue-wash: #26343a;
+  --line: #3a3327;
+  --line-firm: #544a38;
+  --border-primary: rgba(143, 191, 203, 0.22);
+  --border-subtle: rgba(183, 172, 151, 0.14);
+  --ochre: #d2a04a;
+  --ochre-wash: #33291a;
+  --madder: #c15a48;
+  --oasis: #84a177;
+}
+
+/* Response bodies stay fully visible by default (no clip-by-default). */
 .forge-response-scroll {
-  max-height: 320px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #d4c9b0 transparent;
-}
-
-.forge-response-scroll::-webkit-scrollbar {
-  width: 4px;
-}
-
-.forge-response-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.forge-response-scroll::-webkit-scrollbar-thumb {
-  background: #d4c9b0;
-  border-radius: 2px;
+  max-height: none;
+  overflow: visible;
 }

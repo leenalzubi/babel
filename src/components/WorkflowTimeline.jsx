@@ -8,12 +8,8 @@ import {
   Sparkles,
 } from 'lucide-react'
 import AgentTimer from './AgentTimer.jsx'
-import { isAgentTimeoutResponse } from '../lib/debateConstants.js'
+import { isUnavailableAgentResponse } from '../lib/debateConstants.js'
 import { computeProgressUi } from '../lib/progressEstimate.js'
-import {
-  BABEL_SYNTHESIS_TOGGLE_EVENT,
-  readBabelSynthesisEnabled,
-} from '../lib/babelSynthesisPref.js'
 import { useForge } from '../store/useForgeStore.js'
 
 /** @param {'pending' | 'active' | 'complete' | 'partial'} state */
@@ -29,7 +25,7 @@ function StatusDot({ state }) {
     return (
       <span
         className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-dashed border-amber-600/50 bg-amber-500/10 text-amber-700/90 ring-1 ring-amber-600/30"
-        title="Partial — at least one model timed out in this stage"
+        title="Partial. At least one model timed out in this stage"
       >
         <Clock className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
       </span>
@@ -112,25 +108,25 @@ function useWorkflowSteps(state, synthesisEnabled) {
     String(fp.b ?? '').length > 0 &&
     String(fp.c ?? '').length > 0
 
-  const running = status === 'running'
+  const running = status === 'running' || status === 'degraded'
 
   const r1 = rounds.find((r) => r.roundNum === 1)
   const round1Timeout =
     r1 &&
-    [r1.agentA, r1.agentB, r1.agentC].some((t) => isAgentTimeoutResponse(t))
+    [r1.agentA, r1.agentB, r1.agentC].some((t) => isUnavailableAgentResponse(t))
   const rev = reviews.find((r) => r.roundNum === 1)
   const reviewTimeout =
     rev &&
     [rev.aReviews, rev.bReviews, rev.cReviews].some((t) =>
-      isAgentTimeoutResponse(t)
+      isUnavailableAgentResponse(t)
     )
   const finalTimeout = [fp.a, fp.b, fp.c].some((t) =>
-    isAgentTimeoutResponse(t)
+    isUnavailableAgentResponse(t)
   )
   const synthesisTimeout =
     synthesis &&
     typeof synthesis.output === 'string' &&
-    isAgentTimeoutResponse(synthesis.output)
+    isUnavailableAgentResponse(synthesis.output)
 
   /** @type {'pending' | 'active' | 'complete' | 'partial'} */
   let s1 = 'pending'
@@ -157,10 +153,16 @@ function useWorkflowSteps(state, synthesisEnabled) {
   }
 
   let s6 = 'pending'
-  if (status === 'complete') s6 = 'complete'
+  if (status === 'complete' || status === 'complete_with_gaps') s6 = 'complete'
   else if (!synthesisEnabled && running && finalDone) s6 = 'active'
 
-  if (status === 'error' || status === 'partial') {
+  if (
+    status === 'failed' ||
+    status === 'error' ||
+    status === 'blocked' ||
+    status === 'complete_with_gaps' ||
+    status === 'partial'
+  ) {
     if (round1Done) s2 = 'complete'
     if (reviewDone) s3 = 'complete'
     if (finalDone) s4 = 'complete'
@@ -186,7 +188,10 @@ function useWorkflowSteps(state, synthesisEnabled) {
     s5 = markPartial(s5, Boolean(synthesisTimeout))
   }
   const tc = timeoutCount ?? 0
-  s6 = markPartial(s6, status === 'complete' && tc > 0)
+  s6 = markPartial(
+    s6,
+    (status === 'complete' || status === 'complete_with_gaps') && tc > 0
+  )
 
   const baseSteps = [
     { key: 'prompt', label: 'Prompt received', state: s1, icon: null },
@@ -205,7 +210,7 @@ function useWorkflowSteps(state, synthesisEnabled) {
     },
     {
       key: 'finalp',
-      label: 'Round 3: final positions',
+      label: 'Round 3: final positions (up to ~6 min)',
       state: s4,
       icon: 'agents',
     },
@@ -236,16 +241,7 @@ export default function WorkflowTimeline({
   onCollapsedChange = () => {},
 }) {
   const { state } = useForge()
-  const [synthesisUiEnabled, setSynthesisUiEnabled] = useState(
-    readBabelSynthesisEnabled
-  )
-  useEffect(() => {
-    const onToggle = () => setSynthesisUiEnabled(readBabelSynthesisEnabled())
-    window.addEventListener(BABEL_SYNTHESIS_TOGGLE_EVENT, onToggle)
-    return () =>
-      window.removeEventListener(BABEL_SYNTHESIS_TOGGLE_EVENT, onToggle)
-  }, [])
-  const { steps } = useWorkflowSteps(state, synthesisUiEnabled)
+  const { steps } = useWorkflowSteps(state, true)
   const { config, divergenceScores } = state
   const progress = computeProgressUi(state)
   const [progressFadeOut, setProgressFadeOut] = useState(false)
@@ -356,7 +352,7 @@ export default function WorkflowTimeline({
                         />
                       ) : (
                         <span className="shrink-0 text-[9px] text-[var(--text-muted)]/50">
-                          —
+                         :
                         </span>
                       )}
                     </div>
@@ -396,7 +392,7 @@ export default function WorkflowTimeline({
                         />
                       ) : (
                         <span className="shrink-0 text-[9px] text-[var(--text-muted)]/50">
-                          —
+                         :
                         </span>
                       )}
                     </div>
@@ -436,7 +432,7 @@ export default function WorkflowTimeline({
                         />
                       ) : (
                         <span className="shrink-0 text-[9px] text-[var(--text-muted)]/50">
-                          —
+                         :
                         </span>
                       )}
                     </div>
@@ -463,7 +459,7 @@ export default function WorkflowTimeline({
 
   return (
     <aside
-      className={`fixed left-0 right-0 top-0 z-30 border-b border-[var(--border)] bg-[var(--bg-sidebar)] md:bottom-0 md:left-auto md:right-0 md:top-0 md:h-screen md:border-b-0 md:border-l ${
+      className={`fixed left-0 right-0 top-0 z-[45] border-b border-[var(--border)] bg-[var(--bg-sidebar)] md:bottom-0 md:left-auto md:right-0 md:top-0 md:h-screen md:border-b-0 md:border-l ${
         collapsed
           ? 'md:w-[40px] md:min-w-[40px] md:px-1.5 md:py-3'
           : 'md:w-[240px] md:min-w-[240px] md:px-4 md:py-5'
@@ -513,9 +509,7 @@ export default function WorkflowTimeline({
         className={`px-3 py-0 md:px-0 md:py-0 ${collapsed ? 'hidden' : 'max-md:hidden md:block'}`}
       >
         <div className="mb-4 flex items-center justify-between gap-2 pr-0">
-          <h2 className="font-mono text-[11px] font-semibold tracking-[0.12em] text-[var(--text-muted)]">
-            Workflow
-          </h2>
+          <span className="babel-eyebrow">Workflow</span>
           <button
             type="button"
             onClick={() => onCollapsedChange(true)}
@@ -531,7 +525,10 @@ export default function WorkflowTimeline({
             {steps.map((step) => renderDesktopStepRow(step, state))}
           </div>
         </div>
-        {state.status === 'running' || state.status === 'complete' ? (
+        {state.status === 'running' ||
+        state.status === 'degraded' ||
+        state.status === 'complete' ||
+        state.status === 'complete_with_gaps' ? (
           <div
             className={`mt-4 px-3 transition-opacity duration-700 ease-out ${
               progressFadeOut ? 'pointer-events-none opacity-0' : 'opacity-100'
@@ -542,7 +539,7 @@ export default function WorkflowTimeline({
             </p>
             <div className="mt-1 h-0.5 w-full overflow-hidden rounded-full bg-[var(--bg-base)]">
               <div
-                className="h-full rounded-full bg-[#8B1A1A]/22 transition-[width] duration-500"
+                className="h-full rounded-full bg-[#1E4E5E]/22 transition-[width] duration-500"
                 style={{ width: `${Math.min(100, progress.percent)}%` }}
               />
             </div>
@@ -550,7 +547,7 @@ export default function WorkflowTimeline({
         ) : null}
       </div>
 
-      {/* Desktop: collapsed rail — icons only */}
+      {/* Desktop: collapsed rail: icons only */}
       <div
         className={`w-full flex-col items-center ${collapsed ? 'max-md:hidden md:flex' : 'hidden'}`}
       >

@@ -296,6 +296,13 @@ npm run dev
 
 Then open the local URL printed by the development server.
 
+### Product docs in this repo
+
+* Inspectable synthesis lineage: [docs/SYNTHESIS_LINEAGE.md](docs/SYNTHESIS_LINEAGE.md)
+* Babel Lab (public evaluation): [docs/BABEL_LAB.md](docs/BABEL_LAB.md) (routes `/lab`, `/lab/methodology`, `/lab/:caseSlug`)
+* Conclusion stability check: [docs/CONCLUSION_STABILITY.md](docs/CONCLUSION_STABILITY.md)
+* Environment easter eggs (spoilers): [docs/EASTER_EGGS.md](docs/EASTER_EGGS.md)
+
 ### Environment configuration
 
 Babel uses GitHub Models for model calls.

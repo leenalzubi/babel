@@ -23,7 +23,7 @@ export function splitRedactedThinking(text) {
     .trim()
 
   const thinking =
-    thinkingChunks.length > 0 ? thinkingChunks.join('\n\n—\n\n') : null
+    thinkingChunks.length > 0 ? thinkingChunks.join('\n\n-\n\n') : null
 
   return { answer, thinking }
 }

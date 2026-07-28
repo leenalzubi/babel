@@ -1,0 +1,77 @@
+{
+  "id": "case-ai-action-items",
+  "slug": "ai-action-items",
+  "title": "AI meeting assistant without human approval",
+  "status": "published",
+  "domain": "product",
+  "prompt": "Should we ship an AI meeting assistant that sends action items automatically without human approval?",
+  "decisionCriteria": ["reversibility", "user trust", "error cost"],
+  "whyThisCase": "Product decision with competing trust and automation concerns. A strong case for structured debate if models diverge on error cost versus speed.",
+  "knownDifficulty": "Models may agree superficially on “human in the loop” without naming the reversible deployment path or the minority argument for selective auto-send.",
+  "expectedFailureModes": [
+    "Single-model answer flattens trade-offs into a generic caution",
+    "Side-by-side lists opinions without naming the central disagreement",
+    "Babel synthesis may over-weight consensus and under-state dissent"
+  ],
+  "createdAt": "2026-07-26T00:00:00.000Z",
+  "publishedAt": "2026-07-26T00:00:00.000Z",
+  "datasetVersion": "2026-07-26",
+  "conciseFinding": "Framework published; condition outputs and evaluation scores are not yet recorded.",
+  "whatBabelImproved": "Not evaluated; no scored comparison has been recorded for this case yet.",
+  "whereBabelDidNotHelp": "Until baseline and Babel runs are imported, Babel cannot be shown to help or hurt on this prompt. Expect longer completion time and higher reading burden whenever Babel is run, relative to a single-model answer.",
+  "caseConclusion": "This case is published so the Lab can show a real prompt with all three evaluation conditions defined. Outputs, durations, costs, and evaluation scores remain Not recorded / Not evaluated until genuine runs are imported.",
+  "limitations": [
+    "No model outputs have been recorded for any condition yet.",
+    "No human or automated evaluation scores have been recorded.",
+    "Operational metrics (latency, tokens, cost) are Not recorded.",
+    "Prompt text is taken from the public EVAL_PROMPT_SUITE (ps-01); it is not a private user debate."
+  ],
+  "changelog": [
+    {
+      "at": "2026-07-26T00:00:00.000Z",
+      "note": "Published case shell with three empty condition slots for inspectable comparison once runs exist."
+    }
+  ],
+  "artifacts": [
+    {
+      "condition": "single_model",
+      "modelIds": ["openai/gpt-4o-mini"],
+      "promptVersion": "eval-suite:2026-07-26:ps-01",
+      "orchestrationVersion": "pending",
+      "metrics": {},
+      "scores": [],
+      "failureNotes": ["Baseline single-model run not yet recorded."]
+    },
+    {
+      "condition": "side_by_side",
+      "modelIds": [
+        "openai/gpt-4o-mini",
+        "microsoft/phi-4",
+        "mistralai/mistral-small"
+      ],
+      "promptVersion": "eval-suite:2026-07-26:ps-01",
+      "orchestrationVersion": "pending",
+      "metrics": {},
+      "scores": [],
+      "failureNotes": ["Side-by-side baseline run not yet recorded."]
+    },
+    {
+      "condition": "babel",
+      "modelIds": [
+        "openai/gpt-4o-mini",
+        "microsoft/phi-4",
+        "mistralai/mistral-small"
+      ],
+      "roleAssignments": [
+        { "roleId": "skeptic", "modelId": "openai/gpt-4o-mini" },
+        { "roleId": "researcher", "modelId": "microsoft/phi-4" },
+        { "roleId": "operator", "modelId": "mistralai/mistral-small" }
+      ],
+      "promptVersion": "eval-suite:2026-07-26:ps-01",
+      "orchestrationVersion": "pending",
+      "metrics": {},
+      "scores": [],
+      "failureNotes": ["Babel debate run not yet recorded."]
+    }
+  ]
+}

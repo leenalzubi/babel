@@ -3,6 +3,7 @@ import AgentTimer from './AgentTimer.jsx'
 /**
  * @param {{
  *   title: string,
+ *   subtitle?: string | null,
  *   color: string,
  *   line: string,
  *   startTime: number | null,
@@ -11,6 +12,7 @@ import AgentTimer from './AgentTimer.jsx'
  */
 export default function AgentThinking({
   title,
+  subtitle = null,
   color,
   line,
   startTime,
@@ -19,21 +21,27 @@ export default function AgentThinking({
   return (
     <div
       role="status"
-      aria-live="polite"
-      aria-label={`${title}: ${line}`}
-      className="rounded-forge-card flex min-h-[200px] flex-col overflow-hidden border border-dashed border-[var(--border)] bg-[var(--bg-surface)]/80"
-      style={{ borderTopWidth: 2, borderTopColor: color }}
+      aria-label={`${title}${subtitle ? ` (${subtitle})` : ''}: ${line}`}
+      data-state="streaming"
+      className="babel-voice voice forge-reveal-card min-h-[200px] border-dashed"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-dashed border-[var(--border)] px-4 py-3">
-        <span
-          className="font-mono text-[10px] font-semibold tracking-wide"
-          style={{ color }}
-        >
-          {title}
-        </span>
-        {startTime != null ? (
-          <AgentTimer startTime={startTime} endTime={endTime} />
-        ) : null}
+      <div
+        className="babel-voice-niche niche niche-pulse"
+        style={{
+          background: `color-mix(in srgb, ${color} 18%, var(--plaster-hi))`,
+        }}
+      >
+        <div className="min-w-0">
+          <span className="babel-voice-name block" style={{ color }}>
+            {title}
+          </span>
+          {subtitle ? (
+            <span className="mt-0.5 block model-name">
+              {subtitle}
+            </span>
+          ) : null}
+        </div>
+        <span className="babel-voice-stance">Speaking</span>
       </div>
       <div className="relative flex flex-1 flex-col items-center justify-center px-4 py-8">
         <div
@@ -46,9 +54,12 @@ export default function AgentThinking({
             style={{ backgroundColor: color }}
             aria-hidden
           />
-          <p className="max-w-[14rem] text-center font-sans text-sm italic leading-snug text-[var(--text-secondary)]">
+          <p className="max-w-[14rem] text-center text-sm italic leading-snug text-[var(--text-secondary)]">
             {line}
           </p>
+          {startTime != null ? (
+            <AgentTimer startTime={startTime} endTime={endTime} />
+          ) : null}
         </div>
       </div>
     </div>

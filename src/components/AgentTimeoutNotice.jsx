@@ -10,7 +10,7 @@ export default function AgentTimeoutNotice({ agentName }) {
       <p className="flex items-start gap-2 font-mono text-[11px] leading-snug text-amber-800/75">
         <Clock className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
         <span>
-          <span className="font-medium">{agentName}</span> took too long — skipped
+          <span className="font-medium">{agentName}</span> took too long and was skipped
         </span>
       </p>
     </div>

@@ -21,7 +21,7 @@ export default function AgentResponseBody({ rawText, markdownClassName }) {
         : '_No visible answer text._'
 
   return (
-    <div className="flex flex-col">
+    <div className="flex min-w-0 max-w-full flex-col break-words">
       <ReactMarkdown className={markdownClassName}>{displayAnswer}</ReactMarkdown>
 
       {thinking ? (

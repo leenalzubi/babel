@@ -20,3 +20,25 @@ export const POST_ROUND1_MODEL_CALLS = 24
 export function isAgentTimeoutResponse(text) {
   return typeof text === 'string' && text === AGENT_TIMEOUT_MESSAGE
 }
+
+/**
+ * Soft-fail / timeout placeholder bodies that should render as a voice failure notice.
+ * @param {unknown} text
+ */
+export function isUnavailableAgentResponse(text) {
+  if (typeof text !== 'string' || text.length === 0) return false
+  if (isAgentTimeoutResponse(text)) return true
+  const t = text.toLowerCase()
+  return (
+    t.includes('did not answer in time') ||
+    t.includes('content policy') ||
+    t.includes('limiting requests') ||
+    t.includes('context was too long') ||
+    t.includes('is not available through') ||
+    t.includes('model service returned an error') ||
+    t.includes('could not complete this response') ||
+    t.includes('could not process this round') ||
+    t.includes('could not answer') ||
+    t.includes('could not respond')
+  )
+}

@@ -3,7 +3,7 @@
  * Set GITHUB_MODELS_PAT in Vercel → Environment Variables (Production / Preview).
  * Falls back to VITE_GITHUB_TOKEN if present on the server (not recommended).
  *
- * IMPORTANT: Do not import from ../src here — some deploy bundles only include /api,
+ * IMPORTANT: Do not import from ../src here: some deploy bundles only include /api,
  * which would break the function and yield 404/HTML from the static host.
  */
 
@@ -30,7 +30,7 @@ function serverToken() {
  * Vercel / Node sometimes leave POST body as a string or Buffer instead of a parsed object.
  * @param {import('http').IncomingMessage & { body?: unknown }} req
  */
-/** Vercel — allow long GitHub Models completions (see project Functions settings too). */
+/** Vercel: allow long GitHub Models completions (see project Functions settings too). */
 export const config = {
   maxDuration: 300,
 }
@@ -75,7 +75,8 @@ export default async function handler(req, res) {
     if (!token) {
       return res.status(503).json({
         error:
-          'GitHub PAT missing on the server. In Vercel add GITHUB_MODELS_PAT (recommended) under Environment Variables for this environment, then redeploy.',
+          'GitHub PAT missing on the server. In Vercel add GITHUB_MODELS_PAT (recommended) under Environment Variables for Production and Preview, then redeploy.',
+        code: 'GITHUB_TOKEN_MISSING',
       })
     }
 

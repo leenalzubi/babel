@@ -42,7 +42,7 @@ export function computeProgressUi(state) {
   if (
     avgRound1Ms != null &&
     round1Done &&
-    status === 'running' &&
+    (status === 'running' || status === 'degraded') &&
     completed < TOTAL_MODEL_CALLS
   ) {
     const remainingCalls = Math.max(0, TOTAL_MODEL_CALLS - completed)
@@ -53,12 +53,23 @@ export function computeProgressUi(state) {
   let label = ''
   if (status === 'complete') {
     label = 'Debate complete'
-  } else if (status === 'running' && estimatedMinutesRemaining != null) {
+  } else if (status === 'complete_with_gaps') {
+    label = 'Complete with gaps'
+  } else if (status === 'degraded' && estimatedMinutesRemaining != null) {
+    label = `Continuing (~${estimatedMinutesRemaining} min)`
+  } else if (
+    (status === 'running' || status === 'degraded') &&
+    estimatedMinutesRemaining != null
+  ) {
     label = `~${estimatedMinutesRemaining} min remaining`
-  } else if (status === 'running' && round1Done) {
+  } else if ((status === 'running' || status === 'degraded') && round1Done) {
     label = '~… min remaining'
-  } else if (status === 'running') {
+  } else if (status === 'running' || status === 'degraded') {
     label = ''
+  } else if (status === 'blocked') {
+    label = 'Paused'
+  } else if (status === 'failed' || status === 'error') {
+    label = 'Could not finish'
   } else {
     label = ''
   }

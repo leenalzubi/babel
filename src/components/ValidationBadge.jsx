@@ -20,7 +20,7 @@ function ValidatorDetail({ name, v }) {
         <span className="text-[var(--text-primary)]">
           {v.fair_to_me ? 'yes' : 'no'}
         </span>{' '}
-        · fair_to_others:{' '}
+       ; fair_to_others:{' '}
         <span className="text-[var(--text-primary)]">
           {v.fair_to_others ? 'yes' : 'no'}
         </span>
@@ -79,7 +79,7 @@ export default function ValidationBadge() {
       <div
         className={`rounded-forge-card border px-3 py-2.5 transition ${
           approved
-            ? 'border-[#16A34A] bg-[#F0FDF4] text-[#15803D]'
+            ? 'border-[#4C6647] bg-[#E8EDE6] text-[#3D5439]'
             : 'border-[#D97706] bg-[#FFFBEB] text-[#92400E]'
         }`}
       >
@@ -99,7 +99,7 @@ export default function ValidationBadge() {
         </button>
         <p
           className="mt-1 font-[family-name:var(--font-body)] text-[13px] leading-snug opacity-95"
-          style={{ fontFamily: 'var(--font-body), Georgia, serif' }}
+          style={{ fontFamily: 'var(--font-body)' }}
         >
           {approved ? (
             <>
@@ -111,7 +111,7 @@ export default function ValidationBadge() {
         </p>
         {b && c ? (
           <p className="mt-2 font-[family-name:var(--font-mono)] text-[10px] opacity-90">
-            {agentB.name}: {b.score}/10 · {agentC.name}: {c.score}/10
+            {agentB.name}: {b.score}/10; {agentC.name}: {c.score}/10
           </p>
         ) : null}
         {flagged ? (
